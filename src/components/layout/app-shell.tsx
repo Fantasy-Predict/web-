@@ -121,7 +121,7 @@ export function AppShell({
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur lg:hidden">
-        {MOBILE_NAV.map((item) => {
+        {MOBILE_NAV.map((item) => {  
           const isActive = pathname === item.to;
           return (
             <Link
