@@ -376,6 +376,6 @@ export default function AboutClient() {
           </div>
         </Card>
       </section>
-    </>
+    </> 
   );
 }
