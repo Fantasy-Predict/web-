@@ -10,7 +10,7 @@ export function Logo({
 }) {
   if (variant === "mark") {
     return (
-      <div className={cn("relative h-10 w-10", className)}>
+      <div className={cn("relative h-8 w-8", className)}>
         <Image
           src="/icon-logo.png"
           alt="Fantasy Predict"

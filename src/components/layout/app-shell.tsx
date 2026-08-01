@@ -72,8 +72,9 @@ export function AppShell({
 
       <div className="lg:pl-60">
         <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3.5 lg:px-8">
-            <div className="flex min-w-0 items-center gap-3">
+          <div className="flex items-center justify-between px-5 py-3.5 lg:px-8">
+            <div className="flex items-center gap-3">
+              {/* Logo mark – only visible on mobile (lg:hidden) */}
               <Link href="/" className="lg:hidden" aria-label="Fantasy Predict home">
                 <Logo variant="mark" />
               </Link>
@@ -87,6 +88,7 @@ export function AppShell({
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <ThemeToggle />
               <button
                 aria-label="Notifications"
                 className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border hover:bg-accent"
@@ -104,16 +106,17 @@ export function AppShell({
         </header>
 
         <main className="animate-rise px-5 pt-8 pb-28 lg:px-8 lg:pb-14">
-          {/* Wider content area: max-w-5xl → max-w-7xl */}
           <div className="mx-auto max-w-7xl">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <h1 className="truncate text-2xl font-bold sm:text-3xl">{title}</h1>
                 {description && (
                   <p className="mt-1.5 text-sm text-muted-foreground">{description}</p>
                 )}
               </div>
-              {actions}
+              {actions && (
+                <div className="flex-shrink-0">{actions}</div>
+              )}
             </div>
             <div className="mt-8">{children}</div>
           </div>
@@ -121,7 +124,7 @@ export function AppShell({
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur lg:hidden">
-        {MOBILE_NAV.map((item) => {  
+        {MOBILE_NAV.map((item) => {
           const isActive = pathname === item.to;
           return (
             <Link

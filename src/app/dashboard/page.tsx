@@ -24,49 +24,89 @@ export default function DashboardPage() {
       title={`Welcome back, ${currentUser.username}`}
       description="Matchweek 21 predictions close on Saturday at 15:00."
       actions={
-        <Button asChild>
-          <Link href="/dashboard/predict">Make predictions</Link>
+        <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
+          <Link href="/dashboard/predict">Make Predictions</Link>
         </Button>
       }
     >
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {/* =============================================================
+          PREDICTIONS – MAIN FOCUS
+          ============================================================= */}
+      <section>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Upcoming Matches</h2>
+          <Link href="/dashboard/fixtures" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+            View all fixtures
+          </Link>
+        </div>
+        <div className="mt-4 grid gap-4">
+          {upcoming.map((match) => (
+            <MatchCard
+              key={match.id}
+              match={match}
+              footer={
+                <div className="grid grid-cols-3 gap-2">
+                  {["Home win", "Draw", "Away win"].map((option) => (
+                    <Button key={option} asChild variant="outline" size="sm">
+                      <Link href="/dashboard/predict">{option}</Link>
+                    </Button>
+                  ))}
+                </div>
+              }
+            />
+          ))}
+        </div>
+        {/* Quick action button below the matches */}
+        <div className="mt-6 text-center">
+          <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
+            <Link href="/dashboard/predict">View All Predictions</Link>
+          </Button>
+        </div>
+      </section>
+
+      {/* =============================================================
+          STATS – COMPACT ROW (secondary)
+          ============================================================= */}
+      <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Wallet balance" value={formatNaira(currentUser.balance)} hint="Available for entry fees" />
         <StatCard label="Total points" value={currentUser.points.toLocaleString()} accent="primary" hint={`+${currentUser.weeklyPoints} this week`} />
         <StatCard label="Global rank" value={`#${currentUser.rank}`} accent="gold" hint="Up 2 positions" />
         <StatCard label="Win rate" value={`${currentUser.winRate}%`} accent="success" hint="Correct outcomes this season" />
       </div>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-[1.35fr_1fr]">
+      {/* =============================================================
+          SECONDARY SECTIONS – Leagues + Leaderboard + Notifications
+          ============================================================= */}
+      <div className="mt-10 grid gap-8 lg:grid-cols-2">
+        {/* Active Leagues */}
         <section>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Quick predictions</h2>
-            <Link href="/dashboard/fixtures" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-              All fixtures
+            <h2 className="text-lg font-semibold">Active Leagues</h2>
+            <Link href="/dashboard/leagues" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              Manage leagues
             </Link>
           </div>
-          <div className="mt-4 grid gap-4">
-            {upcoming.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                footer={
-                  <div className="grid grid-cols-3 gap-2">
-                    {["Home win", "Draw", "Away win"].map((option) => (
-                      <Button key={option} asChild variant="outline" size="sm">
-                        <Link href="/dashboard/predict">{option}</Link>
-                      </Button>
-                    ))}
-                  </div>
-                }
-              />
-            ))}
+          <div className="mt-4 space-y-4">
+            {leagues
+              .filter((l) => l.rank)
+              .slice(0, 2)
+              .map((league) => (
+                <LeagueCard key={league.id} league={league} />
+              ))}
+            {leagues.filter((l) => l.rank).length > 2 && (
+              <div className="text-center text-sm text-muted-foreground">
+                +{leagues.filter((l) => l.rank).length - 2} more leagues
+              </div>
+            )}
           </div>
         </section>
 
-        <div className="grid gap-8">
+        {/* Right Column: Leaderboard + Notifications */}
+        <div className="space-y-8">
+          {/* Weekly Rankings */}
           <section>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Weekly rankings</h2>
+              <h2 className="text-lg font-semibold">Weekly Rankings</h2>
               <Link href="/dashboard/leaderboard" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
                 View all
               </Link>
@@ -82,6 +122,7 @@ export default function DashboardPage() {
             </Card>
           </section>
 
+          {/* Notifications */}
           <section>
             <h2 className="text-lg font-semibold">Notifications</h2>
             <Card className="mt-4 gap-0 divide-y divide-border p-0 shadow-[var(--shadow-card)]">
@@ -99,22 +140,6 @@ export default function DashboardPage() {
           </section>
         </div>
       </div>
-
-      <section className="mt-10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Active leagues</h2>
-          <Link href="/dashboard/leagues" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            Manage leagues
-          </Link>
-        </div>
-        <div className="mt-4 grid gap-5 md:grid-cols-2">
-          {leagues
-            .filter((l) => l.rank)
-            .map((league) => (
-              <LeagueCard key={league.id} league={league} />
-            ))}
-        </div>
-      </section>
     </AppShell>
   );
 }
