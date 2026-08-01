@@ -21,7 +21,7 @@ export default function PredictPage() {
 
   const completed = open.filter((m) => picks[m.id]?.outcome).length;
 
-  function submit() {
+  function handleSubmit() {
     setSubmitting(true);
     // Backend integration point: POST /predictions
     setTimeout(() => {
@@ -35,11 +35,6 @@ export default function PredictPage() {
     <AppShell
       title="Matchweek 21"
       description="Predictions lock at each match kickoff. You can edit until then."
-      actions={
-        <Button onClick={submit} disabled={submitting || completed === 0}>
-          {submitting ? "Submitting…" : "Submit predictions"}
-        </Button>
-      }
     >
       <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
         <div className="flex items-center justify-between text-sm">
@@ -71,6 +66,18 @@ export default function PredictPage() {
             onChange={(next) => setPicks((prev) => ({ ...prev, [match.id]: { ...prev[match.id], ...next } }))}
           />
         ))}
+      </div>
+
+      {/* Bottom Submit Button – only one */}
+      <div className="mt-8 flex justify-end">
+        <Button
+          onClick={handleSubmit}
+          disabled={submitting || completed === 0}
+          size="lg"
+          className="w-full sm:w-auto"
+        >
+          {submitting ? "Submitting…" : "Submit predictions"}
+        </Button>
       </div>
     </AppShell>
   );
