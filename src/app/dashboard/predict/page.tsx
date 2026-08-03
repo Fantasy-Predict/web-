@@ -7,23 +7,32 @@ import { Card } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
-import { TeamCrest } from "../../../components/app/card";
+import { TeamCrest, MatchCard } from "../../../components/app/card";
 import { matches, type Match } from "../../lib/mock-data";
 import { cn } from "../../lib/utils";
+import { calculatePoints, getOutcomeFromScore, type Prediction } from "../../lib/scoring";
 
-type Pick = { outcome?: "home" | "draw" | "away"; home?: string; away?: string; locked?: boolean };
+type Pick = { 
+  outcome?: "home" | "draw" | "away"; 
+  home?: string; 
+  away?: string; 
+  locked?: boolean;
+  prediction?: Prediction;
+};
 
 export default function PredictPage() {
-  const open = matches.filter((m) => m.status === "upcoming");
+  const [allMatches] = useState<Match[]>(matches);
   const [picks, setPicks] = useState<Record<string, Pick>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const completed = open.filter((m) => picks[m.id]?.outcome).length;
+  const upcoming = allMatches.filter((m) => m.status === "upcoming");
+  const finished = allMatches.filter((m) => m.status === "finished");
+
+  const completed = upcoming.filter((m) => picks[m.id]?.outcome).length;
 
   function handleSubmit() {
     setSubmitting(true);
-    // Backend integration point: POST /predictions
     setTimeout(() => {
       setSubmitting(false);
       setSubmitted(true);
@@ -40,13 +49,13 @@ export default function PredictPage() {
         <div className="flex items-center justify-between text-sm">
           <span className="font-semibold">Progress</span>
           <span className="num text-muted-foreground">
-            {completed} of {open.length} matches
+            {completed} of {upcoming.length} matches
           </span>
         </div>
         <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-[width] duration-500"
-            style={{ width: `${(completed / open.length) * 100}%` }}
+            style={{ width: `${(completed / upcoming.length) * 100}%` }}
           />
         </div>
         {submitted && (
@@ -56,19 +65,69 @@ export default function PredictPage() {
         )}
       </Card>
 
+      {/* Upcoming matches */}
       <div className="mt-6 grid gap-5">
-        {open.map((match, index) => (
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
+        {upcoming.map((match, index) => (
           <PredictionRow
             key={match.id}
             match={match}
-            locked={index === open.length - 1}
+            locked={index === upcoming.length - 1}
             pick={picks[match.id] ?? {}}
-            onChange={(next) => setPicks((prev) => ({ ...prev, [match.id]: { ...prev[match.id], ...next } }))}
+            onChange={(next) => setPicks((prev) => ({ 
+              ...prev, 
+              [match.id]: { 
+                ...prev[match.id], 
+                ...next,
+                prediction: next.outcome && next.home && next.away ? {
+                  outcome: next.outcome,
+                  homeScore: parseInt(next.home) || 0,
+                  awayScore: parseInt(next.away) || 0,
+                } : undefined
+              } 
+            }))}
           />
         ))}
       </div>
 
-      {/* Bottom Submit Button – only one */}
+      {/* Finished matches – show scoring */}
+      {finished.length > 0 && (
+        <div className="mt-10 grid gap-5">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Results</h3>
+          {finished.map((match) => {
+            const pick = picks[match.id];
+            let scoringResult = null;
+            
+            if (pick?.prediction && match.score) {
+              const actualResult = {
+                outcome: getOutcomeFromScore(match.score.home, match.score.away),
+                homeScore: match.score.home,
+                awayScore: match.score.away,
+              };
+              scoringResult = calculatePoints(pick.prediction, actualResult);
+            }
+
+            return (
+              <MatchCard
+                key={match.id}
+                match={match}
+                scoringResult={scoringResult}
+                footer={
+                  scoringResult && (
+                    <div className="mt-2 text-sm">
+                      <span className="font-medium">You earned: </span>
+                      <span className="font-bold text-primary">{scoringResult.points} points</span>
+                      <span className="text-muted-foreground"> ({scoringResult.label})</span>
+                    </div>
+                  )
+                }
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Submit button */}
       <div className="mt-8 flex justify-end">
         <Button
           onClick={handleSubmit}
@@ -155,7 +214,10 @@ function PredictionRow({
             aria-label={`${match.home} exact score`}
             className="num h-10 text-center"
             value={pick.home ?? ""}
-            onChange={(e) => onChange({ home: e.target.value.replace(/\D/g, "").slice(0, 2) })}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "").slice(0, 2);
+              onChange({ home: value });
+            }}
           />
           <span className="text-xs font-semibold text-muted-foreground">score</span>
           <Input
@@ -165,7 +227,10 @@ function PredictionRow({
             aria-label={`${match.away} exact score`}
             className="num h-10 text-center"
             value={pick.away ?? ""}
-            onChange={(e) => onChange({ away: e.target.value.replace(/\D/g, "").slice(0, 2) })}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "").slice(0, 2);
+              onChange({ away: value });
+            }}
           />
         </div>
       </div>

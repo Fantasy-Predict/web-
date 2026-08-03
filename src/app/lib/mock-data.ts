@@ -21,6 +21,7 @@ export type League = {
   privacy: "public" | "private";
   progress: number;
   rank?: number;
+  type: "free" | "monetized"; // ← added
 };
 
 export type LeaderboardRow = {
@@ -50,10 +51,56 @@ export const matches: Match[] = [
 ];
 
 export const leagues: League[] = [
-  { id: "l1", name: "Premier Predictors", competition: "Premier League", entryFee: 5000, players: 128, maxPlayers: 200, prizePool: 640000, privacy: "public", progress: 42, rank: 12 },
-  { id: "l2", name: "Office Rivals", competition: "Premier League", entryFee: 2000, players: 18, maxPlayers: 20, prizePool: 36000, privacy: "private", progress: 42, rank: 3 },
-  { id: "l3", name: "Continental Cup Room", competition: "Champions League", entryFee: 10000, players: 64, maxPlayers: 100, prizePool: 640000, privacy: "public", progress: 25 },
-  { id: "l4", name: "Weekend Warriors", competition: "La Liga", entryFee: 1000, players: 240, maxPlayers: 500, prizePool: 240000, privacy: "public", progress: 60 },
+  { 
+    id: "l1", 
+    name: "Premier Predictors", 
+    competition: "Premier League", 
+    entryFee: 5000, 
+    players: 128, 
+    maxPlayers: 200, 
+    prizePool: 640000, 
+    privacy: "public", 
+    progress: 42, 
+    rank: 12,
+    type: "monetized" // ← added
+  },
+  { 
+    id: "l2", 
+    name: "Office Rivals", 
+    competition: "Premier League", 
+    entryFee: 2000, 
+    players: 18, 
+    maxPlayers: 20, 
+    prizePool: 36000, 
+    privacy: "private", 
+    progress: 42, 
+    rank: 3,
+    type: "monetized" // ← added
+  },
+  { 
+    id: "l3", 
+    name: "Continental Cup Room", 
+    competition: "Champions League", 
+    entryFee: 10000, 
+    players: 64, 
+    maxPlayers: 100, 
+    prizePool: 640000, 
+    privacy: "public", 
+    progress: 25,
+    type: "monetized" // ← added
+  },
+  { 
+    id: "l4", 
+    name: "Weekend Warriors", 
+    competition: "La Liga", 
+    entryFee: 1000, 
+    players: 240, 
+    maxPlayers: 500, 
+    prizePool: 240000, 
+    privacy: "public", 
+    progress: 60,
+    type: "free" // ← added (example of a free league)
+  },
 ];
 
 export const leaderboard: LeaderboardRow[] = [

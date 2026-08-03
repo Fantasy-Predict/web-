@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { LeagueCard, MatchCard, StatCard } from "../../../src/components/app/card";
 import { currentUser, formatNaira, leaderboard, leagues, matches } from "../../app/lib/mock-data";
+import { calculatePoints, getOutcomeFromScore } from "../../app/lib/scoring";
 
 export const metadata: Metadata = {
   title: "Dashboard — Fantasy Predict",
@@ -18,6 +19,27 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   const upcoming = matches.filter((m) => m.status === "upcoming").slice(0, 3);
+  const finished = matches.filter((m) => m.status === "finished");
+
+  // Calculate points from finished matches (example)
+  const totalPointsFromFinished = finished.reduce((total, match) => {
+    if (match.score) {
+      // Mock prediction for demonstration
+      const mockPrediction = {
+        outcome: getOutcomeFromScore(match.score.home, match.score.away),
+        homeScore: match.score.home - 1,
+        awayScore: match.score.away + 1,
+      };
+      const actualResult = {
+        outcome: getOutcomeFromScore(match.score.home, match.score.away),
+        homeScore: match.score.home,
+        awayScore: match.score.away,
+      };
+      const result = calculatePoints(mockPrediction, actualResult);
+      return total + result.points;
+    }
+    return total;
+  }, 0);
 
   return (
     <AppShell
@@ -29,9 +51,7 @@ export default function DashboardPage() {
         </Button>
       }
     >
-      {/* =============================================================
-          PREDICTIONS – MAIN FOCUS
-          ============================================================= */}
+      {/* Upcoming Matches */}
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Upcoming Matches</h2>
@@ -56,7 +76,6 @@ export default function DashboardPage() {
             />
           ))}
         </div>
-        {/* Quick action button below the matches */}
         <div className="mt-6 text-center">
           <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
             <Link href="/dashboard/predict">View All Predictions</Link>
@@ -64,19 +83,42 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* =============================================================
-          STATS – COMPACT ROW (secondary)
-          ============================================================= */}
+      {/* Stats Row */}
       <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Wallet balance" value={formatNaira(currentUser.balance)} hint="Available for entry fees" />
-        <StatCard label="Total points" value={currentUser.points.toLocaleString()} accent="primary" hint={`+${currentUser.weeklyPoints} this week`} />
+        <StatCard 
+          label="Total points" 
+          value={(currentUser.points + totalPointsFromFinished).toLocaleString()} 
+          accent="primary" 
+          hint={`+${currentUser.weeklyPoints} this week`} 
+        />
         <StatCard label="Global rank" value={`#${currentUser.rank}`} accent="gold" hint="Up 2 positions" />
         <StatCard label="Win rate" value={`${currentUser.winRate}%`} accent="success" hint="Correct outcomes this season" />
       </div>
 
-      {/* =============================================================
-          SECONDARY SECTIONS – Leagues + Leaderboard + Notifications
-          ============================================================= */}
+      {/* Scoring System Quick Reference */}
+      <div className="mt-6">
+        <Card className="p-5 shadow-[var(--shadow-card)]">
+          <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+            Scoring System
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { label: "Exact", points: 5, color: "text-green-600 dark:text-green-400" },
+              { label: "Close", points: 3, color: "text-blue-600 dark:text-blue-400" },
+              { label: "Correct", points: 2, color: "text-gold" },
+              { label: "Wrong", points: 0, color: "text-red-600 dark:text-red-400" },
+            ].map((item) => (
+              <div key={item.label} className="text-center">
+                <p className={`font-display text-xl font-bold ${item.color}`}>{item.points}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Secondary Sections */}
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         {/* Active Leagues */}
         <section>
@@ -101,9 +143,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Right Column: Leaderboard + Notifications */}
+        {/* Right Column */}
         <div className="space-y-8">
-          {/* Weekly Rankings */}
           <section>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Weekly Rankings</h2>
@@ -122,7 +163,6 @@ export default function DashboardPage() {
             </Card>
           </section>
 
-          {/* Notifications */}
           <section>
             <h2 className="text-lg font-semibold">Notifications</h2>
             <Card className="mt-4 gap-0 divide-y divide-border p-0 shadow-[var(--shadow-card)]">

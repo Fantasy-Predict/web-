@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PublicLayout } from "@/components/layout/public-layout";
 import AboutClient from "./AboutClient";
 
 export const metadata: Metadata = {
@@ -13,5 +14,9 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
-  return <AboutClient />;
+  return (
+    <PublicLayout>
+      <AboutClient />
+    </PublicLayout>
+  );
 }

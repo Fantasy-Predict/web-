@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
 import { StatCard } from "../../../../components/app/card";
 import { formatNaira, leaderboard, leagues } from "../../../lib/mock-data";
 import { InviteButton } from "./invite-button";
+import { cn } from "../../../lib/utils";
 
 function getLeague(leagueId: string) {
   return leagues.find((l) => l.id === leagueId);
@@ -48,25 +49,37 @@ export default async function LeagueDetailPage({
 
   if (!league) notFound();
 
+  const isFree = league.type === "free";
+
   return (
     <AppShell
       title={league.name}
-      description={`${league.competition} · ${league.privacy === "private" ? "Private league" : "Public league"}`}
+      description={`${league.competition} · ${league.privacy === "private" ? "Private league" : "Public league"} · ${isFree ? "Free" : "Monetized"}`}
       actions={
         <div className="flex gap-2">
           <InviteButton leagueId={league.id} />
-          <Button>{league.rank ? "Make predictions" : `Join for ${formatNaira(league.entryFee)}`}</Button>
+          <Button>
+            {league.rank ? "Make predictions" : isFree ? "Join Free" : `Join for ${formatNaira(league.entryFee)}`}
+          </Button>
         </div>
       }
     >
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Prize pool" value={formatNaira(league.prizePool)} accent="gold" />
-        <StatCard label="Entry fee" value={formatNaira(league.entryFee)} />
+        <StatCard 
+          label="Prize pool" 
+          value={isFree ? "—" : formatNaira(league.prizePool)} 
+          accent="gold" 
+        />
+        <StatCard 
+          label="Entry fee" 
+          value={isFree ? "Free" : formatNaira(league.entryFee)} 
+        />
         <StatCard label="Participants" value={`${league.players}/${league.maxPlayers}`} />
         <StatCard label="Season progress" value={`${league.progress}%`} accent="primary" />
       </div>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+        {/* Members Section */}
         <section>
           <h2 className="text-lg font-semibold">Members</h2>
           <Card className="mt-4 gap-0 divide-y divide-border p-0 shadow-[var(--shadow-card)]">
@@ -90,25 +103,37 @@ export default async function LeagueDetailPage({
           </Card>
         </section>
 
+        {/* League Rules Section – Updated Scoring System */}
         <section>
           <h2 className="text-lg font-semibold">League rules</h2>
           <Card className="mt-4 gap-0 p-6 shadow-[var(--shadow-card)]">
             <ul className="grid gap-4 text-sm leading-relaxed text-muted-foreground">
               <li>
-                <span className="font-semibold text-foreground">Correct outcome:</span> 3 points.
+                <span className="font-semibold text-foreground">Exact score:</span> 5 points
+                (correct score and outcome).
               </li>
               <li>
-                <span className="font-semibold text-foreground">Exact score:</span> 5 points
-                (replaces the outcome points).
+                <span className="font-semibold text-foreground">Close (goal margin):</span> 3 points
+                (correct margin, e.g., predicted 2-1, actual 3-2).
+              </li>
+              <li>
+                <span className="font-semibold text-foreground">Correct outcome:</span> 2 points
+                (correct win/draw result).
+              </li>
+              <li>
+                <span className="font-semibold text-foreground">Wrong:</span> 0 points
+                (incorrect prediction).
               </li>
               <li>
                 <span className="font-semibold text-foreground">Deadline:</span> predictions lock at
                 each match kickoff.
               </li>
-              <li>
-                <span className="font-semibold text-foreground">Prize split:</span> top three
-                finishers share the pool 60 / 30 / 10.
-              </li>
+              {!isFree && (
+                <li>
+                  <span className="font-semibold text-foreground">Prize split:</span> top three
+                  finishers share the pool 60 / 30 / 10.
+                </li>
+              )}
             </ul>
             <div className="mt-6 flex flex-wrap gap-2">
               <Badge variant="secondary">No late entries after matchweek 5</Badge>

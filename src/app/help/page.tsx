@@ -37,7 +37,13 @@ const CATEGORIES = [
   },
   {
     title: "Leagues",
-    topics: ["Joining a league", "Creating a league", "Private vs public leagues", "League rules"],
+    topics: [
+      "Free vs Monetized leagues",
+      "Joining a league",
+      "Creating a league",
+      "Private vs public leagues",
+      "League rules",
+    ],
   },
   {
     title: "Payments & Wallet",
@@ -45,7 +51,7 @@ const CATEGORIES = [
   },
   {
     title: "Rankings & Points",
-    topics: ["Leaderboard system", "Weekly rankings", "Season rankings", "Points calculation"],
+    topics: ["Leaderboard system", "Weekly rankings", "Season rankings", "How points are calculated"],
   },
   {
     title: "Account & Settings",
@@ -56,11 +62,15 @@ const CATEGORIES = [
 const POPULAR_QUESTIONS = [
   {
     q: "How do I join a league?",
-    a: "Browse available leagues from your dashboard, select the one you're interested in, review the entry fee and prize structure, complete payment if required, and confirm your participation. You'll receive a confirmation once you're in.",
+    a: "Browse available leagues from your dashboard, select the one you're interested in, review the entry fee and prize structure, complete payment if required, and confirm your participation. You'll receive a confirmation once you're in. Note that you can join both free and monetized leagues.",
   },
   {
     q: "How are points calculated?",
-    a: "Points are awarded based on prediction accuracy. You earn points for correct outcomes (home win, draw, or away win) and bonus points when your exact score prediction is correct. Full scoring rules are published inside each league.",
+    a: "Points are awarded based on prediction accuracy using the following system: Exact score → 5 points | Close (correct goal margin) → 3 points | Correct outcome → 2 points | Wrong → 0 points. Full scoring rules are published inside each league.",
+  },
+  {
+    q: "What is the difference between Free and Monetized leagues?",
+    a: "Free leagues have no entry fees and are perfect for playing with friends, office groups, or casual competition. Monetized leagues have entry fees and real prize pools, allowing you to compete for rewards. You can choose which type to join or create.",
   },
   {
     q: "When do predictions close?",
@@ -85,17 +95,17 @@ const STEPS = [
   {
     step: "02",
     title: "Join A League",
-    body: "Browse available leagues from your dashboard. Select one that interests you and review the details before joining.",
+    body: "Browse available leagues from your dashboard – choose a free league for casual play or a monetized league for real prizes. Select one that interests you and review the details before joining.",
   },
   {
     step: "03",
     title: "Make Predictions",
-    body: "Select upcoming matches, choose your predicted outcome (home win, draw, or away win), and submit before the deadline.",
+    body: "Select upcoming matches, choose your predicted outcome (home win, draw, or away win) and exact score. Submit before the deadline.",
   },
   {
     step: "04",
     title: "Track Your Progress",
-    body: "View your points, check your position on the leaderboard, and see how you're performing against other players.",
+    body: "View your points, check your position on the leaderboard, and see how you're performing against other players. Points are awarded based on the 5/3/2/0 scoring system.",
   },
 ];
 

@@ -5,6 +5,7 @@ import type { League, Match } from "../../app/lib/mock-data";
 import { formatNaira } from "../../app/lib/mock-data";
 import Link from "next/link";
 import { Button } from "../../components/ui/button";
+import type { ScoringResult } from "../../app/lib/scoring";
 
 export function StatCard({
   label,
@@ -45,7 +46,15 @@ export function TeamCrest({ short }: { short: string }) {
   );
 }
 
-export function MatchCard({ match, footer }: { match: Match; footer?: React.ReactNode }) {
+export function MatchCard({ 
+  match, 
+  footer, 
+  scoringResult 
+}: { 
+  match: Match; 
+  footer?: React.ReactNode;
+  scoringResult?: ScoringResult | null;
+}) {
   return (
     <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
@@ -58,6 +67,33 @@ export function MatchCard({ match, footer }: { match: Match; footer?: React.Reac
         <MatchRow short={match.homeShort} name={match.home} score={match.score?.home} />
         <MatchRow short={match.awayShort} name={match.away} score={match.score?.away} />
       </div>
+
+      {/* Points earned display */}
+      {scoringResult && match.status === "finished" && (
+        <div className="mt-4 rounded-xl border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Your Prediction</p>
+              <p className="text-xs text-muted-foreground">
+                Points earned: <span className="font-bold text-foreground">{scoringResult.points}</span>
+              </p>
+            </div>
+            <Badge
+              className={cn(
+                "px-3 py-1 text-xs font-semibold",
+                scoringResult.points === 5 && "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400",
+                scoringResult.points === 3 && "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                scoringResult.points === 2 && "border-gold/30 bg-gold/10 text-gold",
+                scoringResult.points === 0 && "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400"
+              )}
+            >
+              {scoringResult.label} — {scoringResult.points} pts
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{scoringResult.description}</p>
+        </div>
+      )}
+
       {footer && <div className="mt-5 border-t border-border pt-4">{footer}</div>}
     </Card>
   );
@@ -92,6 +128,8 @@ export function MatchStatus({ status, kickoff }: { status: Match["status"]; kick
 }
 
 export function LeagueCard({ league }: { league: League }) {
+  const isFree = league.type === "free";
+
   return (
     <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
@@ -99,19 +137,34 @@ export function LeagueCard({ league }: { league: League }) {
           <h3 className="truncate text-base font-semibold">{league.name}</h3>
           <p className="mt-1 truncate text-xs text-muted-foreground">{league.competition}</p>
         </div>
-        <Badge variant={league.privacy === "private" ? "secondary" : "outline"} className="shrink-0">
-          {league.privacy === "private" ? "Private" : "Public"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {isFree ? (
+            <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400">
+              Free
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="border-gold/30 bg-gold/10 text-gold">
+              Monetized
+            </Badge>
+          )}
+          <Badge variant={league.privacy === "private" ? "secondary" : "outline"} className="shrink-0">
+            {league.privacy === "private" ? "Private" : "Public"}
+          </Badge>
+        </div>
       </div>
 
       <dl className="mt-5 grid grid-cols-3 gap-3 text-sm">
         <div>
           <dt className="text-xs text-muted-foreground">Entry</dt>
-          <dd className="num mt-1 font-semibold">{formatNaira(league.entryFee)}</dd>
+          <dd className="num mt-1 font-semibold">
+            {isFree ? "Free" : formatNaira(league.entryFee)}
+          </dd>
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Prize pool</dt>
-          <dd className="num mt-1 font-semibold text-gold">{formatNaira(league.prizePool)}</dd>
+          <dd className="num mt-1 font-semibold text-gold">
+            {isFree ? "—" : formatNaira(league.prizePool)}
+          </dd>
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Players</dt>

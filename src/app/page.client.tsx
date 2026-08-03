@@ -442,11 +442,7 @@ export default function PageClient() {
                                     title: "Explore Available Leagues",
                                     body: "Browse public competitions or join private leagues through invitations."
                                 },
-                                {
-                                    step: "03",
-                                    title: "Join A League",
-                                    body: "Enter free leagues or participate in monetized competitions with applicable entry fees."
-                                },
+                                { step: "03", title: "Choose Your League", body: "Join a free league to play with friends, or create a monetized league with entry fees and real prize pools." },
                                 {
                                     step: "04",
                                     title: "Make Predictions",

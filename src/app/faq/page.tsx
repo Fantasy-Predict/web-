@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 // ============================================================
-// FAQ DATA – Grouped by Category
+// FAQ DATA – Grouped by Category (UPDATED)
 // ============================================================
 
 const FAQ_CATEGORIES = [
@@ -88,12 +88,24 @@ const FAQ_CATEGORIES = [
         a: "A league is a competition where users compete against each other based on their prediction performance.",
       },
       {
+        q: "What is the difference between Free and Monetized leagues?",
+        a: "Free leagues have no entry fees and are perfect for playing with friends, office groups, or casual competition. Monetized leagues have entry fees and real prize pools, allowing you to compete for rewards.",
+      },
+      {
         q: "How do I join a league?",
         a: "Browse available leagues, select your preferred league, review the details, and join.",
       },
       {
         q: "Can I create my own league?",
-        a: "Yes. Users can create private or public leagues depending on the available options.",
+        a: "Yes. Users can create private or public leagues depending on the available options. When creating a league, you can choose between Free or Monetized.",
+      },
+      {
+        q: "Who sets the entry fee for a Monetized league?",
+        a: "Entry fees for monetized leagues are set by the league creator, subject to platform guidelines. The platform may also offer curated monetized leagues with fixed entry fees.",
+      },
+      {
+        q: "Can I convert a Free league to Monetized later?",
+        a: "Once a league is created, the league type (Free or Monetized) cannot be changed. You would need to create a new league with the desired type.",
       },
       {
         q: "What information can I see before joining a league?",
@@ -115,7 +127,11 @@ const FAQ_CATEGORIES = [
     questions: [
       {
         q: "How are points calculated?",
-        a: "Points are awarded based on prediction accuracy according to Fantasy Predict's scoring system.",
+        a: "Points are awarded based on prediction accuracy: Exact score → 5 points | Close (correct goal margin) → 3 points | Correct outcome → 2 points | Wrong → 0 points.",
+      },
+      {
+        q: "What is considered a 'Close' prediction?",
+        a: "A 'Close' prediction means you predicted the correct goal margin (for example, predicting 2-1 when the actual score is 3-2, or 1-0 when the actual score is 2-1).",
       },
       {
         q: "Where can I view my ranking?",
