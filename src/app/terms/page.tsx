@@ -246,12 +246,16 @@ export default function TermsClient() {
                   Once a match locks, predictions cannot be edited, modified, or withdrawn.
                 </p>
                 <p>
-                  Points are awarded based on prediction accuracy according to the scoring
-                  system defined for each league.
+                  Points are awarded based on prediction accuracy using the following system:
                 </p>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li><strong className="text-foreground">Exact score:</strong> 5 points</li>
+                  <li><strong className="text-foreground">Close (correct goal margin):</strong> 3 points</li>
+                  <li><strong className="text-foreground">Correct outcome:</strong> 2 points</li>
+                  <li><strong className="text-foreground">Wrong:</strong> 0 points</li>
+                </ul>
                 <p>
-                  Fantasy Predict reserves the right to define and update scoring systems where
-                  necessary, with reasonable notice to users.
+                  Full scoring rules are published within each league. Fantasy Predict reserves the right to define and update scoring systems where necessary, with reasonable notice to users.
                 </p>
               </div>
             </section>
