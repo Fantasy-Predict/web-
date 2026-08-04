@@ -21,7 +21,12 @@ export type League = {
   privacy: "public" | "private";
   progress: number;
   rank?: number;
-  type: "free" | "monetized"; // ← added
+  type: "free" | "monetized";
+  // New fields for pool creation
+  poolFor: "office" | "friends-family" | "open" | "media-blog" | "business" | "other";
+  prizeType: "fun" | "prizes";
+  introduction?: string;
+  platformFeePercentage: number; // 10 for monetized, 0 for free
 };
 
 export type LeaderboardRow = {
@@ -62,7 +67,11 @@ export const leagues: League[] = [
     privacy: "public", 
     progress: 42, 
     rank: 12,
-    type: "monetized" // ← added
+    type: "monetized",
+    poolFor: "open",
+    prizeType: "prizes",
+    introduction: "The ultimate Premier League prediction challenge. Compete against the best!",
+    platformFeePercentage: 10,
   },
   { 
     id: "l2", 
@@ -75,7 +84,11 @@ export const leagues: League[] = [
     privacy: "private", 
     progress: 42, 
     rank: 3,
-    type: "monetized" // ← added
+    type: "monetized",
+    poolFor: "office",
+    prizeType: "prizes",
+    introduction: "Our office prediction league – may the best analyst win!",
+    platformFeePercentage: 10,
   },
   { 
     id: "l3", 
@@ -87,7 +100,11 @@ export const leagues: League[] = [
     prizePool: 640000, 
     privacy: "public", 
     progress: 25,
-    type: "monetized" // ← added
+    type: "monetized",
+    poolFor: "open",
+    prizeType: "prizes",
+    introduction: "The Champions League prediction room for serious fans.",
+    platformFeePercentage: 10,
   },
   { 
     id: "l4", 
@@ -99,7 +116,11 @@ export const leagues: League[] = [
     prizePool: 240000, 
     privacy: "public", 
     progress: 60,
-    type: "free" // ← added (example of a free league)
+    type: "free",
+    poolFor: "friends-family",
+    prizeType: "fun",
+    introduction: "Weekend La Liga predictions with friends – just for bragging rights!",
+    platformFeePercentage: 0,
   },
 ];
 

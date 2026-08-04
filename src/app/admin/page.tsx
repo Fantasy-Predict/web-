@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "../../components/app/card";
 import { adminActivity, adminPayouts, adminStats } from "../../app/lib/admin-data";
-import { formatNaira } from "../../app/lib/mock-data";
+import { formatNaira, leagues } from "../../app/lib/mock-data";
 
 export const metadata: Metadata = {
   title: "Admin Overview — Fantasy Predict",
@@ -18,6 +18,16 @@ export const metadata: Metadata = {
 };
 
 export default function AdminOverview() {
+  // Calculate free vs monetized league counts
+  const freeLeagues = leagues.filter((l) => l.type === "free").length;
+  const monetizedLeagues = leagues.filter((l) => l.type === "monetized").length;
+
+  // Calculate total platform fees (mock: assume all monetized leagues have collected fees)
+  // In a real app this would come from the backend
+  const totalPlatformFees = leagues
+    .filter((l) => l.type === "monetized")
+    .reduce((sum, l) => sum + Math.round(l.entryFee * l.maxPlayers * 0.1), 0);
+
   return (
     <AdminShell
       title="Platform overview"
@@ -30,15 +40,28 @@ export default function AdminOverview() {
     >
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total users" value={adminStats.totalUsers.toLocaleString()} hint={`${adminStats.activeUsers.toLocaleString()} active this week`} />
-        <StatCard label="Active leagues" value={adminStats.totalLeagues.toLocaleString()} accent="primary" hint="Public and private" />
+        <StatCard label="Active leagues" value={adminStats.totalLeagues.toLocaleString()} accent="primary" hint={`${freeLeagues} Free · ${monetizedLeagues} Monetized`} />
         <StatCard label="Predictions this week" value={adminStats.predictionsThisWeek.toLocaleString()} accent="gold" hint="Across all competitions" />
         <StatCard label="Platform revenue" value={formatNaira(adminStats.platformRevenue)} accent="success" hint="Commission this month" />
       </div>
+
+      {/* New row: additional stats */}
       <div className="mt-6 grid gap-5 sm:grid-cols-3">
         <StatCard label="Deposits this month" value={formatNaira(adminStats.depositsThisMonth)} hint="Paystack settled" />
         <StatCard label="Withdrawals this month" value={formatNaira(adminStats.withdrawalsThisMonth)} hint="Paid to bank accounts" />
         <StatCard label="Pending payouts" value={String(adminStats.pendingPayouts)} accent="gold" hint="Awaiting review" />
       </div>
+
+      {/* New: Platform fees collected card */}
+      <div className="mt-6">
+        <StatCard
+          label="Platform fees collected"
+          value={formatNaira(totalPlatformFees)}
+          accent="gold"
+          hint="From monetized leagues (10%)"
+        />
+      </div>
+
       <div className="mt-10 grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         <section>
           <div className="flex items-center justify-between">

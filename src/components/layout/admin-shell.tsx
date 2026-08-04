@@ -94,7 +94,7 @@ export function AdminShell({
             </nav>
             <div className="flex items-center gap-2">
               <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-navy text-xs font-semibold text-navy-foreground">
+                <AvatarFallback className="bg-navy text-xs font-semibold text-navy-foreground lg:hidden">
                   AD
                 </AvatarFallback>
               </Avatar>
@@ -103,7 +103,7 @@ export function AdminShell({
         </header>
 
         <main className="animate-rise px-5 pt-8 pb-24 lg:px-8 lg:pb-14">
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-7xl">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold sm:text-3xl">{title}</h1>

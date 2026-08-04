@@ -50,13 +50,41 @@ export default async function LeagueDetailPage({
   if (!league) notFound();
 
   const isFree = league.type === "free";
+  const isMonetized = league.type === "monetized";
+  const hasPrize = league.prizeType === "prizes";
+
+  // Calculate platform fee breakdown for monetized leagues
+  const totalPot = league.entryFee * league.maxPlayers;
+  const platformFee = isMonetized ? Math.round(totalPot * 0.1) : 0;
+  const prizePoolAfterFee = isMonetized ? totalPot - platformFee : 0;
+
+  // Map poolFor value to display label
+  const poolForLabels: Record<string, string> = {
+    office: "Office pool",
+    "friends-family": "Friends / family",
+    open: "Open pool - anyone is welcome!",
+    "media-blog": "Media / blog",
+    business: "Business / competition",
+    other: "Other",
+  };
 
   return (
     <AppShell
       title={league.name}
-      description={`${league.competition} · ${league.privacy === "private" ? "Private league" : "Public league"} · ${isFree ? "Free" : "Monetized"}`}
+      description={`${league.competition} · ${league.privacy === "private" ? "Private league" : "Public league"}`}
       actions={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-[10px] font-semibold px-2.5 py-1",
+              isFree
+                ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+                : "border-gold/30 bg-gold/10 text-gold"
+            )}
+          >
+            {isFree ? "Free" : "Monetized"}
+          </Badge>
           <InviteButton leagueId={league.id} />
           <Button>
             {league.rank ? "Make predictions" : isFree ? "Join Free" : `Join for ${formatNaira(league.entryFee)}`}
@@ -64,6 +92,7 @@ export default async function LeagueDetailPage({
         </div>
       }
     >
+      {/* Stats Row */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           label="Prize pool" 
@@ -78,6 +107,76 @@ export default async function LeagueDetailPage({
         <StatCard label="Season progress" value={`${league.progress}%`} accent="primary" />
       </div>
 
+      {/* New: League Details Section – Pool For, Prize Type, Introduction, Platform Fee */}
+      <div className="mt-8 grid gap-5 sm:grid-cols-2">
+        {/* Left Column: Pool For + Prize Type */}
+        <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            League Details
+          </h3>
+          <div className="mt-4 space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Who is this pool for?</p>
+              <p className="text-sm font-medium">{poolForLabels[league.poolFor] || league.poolFor}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Anything to win?</p>
+              <p className="text-sm font-medium">{hasPrize ? "There are prizes 🏆" : "It's just for fun"}</p>
+            </div>
+            {league.introduction && (
+              <div>
+                <p className="text-xs text-muted-foreground">Introduction</p>
+                <p className="text-sm font-medium leading-relaxed">{league.introduction}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Right Column: Platform Fee (only for monetized leagues) */}
+        {isMonetized && (
+          <Card className="gap-0 p-5 shadow-[var(--shadow-card)] border-gold/20">
+            <h3 className="text-sm font-semibold text-gold uppercase tracking-wider">
+              Fee Breakdown
+            </h3>
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Entry Fees</span>
+                <span className="font-semibold">{formatNaira(totalPot)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Platform Fee (10%)</span>
+                <span className="font-semibold text-gold">{formatNaira(platformFee)}</span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-border pt-2">
+                <span className="text-muted-foreground">Prize Pool (90%)</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">{formatNaira(prizePoolAfterFee)}</span>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                The prize pool is distributed among winners based on the league's prize distribution rules.
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {/* If free league, show a placeholder card */}
+        {isFree && (
+          <Card className="gap-0 p-5 shadow-[var(--shadow-card)] border-green-500/20">
+            <h3 className="text-sm font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">
+              Free League
+            </h3>
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                This is a free league with no entry fees. Perfect for playing with friends!
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Prize pool: {formatNaira(league.prizePool) || "Bragging rights only"}
+              </p>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* Members + Rules Section */}
       <div className="mt-10 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         {/* Members Section */}
         <section>
@@ -128,7 +227,7 @@ export default async function LeagueDetailPage({
                 <span className="font-semibold text-foreground">Deadline:</span> predictions lock at
                 each match kickoff.
               </li>
-              {!isFree && (
+              {!isFree && hasPrize && (
                 <li>
                   <span className="font-semibold text-foreground">Prize split:</span> top three
                   finishers share the pool 60 / 30 / 10.
