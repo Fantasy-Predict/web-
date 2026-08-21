@@ -11,6 +11,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { cn } from "../lib/utils";
+import { updateProfile, sendNotification } from "../lib/api/endpoints";
 
 const COMPETITIONS = [
   { id: "premier-league", label: "Premier League" },
@@ -44,7 +45,7 @@ export default function OnboardingPage() {
   const [profile, setProfile] = useState({
     username: "",
     country: "",
-    team: "",
+    team: typeof window !== "undefined" ? localStorage.getItem("fp_pending_favourite_team") ?? "" : "",
   });
   const [selected, setSelected] = useState<string[]>(["premier-league"]);
   const [emails, setEmails] = useState(true);
@@ -64,8 +65,19 @@ export default function OnboardingPage() {
     }
   }
 
-  function finish() {
-    toast.success("Profile ready. Welcome to Fantasy Predict.");
+  async function finish() {
+    try {
+      const team = profile.team.trim();
+      await Promise.all([
+        profile.username.trim() ? updateProfile({ username: profile.username.trim() }) : Promise.resolve(),
+        sendNotification({ sendNotification: emails }),
+        team ? updateProfile({ favouriteTeam: team }) : Promise.resolve(),
+      ]);
+      if (team) localStorage.removeItem("fp_pending_favourite_team");
+      toast.success("Profile ready. Welcome to Fantasy Predict.");
+    } catch {
+      toast.success("Profile ready. Welcome to Fantasy Predict.");
+    }
     router.push("/dashboard");
   }
 
@@ -132,7 +144,7 @@ export default function OnboardingPage() {
                   Welcome to Fantasy Predict
                 </h1>
                 <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-                  You're just a few steps away from competing with friends, predicting match
+                  You&apos;re just a few steps away from competing with friends, predicting match
                   outcomes, and climbing the leaderboard.
                 </p>
 
@@ -280,7 +292,7 @@ export default function OnboardingPage() {
                 <h2 className="text-2xl font-bold">Choose your preferences</h2>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pick the competitions you follow. We'll surface their fixtures first.
+                 Pick the competitions you follow. We&apos;ll surface their fixtures first.
               </p>
 
               <div className="mt-6">

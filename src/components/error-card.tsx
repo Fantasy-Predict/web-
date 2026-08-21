@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function ErrorCard({
   title = "This page didn't load",
   description = "Something went wrong on our end. You can try refreshing or head back home.",
@@ -21,9 +23,9 @@ export function ErrorCard({
               Try again
             </button>
           )}
-          <a href="/" className="rounded-md border border-[#d1d5db] bg-white px-4 py-2 text-[#111]">
+          <Link href="/" className="rounded-md border border-[#d1d5db] bg-white px-4 py-2 text-[#111]">
             Go home
-          </a>
+          </Link>
         </div>
       </div>
     </div>

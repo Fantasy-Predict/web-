@@ -1,6 +1,8 @@
 export type Match = {
   id: string;
   competition: string;
+  competitionName?: string;
+  matchday?: string;
   home: string;
   away: string;
   homeShort: string;
@@ -10,7 +12,7 @@ export type Match = {
   score?: { home: number; away: number };
 };
 
-export type League = {
+export type Pool = {
   id: string;
   name: string;
   competition: string;
@@ -27,6 +29,9 @@ export type League = {
   prizeType: "fun" | "prizes";
   introduction?: string;
   platformFeePercentage: number; // 10 for monetized, 0 for free
+  createdBy?: string;
+  isCreator?: boolean;
+  inviteCode?: string;
 };
 
 export type LeaderboardRow = {
@@ -40,9 +45,9 @@ export type LeaderboardRow = {
 
 export type Transaction = {
   id: string;
-  type: "Deposit" | "Withdrawal" | "Entry fee" | "Prize payout";
+  type: string;
   amount: number;
-  status: "successful" | "pending" | "failed";
+  status: string;
   date: string;
 };
 
@@ -55,7 +60,7 @@ export const matches: Match[] = [
   { id: "m6", competition: "Serie A", home: "Inter", away: "Napoli", homeShort: "INT", awayShort: "NAP", kickoff: "Wed 19:45", status: "finished", score: { home: 2, away: 0 } },
 ];
 
-export const leagues: League[] = [
+export const pools: Pool[] = [
   { 
     id: "l1", 
     name: "Premier Predictors", 
@@ -87,7 +92,7 @@ export const leagues: League[] = [
     type: "monetized",
     poolFor: "office",
     prizeType: "prizes",
-    introduction: "Our office prediction league – may the best analyst win!",
+    introduction: "Our office prediction pool – may the best analyst win!",
     platformFeePercentage: 10,
   },
   { 

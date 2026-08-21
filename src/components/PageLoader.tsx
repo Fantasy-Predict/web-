@@ -30,21 +30,6 @@ export function PageLoader() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstRenderRef = useRef(true);
 
-  // Detect route changes
-  useEffect(() => {
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false;
-      prevPathnameRef.current = pathname;
-      return;
-    }
-
-    if (pathname !== prevPathnameRef.current) {
-      prevPathnameRef.current = pathname;
-      startLoading();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
-
   const startLoading = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -74,13 +59,25 @@ export function PageLoader() {
     animationFrameRef.current = requestAnimationFrame(animateProgress);
 
     timeoutRef.current = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        setVisible(false);
-        setProgress(100);
-      }
+      setIsLoading(false);
+      setVisible(false);
+      setProgress(100);
     }, MAX_DISPLAY_MS);
   };
+
+  // Detect route changes
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      prevPathnameRef.current = pathname;
+      return;
+    }
+
+    if (pathname !== prevPathnameRef.current) {
+      prevPathnameRef.current = pathname;
+      startLoading();
+    }
+  }, [pathname]);
 
   useEffect(() => {
     return () => {

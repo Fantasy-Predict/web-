@@ -34,10 +34,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeChoice>("system");
   const [resolved, setResolved] = useState<"light" | "dark">("light");
 
+  // Sync React state from localStorage after mount (bootstrap script already applied classes)
   useEffect(() => {
     const stored = (localStorage.getItem(STORAGE_KEY) as ThemeChoice | null) ?? "system";
+    const next = apply(stored);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync with localStorage after mount
     setThemeState(stored);
-    setResolved(apply(stored));
+    setResolved(next);
   }, []);
 
   useEffect(() => {

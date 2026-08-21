@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 
 const SESSION_KEY = "fp-welcome-shown";
@@ -8,7 +8,7 @@ const SESSION_KEY = "fp-welcome-shown";
 // Step definitions
 const STEPS = [
   { progress: 20, message: "Predict Matches" },
-  { progress: 40, message: "Join Competitive Leagues" },
+  { progress: 40, message: "Join Competitive Pools" },
   { progress: 60, message: "Earn Points" },
   { progress: 80, message: "Climb the Leaderboard" },
   { progress: 100, message: "Claim Victory!" },
@@ -17,23 +17,18 @@ const STEPS = [
 const TOTAL_DURATION = 5000; // 5 seconds total loading time
 
 export function WelcomeSplash({ children }: { children: ReactNode }) {
-  const [phase, setPhase] = useState<"unknown" | "playing" | "fading" | "done">("unknown");
+  const [phase, setPhase] = useState<"unknown" | "playing" | "fading" | "done">(() => {
+    if (typeof window === "undefined") return "unknown";
+    const alreadyShown = sessionStorage.getItem(SESSION_KEY);
+    if (alreadyShown) return "done";
+    sessionStorage.setItem(SESSION_KEY, "1");
+    return "playing";
+  });
   const [progress, setProgress] = useState(0);
-  const [currentStepIndex, setCurrentStepIndex] = useState(-1);
   const [ballX, setBallX] = useState(0);
   const [goalScored, setGoalScored] = useState(false);
   const [showGoalText, setShowGoalText] = useState(false);
   const [showNet, setShowNet] = useState(false);
-
-  useLayoutEffect(() => {
-    const alreadyShown = sessionStorage.getItem(SESSION_KEY);
-    if (alreadyShown) {
-      setPhase("done");
-    } else {
-      sessionStorage.setItem(SESSION_KEY, "1");
-      setPhase("playing");
-    }
-  }, []);
 
   // Progress animation
   useEffect(() => {
@@ -70,15 +65,8 @@ export function WelcomeSplash({ children }: { children: ReactNode }) {
   }, [phase]);
 
   // Update current step message based on progress
-  useEffect(() => {
-    let newIndex = -1;
-    for (let i = 0; i < STEPS.length; i++) {
-      if (progress >= STEPS[i].progress) {
-        newIndex = i;
-      }
-    }
-    setCurrentStepIndex(newIndex);
-  }, [progress]);
+  const currentStepIndex =
+    STEPS.findIndex((step, i) => progress >= step.progress && (i === STEPS.length - 1 || progress < STEPS[i + 1]?.progress));
 
   // Fade out transition
   useEffect(() => {

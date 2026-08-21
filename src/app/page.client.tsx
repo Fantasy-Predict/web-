@@ -4,9 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { leaderboard } from "../app/lib/mock-data";
 import { PublicLayout } from "@/components/layout/public-layout";
 import {
     Accordion,
@@ -19,7 +17,7 @@ import {
     SeasonCountdown,
     TopPlayersChart,
     StatsStrip,
-    LeagueTiers,
+    PoolTiers,
     CountdownChip,
 } from "../components/app/landing-sections";
 import { WelcomeSplash } from "@/components/app/welcome-splash";
@@ -97,7 +95,6 @@ export function HeroPredictionWidget() {
     };
 
     const homeCode = "ARS";
-    const awayCode = "COV";
     const homeLogo = CLUB_LOGOS[homeCode];
     // Coventry: we don't have a CDN logo, so we'll use initials fallback
 
@@ -281,7 +278,7 @@ const FAQS = [
 const TRUST_SIGNALS = [
     {
         title: "Secure Payments",
-        body: "All deposits and withdrawals are handled securely through Paystack, Nigeria's leading payment gateway.",
+        body: "All deposits and withdrawals are handled securely through Paystack, a trusted payment provider.",
     },
     {
         title: "Transparent Distribution",
@@ -334,10 +331,10 @@ export default function PageClient() {
 
                             <div className="mt-8 flex flex-wrap gap-3" data-aos="fade-up" data-aos-delay="150">
                                 <Button asChild size="lg" className="bg-primary text-white hover:bg-primary/90">
-                                    <Link href="/dashboard/leagues/create">Create a league</Link>
+                                    <Link href="/dashboard/pools/create">Create a pool</Link>
                                 </Button>
                                 <Button asChild size="lg" variant="outline" className="border-white/30 hover:bg-white/10">
-                                    <Link href="/dashboard/leagues">Join a league</Link>
+                                    <Link href="/dashboard/pools">Join a pool</Link>
                                 </Button>
                             </div>
 
@@ -423,7 +420,7 @@ export default function PageClient() {
                     </div>
                 </section>
 
-                <LeagueTiers />
+                <PoolTiers />
 
                 <section id="how-it-works" className="border-y border-border bg-card/40">
                     <div className="mx-auto max-w-6xl px-5 py-20 lg:px-8">
@@ -481,7 +478,7 @@ export default function PageClient() {
                                 data-aos="fade-up"
                                 data-aos-delay={i * 100}
                             >
-                                <p className="text-sm leading-relaxed">"{item.quote}"</p>
+                                <p className="text-sm leading-relaxed">&quot;{item.quote}&quot;</p>
                                 <div className="mt-6 border-t border-border pt-4">
                                     <p className="text-sm font-semibold">{item.name}</p>
                                     <p className="mt-1 text-xs text-muted-foreground">{item.role}</p>

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PublicLayout } from "@/components/layout/public-layout";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +16,7 @@ const TOC = [
   { id: "accounts", label: "Account Registration" },
   { id: "platform-usage", label: "Platform Usage" },
   { id: "predictions-scoring", label: "Predictions & Scoring" },
-  { id: "leagues", label: "Leagues & Competitions" },
+  { id: "pools", label: "Pools & Competitions" },
   { id: "payments-wallet", label: "Payments & Wallet" },
   { id: "rewards", label: "Rewards & Prize Distribution" },
   { id: "user-responsibilities", label: "User Responsibilities" },
@@ -37,7 +36,6 @@ const TOC = [
 
 export default function TermsClient() {
   const [activeId, setActiveId] = useState<string>(TOC[0].id);
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Intersection Observer to track visible sections
   useEffect(() => {
@@ -161,7 +159,7 @@ export default function TermsClient() {
                 </p>
                 <p>
                   These terms govern your use of the Fantasy Predict platform, including all
-                  features, leagues, predictions, and payment services.
+                  features, pools, predictions, and payment services.
                 </p>
               </div>
             </section>
@@ -218,12 +216,12 @@ export default function TermsClient() {
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
                 <p>
-                  Fantasy Predict allows users to create and join leagues, submit predictions on
+                  Fantasy Predict allows users to create and join pools, submit predictions on
                   football matches, view rankings, and participate in competitions.
                 </p>
                 <p>
                   Users must use the platform fairly and follow all competition rules published
-                  within each league.
+                  within each pool.
                 </p>
                 <p>
                   The platform is provided for entertainment and competitive purposes only.
@@ -255,35 +253,35 @@ export default function TermsClient() {
                   <li><strong className="text-foreground">Wrong:</strong> 0 points</li>
                 </ul>
                 <p>
-                  Full scoring rules are published within each league. Fantasy Predict reserves the right to define and update scoring systems where necessary, with reasonable notice to users.
+                  Full scoring rules are published within each pool. Fantasy Predict reserves the right to define and update scoring systems where necessary, with reasonable notice to users.
                 </p>
               </div>
             </section>
 
-            {/* 6. LEAGUES */}
-            <section id="leagues" data-aos="fade-up" data-aos-delay="200">
+            {/* 6. POOLS */}
+            <section id="pools" data-aos="fade-up" data-aos-delay="200">
               <div className="flex items-center gap-4 border-b border-gold/20 pb-3">
                 <span className="text-xs font-bold tracking-[0.18em] text-gold">06</span>
-                <h2 className="text-xl font-bold">Leagues & Competitions</h2>
+                <h2 className="text-xl font-bold">Pools & Competitions</h2>
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
                 <p>
-                  Fantasy Predict may provide different types of leagues, including free leagues,
-                  public monetized leagues, and private leagues created by users.
+                  Fantasy Predict may provide different types of pools, including free pools,
+                  public monetized pools, and private pools created by users.
                 </p>
                 <p>
-                  <strong className="text-foreground">Public Monetized Leagues:</strong> Public
-                  monetized leagues are created and managed by Fantasy Predict. Entry fees,
+                  <strong className="text-foreground">Public Monetized Pools:</strong> Public
+                  monetized pools are created and managed by Fantasy Predict. Entry fees,
                   prize structures, and participation requirements are determined by the platform.
                 </p>
                 <p>
-                  <strong className="text-foreground">Private Leagues:</strong> Users may create
-                  private leagues where they can define participation settings, including entry
-                  fees and prize distribution, subject to Fantasy Predict's platform guidelines
+                  <strong className="text-foreground">Private Pools:</strong> Users may create
+                  private pools where they can define participation settings, including entry
+                   fees and prize distribution, subject to Fantasy Predict&apos;s platform guidelines
                   and rules.
                 </p>
                 <p>
-                  League creators are responsible for managing their leagues in accordance with
+                  Pool creators are responsible for managing their pools in accordance with
                   platform rules.
                 </p>
               </div>
@@ -297,20 +295,20 @@ export default function TermsClient() {
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
                 <p>
-                  Payments are only required when users participate in leagues that require
+                  Payments are only required when users participate in pools that require
                   an entry fee. Account registration and access to the Fantasy Predict
                   dashboard do not require payment.
                 </p>
                 <p>
-                  Entry fees for paid leagues are charged from your wallet at the point of
-                  joining a league.
+                  Entry fees for paid pools are charged from your wallet at the point of
+                  joining a pool.
                 </p>
                 <p>
                   Payments are processed through approved third-party payment providers
                   integrated with the platform.
                 </p>
                 <p>
-                  Your wallet balance can be used for league entry fees and may receive
+                  Your wallet balance can be used for pool entry fees and may receive
                   prize winnings. Withdrawals are subject to platform withdrawal rules.
                 </p>
                 <p>
@@ -328,15 +326,15 @@ export default function TermsClient() {
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
                 <p>
-                  Users earn rewards by performing well in eligible leagues based on the
+                  Users earn rewards by performing well in eligible pools based on the
                   announced prize structure.
                 </p>
                 <p>
-                  Prize information is displayed within the league details before participation.
+                  Prize information is displayed within the pool details before participation.
                 </p>
                 <p>
-                  Prize distribution happens after the league concludes and results are verified.
-                  Winners are determined according to the rules published in each league.
+                  Prize distribution happens after the pool concludes and results are verified.
+                  Winners are determined according to the rules published in each pool.
                 </p>
                 <p>
                   Fantasy Predict reserves the right to verify results and eligibility before
@@ -357,8 +355,8 @@ export default function TermsClient() {
                   <li>Manipulate results or attempt to influence match outcomes</li>
                   <li>Create fraudulent accounts or impersonate others</li>
                   <li>Abuse the platform or its features</li>
-                  <li>Attempt unauthorized access to the platform or other users' accounts</li>
-                  <li>Engage in any activity that disrupts the platform's operation</li>
+                   <li>Attempt unauthorized access to the platform or other users&apos; accounts</li>
+                   <li>Engage in any activity that disrupts the platform&apos;s operation</li>
                 </ul>
               </div>
             </section>
@@ -494,7 +492,7 @@ export default function TermsClient() {
                   <li>Any indirect or consequential damages</li>
                 </ul>
                 <p>
-                  The platform is provided "as is" and users participate at their own risk.
+                   The platform is provided &quot;as is&quot; and users participate at their own risk.
                 </p>
               </div>
             </section>

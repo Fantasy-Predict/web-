@@ -1,20 +1,22 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, Search } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, LogOut, Search } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "../theme-toggle";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
-import { currentUser } from "../../app/lib/mock-data";
+import { getProfile } from "../../app/lib/api/endpoints";
+import { clearSession } from "../../app/lib/api/session";
+import { useNotifications, markAllRead } from "../../app/lib/notifications";
 import { cn } from "../../app/lib/utils";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/dashboard/fixtures", label: "Fixtures" },
   { to: "/dashboard/predict", label: "Predict" },
-  { to: "/dashboard/leagues", label: "Leagues" },
+  { to: "/dashboard/pools", label: "Pools" },
   { to: "/dashboard/leaderboard", label: "Leaderboard" },
   { to: "/dashboard/wallet", label: "Wallet" },
   { to: "/dashboard/profile", label: "Profile" },
@@ -22,7 +24,7 @@ const NAV = [
 ] as const;
 
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/dashboard", "/dashboard/predict", "/dashboard/leagues", "/dashboard/wallet", "/dashboard/profile"].includes(n.to),
+  ["/dashboard", "/dashboard/predict", "/dashboard/pools", "/dashboard/wallet", "/dashboard/profile"].includes(n.to),
 );
 
 export function AppShell({
@@ -37,6 +39,42 @@ export function AppShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [initials, setInitials] = useState("FP");
+  const { notifications, unreadCount } = useNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  function handleLogout() {
+    clearSession();
+    router.push("/login");
+  }
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getProfile()
+      .then((profile) => {
+        if (!active) return;
+        const name = profile?.firstName || profile?.username || profile?.email;
+        setInitials(name ? name.slice(0, 2).toUpperCase() : "FP");
+      })
+      .catch(() => {
+        if (active) setInitials("FP");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,8 +103,15 @@ export function AppShell({
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border p-4">
+        <div className="border-t border-sidebar-border p-4 space-y-2">
           <ThemeToggle className="w-full justify-between" />
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            Log out
+          </button>
         </div>
       </aside>
 
@@ -82,23 +127,60 @@ export function AppShell({
                 <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="search"
-                  placeholder="Search leagues, players"
+                  placeholder="Search pools, players"
                   className="h-9 w-full rounded-xl border border-input bg-card pr-3 pl-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <ThemeToggle />
-              <button
-                aria-label="Notifications"
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border hover:bg-accent"
-              >
-                <Bell className="h-4 w-4" />
-                <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-destructive" />
-              </button>
+              <div className="relative" ref={notifRef}>
+                <button
+                  aria-label="Notifications"
+                  onClick={() => {
+                    setShowNotifications((prev) => !prev);
+                    if (unreadCount > 0) markAllRead();
+                  }}
+                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border hover:bg-accent"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+                {showNotifications && (
+                  <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                    <div className="border-b border-border px-4 py-3">
+                      <p className="text-sm font-semibold">Notifications</p>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <p className="px-4 py-6 text-center text-xs text-muted-foreground">
+                          No notifications yet
+                        </p>
+                      ) : (
+                        notifications.slice(0, 10).map((n) => (
+                          <div
+                            key={n.id}
+                            className={cn(
+                              "border-b border-border px-4 py-3 last:border-0",
+                              !n.read && "bg-primary/5",
+                            )}
+                          >
+                            <p className="text-sm font-semibold">{n.title}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
-                  {currentUser.username.slice(0, 2).toUpperCase()}
+                  {initials}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -123,7 +205,7 @@ export function AppShell({
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-border bg-background/95 backdrop-blur lg:hidden">
         {MOBILE_NAV.map((item) => {
           const isActive = pathname === item.to;
           return (
@@ -139,6 +221,13 @@ export function AppShell({
             </Link>
           );
         })}
+        <button
+          onClick={handleLogout}
+          className="py-3 text-center text-[11px] font-semibold text-muted-foreground"
+        >
+          <LogOut className="mx-auto mb-0.5 h-4 w-4" />
+          Log out
+        </button>
       </nav>
     </div>
   );

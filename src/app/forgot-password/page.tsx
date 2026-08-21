@@ -2,22 +2,24 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
+import { toast } from "sonner";
+import { forgotPassword } from "@/app/lib/api/endpoints";
 import { AuthLayout } from "@/components/layout/auth-layout";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Label } from "../..//components/ui/label";
-import { Card } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
 
 const schema = z.string().trim().email({ message: "Enter a valid email address" }).max(255);
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     const parsed = schema.safeParse(email);
     if (!parsed.success) {
@@ -26,17 +28,20 @@ export default function ForgotPasswordPage() {
     }
     setError(null);
     setLoading(true);
-    // Backend integration point: POST /auth/forgot-password
-    setTimeout(() => {
+    try {
+      await forgotPassword({ email: parsed.data });
+      toast.success("We've sent you a reset code");
+      router.push(`/reset-password?email=${encodeURIComponent(parsed.data)}`);
+    } catch (err) {
       setLoading(false);
-      setSent(true);
-    }, 700);
+      toast.error(err instanceof Error ? err.message : "Unable to send the code");
+    }
   }
 
   return (
     <AuthLayout
       title="Forgot your password?"
-      description="Enter the email on your account and we'll send a reset link."
+      description="Enter the email on your account and we'll send a reset code."
       footer={
         <p>
           Remembered it?{" "}
@@ -46,33 +51,23 @@ export default function ForgotPasswordPage() {
         </p>
       }
     >
-      {sent ? (
-        <Card className="gap-0 border-success/40 bg-success/10 p-6">
-          <h2 className="text-base font-semibold">Check your inbox</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            If an account exists for {email}, a reset link is on its way. The link expires in 30
-            minutes.
-          </p>
-        </Card>
-      ) : (
-        <form className="grid gap-5" onSubmit={submit} noValidate>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email address</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-invalid={!!error}
-            />
-            {error && <p className="text-xs text-destructive">{error}</p>}
-          </div>
-          <Button type="submit" size="lg" disabled={loading}>
-            {loading ? "Sending link…" : "Send reset link"}
-          </Button>
-        </form>
-      )}
+      <form className="grid gap-5" onSubmit={submit} noValidate>
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email address</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={!!error}
+          />
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+        <Button type="submit" size="lg" disabled={loading || !email.trim()}>
+          {loading ? "Sending code…" : "Send reset code"}
+        </Button>
+      </form>
     </AuthLayout>
   );
 }

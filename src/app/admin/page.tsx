@@ -1,32 +1,49 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { AdminShell } from "../../components/layout/admin-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "../../components/app/card";
-import { adminActivity, adminPayouts, adminStats } from "../../app/lib/admin-data";
-import { formatNaira, leagues } from "../../app/lib/mock-data";
+import { adminActivity, adminPayouts } from "../../app/lib/admin-data";
+import { formatNaira } from "../../app/lib/mock-data";
+import { getAdminDashboard, type AdminDashboard } from "../lib/api/endpoints";
 
-export const metadata: Metadata = {
-  title: "Admin Overview — Fantasy Predict",
-  description:
-    "Platform overview for Fantasy Predict administrators: users, leagues, predictions, deposits and pending payouts.",
-  openGraph: {
-    title: "Admin Overview — Fantasy Predict",
-    description: "Users, leagues, predictions and payments at a glance.",
-  },
+const EMPTY_DASHBOARD: AdminDashboard = {
+  totalUsers: 0,
+  activeUsers: 0,
+  totalPools: 0,
+  predictionsThisWeek: 0,
+  depositsThisMonth: 0,
+  withdrawalsThisMonth: 0,
+  pendingPayouts: 0,
+  platformRevenue: 0,
 };
 
 export default function AdminOverview() {
-  // Calculate free vs monetized league counts
-  const freeLeagues = leagues.filter((l) => l.type === "free").length;
-  const monetizedLeagues = leagues.filter((l) => l.type === "monetized").length;
+  const [stats, setStats] = useState<AdminDashboard>(EMPTY_DASHBOARD);
+  const [loading, setLoading] = useState(true);
 
-  // Calculate total platform fees (mock: assume all monetized leagues have collected fees)
-  // In a real app this would come from the backend
-  const totalPlatformFees = leagues
-    .filter((l) => l.type === "monetized")
-    .reduce((sum, l) => sum + Math.round(l.entryFee * l.maxPlayers * 0.1), 0);
+  useEffect(() => {
+    let active = true;
+    getAdminDashboard()
+      .then((data) => {
+        if (active && data) setStats(data);
+      })
+      .catch((error) => {
+        toast.error(error instanceof Error ? error.message : "Unable to load the dashboard");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const pendingPayouts = adminPayouts.filter((p) => p.status === "awaiting review");
 
   return (
     <AdminShell
@@ -38,29 +55,43 @@ export default function AdminOverview() {
         </Button>
       }
     >
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total users" value={adminStats.totalUsers.toLocaleString()} hint={`${adminStats.activeUsers.toLocaleString()} active this week`} />
-        <StatCard label="Active leagues" value={adminStats.totalLeagues.toLocaleString()} accent="primary" hint={`${freeLeagues} Free · ${monetizedLeagues} Monetized`} />
-        <StatCard label="Predictions this week" value={adminStats.predictionsThisWeek.toLocaleString()} accent="gold" hint="Across all competitions" />
-        <StatCard label="Platform revenue" value={formatNaira(adminStats.platformRevenue)} accent="success" hint="Commission this month" />
-      </div>
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading the dashboard…</p>
+      ) : (
+        <>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Total users"
+              value={stats.totalUsers.toLocaleString()}
+              hint={`${stats.activeUsers.toLocaleString()} active this week`}
+            />
+            <StatCard
+              label="Active pools"
+              value={stats.totalPools.toLocaleString()}
+              accent="primary"
+              hint="Free · Monetized"
+            />
+            <StatCard
+              label="Predictions this week"
+              value={stats.predictionsThisWeek.toLocaleString()}
+              accent="gold"
+              hint="Across all competitions"
+            />
+            <StatCard
+              label="Platform revenue"
+              value={formatNaira(stats.platformRevenue)}
+              accent="success"
+              hint="Commission this month"
+            />
+          </div>
 
-      {/* New row: additional stats */}
-      <div className="mt-6 grid gap-5 sm:grid-cols-3">
-        <StatCard label="Deposits this month" value={formatNaira(adminStats.depositsThisMonth)} hint="Paystack settled" />
-        <StatCard label="Withdrawals this month" value={formatNaira(adminStats.withdrawalsThisMonth)} hint="Paid to bank accounts" />
-        <StatCard label="Pending payouts" value={String(adminStats.pendingPayouts)} accent="gold" hint="Awaiting review" />
-      </div>
-
-      {/* New: Platform fees collected card */}
-      <div className="mt-6">
-        <StatCard
-          label="Platform fees collected"
-          value={formatNaira(totalPlatformFees)}
-          accent="gold"
-          hint="From monetized leagues (10%)"
-        />
-      </div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-3">
+            <StatCard label="Deposits this month" value={formatNaira(stats.depositsThisMonth)} hint="Paystack settled" />
+            <StatCard label="Withdrawals this month" value={formatNaira(stats.withdrawalsThisMonth)} hint="Paid to bank accounts" />
+            <StatCard label="Pending payouts" value={String(stats.pendingPayouts)} accent="gold" hint="Awaiting review" />
+          </div>
+        </>
+      )}
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         <section>
@@ -71,9 +102,8 @@ export default function AdminOverview() {
             </Link>
           </div>
           <Card className="mt-4 gap-0 divide-y divide-border p-0 shadow-[var(--shadow-card)]">
-            {adminPayouts
-              .filter((p) => p.status === "awaiting review")
-              .map((p) => (
+            {pendingPayouts.length ? (
+              pendingPayouts.map((p) => (
                 <div key={p.id} className="flex items-center justify-between gap-4 px-5 py-4">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{p.user}</p>
@@ -81,8 +111,16 @@ export default function AdminOverview() {
                   </div>
                   <span className="num text-sm font-bold">{formatNaira(p.amount)}</span>
                 </div>
-              ))}
+              ))
+            ) : (
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                No payouts awaiting review.
+              </p>
+            )}
           </Card>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Payout lists come from mock data until the payouts endpoint is added.
+          </p>
         </section>
         <section>
           <h2 className="text-lg font-semibold">Recent activity</h2>
@@ -95,6 +133,9 @@ export default function AdminOverview() {
               </div>
             ))}
           </Card>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Recent activity comes from mock data until the activity endpoint is added.
+          </p>
         </section>
       </div>
     </AdminShell>

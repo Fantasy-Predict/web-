@@ -34,15 +34,15 @@ export type AdminActivity = [
 export const adminStats = {
   totalUsers: 8412,
   activeUsers: 3187,
-  totalLeagues: 380,
+  totalPools: 380,
   predictionsThisWeek: 24190,
   depositsThisMonth: 4820000,
   withdrawalsThisMonth: 1965000,
   pendingPayouts: 7,
   platformRevenue: 612000,
-  // NEW: Platform fees collected this month (10% from monetized leagues)
+  // NEW: Platform fees collected this month (10% from monetized pools)
   platformFeesThisMonth: 124500,
-  // NEW: Breakdown of free vs monetized leagues (will be calculated in components)
+  // NEW: Breakdown of free vs monetized pools (will be calculated in components)
 };
 
 export const adminUsers: AdminUser[] = [
@@ -70,7 +70,7 @@ export const adminResults: AdminResult[] = [
 
 export const adminActivity: AdminActivity[] = [
   ["Payout approved", "₦8,000 to tunde.b", "12 minutes ago"],
-  ["League created", "Weekend Warriors II · ₦1,000 entry · Free league", "1 hour ago"],
+  ["Pool created", "Weekend Warriors II · ₦1,000 entry · Free pool", "1 hour ago"],
   ["Result settled", "Inter 2 - 0 Napoli · 1,204 predictions scored", "3 hours ago"],
   ["User suspended", "kwesi_a flagged for duplicate accounts", "Yesterday"],
   ["Platform fee collected", "₦12,500 from Premier Predictors (10%)", "2 days ago"],

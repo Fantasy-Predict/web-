@@ -4,6 +4,7 @@ import { PublicLayout } from "@/components/layout/public-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
   title: "Contact Support — Fantasy Predict",
@@ -65,16 +66,8 @@ const SUPPORT_INFO = [
   },
 ];
 
-const SUBJECT_OPTIONS = [
-  "Account Issue",
-  "Payment Issue",
-  "League Support",
-  "Prediction Issue",
-  "Technical Problem",
-  "Feedback",
-  "Other",
-];
-
+// ============================================================
+// PAGE COMPONENT
 // ============================================================
 // PAGE COMPONENT
 // ============================================================
@@ -89,7 +82,7 @@ export default function ContactPage() {
         <div className="relative mx-auto max-w-4xl px-5 py-16 text-center sm:py-20 lg:py-24 lg:px-8">
           <Badge variant="outline" className="border-primary/40 text-primary">Contact Us</Badge>
           <h1 className="mt-4 font-display text-3xl font-bold sm:text-4xl lg:text-5xl">
-            We're Here To Help
+            We&apos;re Here To Help
           </h1>
           <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed text-muted-foreground">
             Whether you need help with your account, payments, leagues, or anything else,
@@ -152,65 +145,7 @@ export default function ContactPage() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-5" data-aos="fade-up" data-aos-delay="100">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium">
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                placeholder="Enter your name"
-                className="mt-1.5 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Enter your email"
-                className="mt-1.5 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="subject" className="block text-sm font-medium">
-              Subject
-            </label>
-            <select
-              id="subject"
-              className="mt-1.5 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">Select a subject</option>
-              {SUBJECT_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="message" className="block text-sm font-medium">
-              Message
-            </label>
-            <textarea
-              id="message"
-              rows={5}
-              placeholder="Tell us how we can help…"
-              className="mt-1.5 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          <Button type="submit" size="lg" className="w-full sm:w-auto">
-            Submit Request
-          </Button>
-        </form>
+        <ContactForm />
       </section>
 
       {/* =============================================================
@@ -273,10 +208,10 @@ export default function ContactPage() {
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg">
-                <Link href="/dashboard/leagues/create">Create League</Link>
+                 <Link href="/dashboard/pools/create">Create Pool</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/dashboard/leagues">Join League</Link>
+                 <Link href="/dashboard/pools">Join Pool</Link>
               </Button>
             </div>
           </Card>

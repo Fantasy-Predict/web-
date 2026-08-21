@@ -41,12 +41,12 @@ const COMMITMENTS = [
 
 const GUIDELINES = [
   "Participate for enjoyment first.",
-  "Only join leagues you can comfortably afford.",
+   "Only join pools you can comfortably afford.",
   "Understand the rules before entering a competition.",
   "Avoid chasing losses or making emotional decisions.",
   "Take regular breaks from the platform.",
   "Maintain a healthy balance between football, work, family, and personal life.",
-  "Users are encouraged to participate responsibly, especially when joining paid leagues or competitions involving entry fees.",
+   "Users are encouraged to participate responsibly, especially when joining paid pools or competitions involving entry fees.",
 ];
 
 const WARNING_SIGNS = [
@@ -79,11 +79,11 @@ const TOOLS = [
 const FAQS = [
   {
     q: "Is Fantasy Predict a betting platform?",
-    a: "Fantasy Predict is a football prediction platform focused on skill-based competition. Participation may involve paid leagues depending on the competition.",
+    a: "Fantasy Predict is a football prediction platform focused on skill-based competition. Participation may involve paid pools depending on the competition.",
   },
   {
     q: "Can I participate for free?",
-    a: "Some leagues may be free to join, while others may require an entry fee. You can choose the option that suits you best.",
+    a: "Some pools may be free to join, while others may require an entry fee. You can choose the option that suits you best.",
   },
   {
     q: "Can I take a break from my account?",
@@ -319,10 +319,10 @@ export default function ResponsibleGamingClient() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
-              <Link href="/dashboard/leagues/create">Create League</Link>
+              <Link href="/dashboard/pools/create">Create Pool</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/dashboard/leagues">Join League</Link>
+              <Link href="/dashboard/pools">Join Pool</Link>
             </Button>
           </div>
         </Card>

@@ -6,24 +6,33 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { AuthDivider, AuthLayout, GoogleButton } from "@/components/layout/auth-layout";
+import { ApiError } from "@/app/lib/api/client";
+import { adminLogin, login, updateProfile } from "@/app/lib/api/endpoints";
+import { notifySystem } from "@/app/lib/notifications";
+import {
+  clearSession,
+  setSessionCookies,
+  setStoredUserType,
+  setToken,
+} from "@/app/lib/api/session";
+import { AuthLayout } from "@/components/layout/auth-layout";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 
 const schema = z.object({
-  email: z.string().trim().email({ message: "Enter a valid email address" }).max(255),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }).max(128),
+  to: z.string().trim().min(1, { message: "Enter your email or phone number" }).max(255),
+  password: z.string().min(1, { message: "Enter your password" }).max(128),
 });
 
 export default function LoginPage() {
   const router = useRouter();
-  const [values, setValues] = useState({ email: "", password: "" });
+  const [values, setValues] = useState({ to: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     const parsed = schema.safeParse(values);
     if (!parsed.success) {
@@ -34,12 +43,67 @@ export default function LoginPage() {
     }
     setErrors({});
     setLoading(true);
-    // Backend integration point: POST /auth/login
-    setTimeout(() => {
+    clearSession();
+
+    // Single sign-in page: try the user endpoint first, then fall back to the
+    // admin endpoint so admin accounts can use the same form.
+    try {
+      const response = await login(parsed.data);
+      completeSession(response, false, parsed.data.to);
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        try {
+          const adminResponse = await adminLogin({
+            email: parsed.data.to,
+            password: parsed.data.password,
+          });
+          completeSession(adminResponse, true, parsed.data.to);
+        } catch (adminError) {
+          setLoading(false);
+          toast.error(adminError instanceof Error ? adminError.message : "Invalid email or password");
+        }
+      } else {
+        setLoading(false);
+        toast.error(error instanceof Error ? error.message : "Unable to log in. Please try again.");
+      }
+    }
+  }
+
+  function completeSession(
+    response: { token?: string; userType?: "admin" | "user"; verificationStatus?: boolean },
+    isAdmin: boolean,
+    loginId?: string,
+  ) {
+    const token = response.token;
+    if (!token) {
       setLoading(false);
-      toast.success("Welcome back");
-      router.push("/dashboard");
-    }, 700);
+      toast.error("Login failed — no session token received. Please try again.");
+      return;
+    }
+    const userType: "admin" | "user" = response.userType === "admin" ? "admin" : isAdmin ? "admin" : "user";
+
+    clearSession();
+    setToken(token);
+    setStoredUserType(userType);
+    setSessionCookies(token, userType);
+
+    const pendingTeam = localStorage.getItem("fp_pending_favourite_team");
+    if (pendingTeam) {
+      localStorage.removeItem("fp_pending_favourite_team");
+      updateProfile({ favouriteTeam: pendingTeam }).catch(() => {});
+    }
+
+    toast.success(userType === "admin" ? "Welcome back, admin" : "Welcome back");
+    notifySystem("Welcome back", "You're logged in. Check your dashboard for the latest updates.");
+
+    let destination = "/dashboard";
+    if (userType === "admin") {
+      destination = "/admin";
+    } else if (response.verificationStatus !== true) {
+      destination = `/verify-account?email=${encodeURIComponent(loginId ?? "")}`;
+    }
+    router.push(destination);
+    router.refresh();
   }
 
   return (
@@ -55,20 +119,19 @@ export default function LoginPage() {
         </p>
       }
     >
-      <GoogleButton label="Continue with Google" />
-      <AuthDivider />
+
       <form className="grid gap-5" onSubmit={submit} noValidate>
         <div className="grid gap-2">
-          <Label htmlFor="email">Email address</Label>
+          <Label htmlFor="to">Email or phone number</Label>
           <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={values.email}
-            onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
-            aria-invalid={!!errors.email}
+            id="to"
+            type="text"
+            autoComplete="username"
+            value={values.to}
+            onChange={(e) => setValues((v) => ({ ...v, to: e.target.value }))}
+            aria-invalid={!!errors.to}
           />
-          {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+          {errors.to && <p className="text-xs text-destructive">{errors.to}</p>}
         </div>
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
@@ -102,7 +165,7 @@ export default function LoginPage() {
           {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
         </div>
         <Button type="submit" size="lg" disabled={loading}>
-          {loading ? "Signing in…" : "Log in"}
+          {loading ? "Logging in…" : "Log in"}
         </Button>
       </form>
     </AuthLayout>

@@ -1,17 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminShell, AdminTable } from "../../../components/layout/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { adminUsers } from "../../lib/admin-data";
 import { formatNaira } from "../../lib/mock-data";
+import { getAdminUsers, type AdminUser } from "../../lib/api/endpoints";
 
 export default function AdminUsers() {
   const [query, setQuery] = useState("");
-  const rows = adminUsers.filter((u) =>
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    getAdminUsers()
+      .then((data) => {
+        if (active && Array.isArray(data)) setUsers(data);
+      })
+      .catch((error) => {
+        toast.error(error instanceof Error ? error.message : "Unable to load users");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const rows = users.filter((u) =>
     `${u.username} ${u.email} ${u.country}`.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -25,6 +45,9 @@ export default function AdminUsers() {
       />
 
       <div className="mt-6">
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading users…</p>
+        ) : (
         <AdminTable columns={["User", "Country", "Joined", "Balance", "Status", "Action"]}>
           {rows.map((u) => (
             <tr key={u.id} className="border-b border-border last:border-0">
@@ -64,14 +87,15 @@ export default function AdminUsers() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                No users match that search.
-              </td>
-            </tr>
-          )}
-        </AdminTable>
+            {rows.length === 0 && !loading && (
+              <tr>
+                <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                  No users match that search.
+                </td>
+              </tr>
+            )}
+          </AdminTable>
+        )}
       </div>
     </AdminShell>
   );

@@ -134,9 +134,8 @@ function diff(target: Date) {
 }
 
 function useSeasonCountdown() {
-  const [time, setTime] = useState<ReturnType<typeof diff> | null>(null);
+  const [time, setTime] = useState<ReturnType<typeof diff> | null>(() => diff(SEASON_KICKOFF));
   useEffect(() => {
-    setTime(diff(SEASON_KICKOFF));
     const id = setInterval(() => setTime(diff(SEASON_KICKOFF)), 1000);
     return () => clearInterval(id);
   }, []);
@@ -160,7 +159,7 @@ export function SeasonCountdown() {
           <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Season countdown</p>
           <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Kickoff is 21 August <br /> Arsenal vs Coventry</h2>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Matchweek 1 predictions open two weeks before kickoff. Set up your league now so your room is full and
+            Matchweek 1 predictions open two weeks before kickoff.           Set up your pool now so your room is full and
             paid up before the first whistle.
           </p>
         </div>
@@ -217,7 +216,7 @@ function useCountUp(target: number, active: boolean, duration = 1400) {
 
 const STATS = [
   { target: 24000, suffix: "+", label: "Predictions submitted" },
-  { target: 380, suffix: "", label: "Active leagues" },
+  { target: 380, suffix: "", label: "Active pools" },
   { target: 18, prefix: "₦", suffix: "m", label: "Prize pools published" },
   { target: 6, suffix: "", label: "Top-flight clubs tracked" },
 ];
@@ -276,54 +275,54 @@ function StatItem({
 }
 
 /* ------------------------------------------------------------------ */
-/* League tiers                                                        */
+/* Pool tiers                                                           */
 /* ------------------------------------------------------------------ */
 
 const TIERS = [
   {
     badge: "Free",
     tag: "Play with friends",
-    name: "Free League",
-    body: "Create or join a free league with no entry fees. Perfect for friends, office groups, or casual competition.",
+    name: "Free Pool",
+    body: "Create or join a free pool with no entry fees. Perfect for friends, office groups, or casual competition.",
     prizePool: "Bragging rights",
-    detail: "100+ active leagues",
-    cta: "Browse Free Leagues",
-    href: "/dashboard/leagues?type=free",
+    detail: "100+ active pools",
+    cta: "Browse Free Pools",
+    href: "/dashboard/pools?type=free",
     featured: false,
   },
   {
     badge: "Entry fee applies",
     tag: "Monetized",
-    name: "Monetized League",
-    body: "Create or join a monetized league with entry fees and real prize pools. Set your own stakes and compete for rewards.",
+    name: "Monetized Pool",
+    body: "Create or join a monetized pool with entry fees and real prize pools. Set your own stakes and compete for rewards.",
     prizePool: "You decide",
-    detail: "Varies by league",
-    cta: "Create Monetized League",
-    href: "/dashboard/leagues/create",
+    detail: "Varies by pool",
+    cta: "Create Monetized Pool",
+    href: "/dashboard/pools/create",
     featured: true,
   },
   {
     badge: "Flexible",
     tag: "Custom",
     name: "Create Your Own",
-    body: "Choose between Free or Monetized when creating your league. Invite your circle and set your own rules.",
+    body: "Choose between Free or Monetized when creating your pool. Invite your circle and set your own rules.",
     prizePool: "You decide",
     detail: "Instant invite link",
-    cta: "Create League",
-    href: "/dashboard/leagues/create",
+    cta: "Create Pool",
+    href: "/dashboard/pools/create",
     featured: false,
   },
 ];
 
-export function LeagueTiers() {
+export function PoolTiers() {
   return (
     <section className="mx-auto lg:px-36 px-5 py-20 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4" data-aos="fade-up">
         <div>
           <h2 className="text-3xl font-bold sm:text-4xl">Choose How You Want to Play</h2>
           <p className="mt-3 max-w-lg text-sm text-muted-foreground">
-            Fantasy Predict is free to join. Once inside, you can browse free leagues, join monetized
-            public leagues, or create your own private league with custom entry fees.
+            Fantasy Predict is free to join. Once inside, you can browse free pools, join monetized
+            public pools, or create your own private pool with custom entry fees.
           </p>
         </div>
       </div>
@@ -376,7 +375,7 @@ export function TopPlayersChart() {
         <div>
           <h2 className="text-3xl font-bold sm:text-4xl">Top players right now</h2>
           <p className="mt-3 max-w-lg text-sm text-muted-foreground">
-            Live season standings across every public league. Points come from correct outcomes, exact scores and
+            Live season standings across every public pool. Points come from correct outcomes, exact scores and
             streak bonuses.
           </p>
         </div>

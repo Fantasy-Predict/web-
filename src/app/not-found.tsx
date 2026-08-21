@@ -9,7 +9,7 @@ export default function NotFound() {
         <p className="font-display text-7xl font-bold text-primary">404</p>
         <h1 className="mt-4 text-xl font-semibold">This page is off the pitch</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
         <div className="mt-6">
           <Link

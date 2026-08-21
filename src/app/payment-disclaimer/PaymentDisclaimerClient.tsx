@@ -10,18 +10,6 @@ import { Button } from "@/components/ui/button";
 // DATA
 // ============================================================
 
-const INFO_CARDS = [
-  {
-    title: "Typical Processing Time",
-    description: "Instant in most cases. Occasionally delayed due to banking or provider issues.",
-  },
-  {
-    title: "Typical Processing Time",
-    description: "Within 24 business hours after approval.",
-    variant: "withdrawal" as const,
-  },
-];
-
 // ============================================================
 // PAGE COMPONENT
 // ============================================================
@@ -77,10 +65,10 @@ export default function PaymentDisclaimerClient() {
           <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
             <p>
               Fantasy Predict does not charge users for account registration or dashboard access.
-              Payments apply only to eligible leagues that require participation fees.
+              Payments apply only to eligible pools that require participation fees.
             </p>
             <p>
-              Fantasy Predict allows users to participate in eligible leagues that may require
+              Fantasy Predict allows users to participate in eligible pools that may require
               entry fees. All payments are processed through secure third-party payment providers,
               and users are encouraged to review transaction details before confirming any payment.
             </p>
@@ -161,7 +149,7 @@ export default function PaymentDisclaimerClient() {
                 <li>Requests are reviewed before processing.</li>
                 <li>Processing may take up to the stated business period.</li>
                 <li>
-                  Delays caused by banks or payment providers are outside Fantasy Predict's
+                  Delays caused by banks or payment providers are outside Fantasy Predict&apos;s
                   control.
                 </li>
               </ul>
@@ -215,7 +203,7 @@ export default function PaymentDisclaimerClient() {
               <ul className="list-disc pl-5 space-y-2">
                 <li>Payment fails</li>
                 <li>Duplicate payment occurs</li>
-                <li>Wallet balance doesn't update</li>
+                <li>Wallet balance doesn&apos;t update</li>
                 <li>Withdrawal is delayed</li>
               </ul>
               <p>Users should:</p>
@@ -243,7 +231,7 @@ export default function PaymentDisclaimerClient() {
               Refund eligibility depends on several factors, including:
             </p>
             <ul className="list-disc pl-5 space-y-2">
-              <li>League rules and participation status</li>
+              <li>Pool rules and participation status</li>
               <li>Payment status and verification</li>
               <li>Transaction verification</li>
             </ul>
@@ -367,15 +355,15 @@ export default function PaymentDisclaimerClient() {
               Ready To Start Predicting?
             </h2>
             <p className="mt-3 max-w-lg mx-auto text-sm leading-relaxed text-muted-foreground">
-              Join thousands of fans already competing. Create your league or join an existing
+              Join thousands of fans already competing. Create your pool or join an existing
               one today.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
-                <Link href="/dashboard/leagues/create">Create League</Link>
+                <Link href="/dashboard/pools/create">Create Pool</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/dashboard/leagues">Join League</Link>
+                <Link href="/dashboard/pools">Join Pool</Link>
               </Button>
             </div>
           </Card>

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PublicLayout } from "@/components/layout/public-layout";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -190,7 +189,7 @@ export default function PrivacyClient() {
                   <h4 className="font-semibold text-foreground">Activity Information</h4>
                   <ul className="list-disc pl-5 mt-1.5 space-y-1">
                     <li>Predictions submitted</li>
-                    <li>Leagues joined and created</li>
+                    <li>Pools joined and created</li>
                     <li>Rankings and points</li>
                     <li>Match activity and participation</li>
                   </ul>
@@ -218,7 +217,7 @@ export default function PrivacyClient() {
                 <p>We use your information to:</p>
                 <ul className="list-disc pl-5 space-y-1.5">
                   <li>Create and manage user accounts</li>
-                  <li>Process league participation and predictions</li>
+                   <li>Process pool participation and predictions</li>
                   <li>Display leaderboards and rankings</li>
                   <li>Improve platform performance and user experience</li>
                   <li>Send important notifications and updates</li>
@@ -278,7 +277,7 @@ export default function PrivacyClient() {
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
                 <p>
-                  Fantasy Predict does not sell users' personal information to third parties.
+                   Fantasy Predict does not sell users&apos; personal information to third parties.
                 </p>
                 <p>
                   We may share your information with trusted service providers who assist us
@@ -391,7 +390,7 @@ export default function PrivacyClient() {
             <section id="childrens-privacy" data-aos="fade-up" data-aos-delay="400">
               <div className="flex items-center gap-4 border-b border-gold/20 pb-3">
                 <span className="text-xs font-bold tracking-[0.18em] text-gold">11</span>
-                <h2 className="text-xl font-bold">Children's Privacy</h2>
+                 <h2 className="text-xl font-bold">Children&apos;s Privacy</h2>
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
                 <p>

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 // TODO: replace with your project URL once a project name or custom domain is set.
-const BASE_URL = "";
+const BASE_URL = "https://fantasy-predict.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: {

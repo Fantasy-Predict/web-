@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AppShell } from "@/components/layout/app-shell";
@@ -17,12 +18,12 @@ import {
   SelectValue,
 } from "../../../../components/ui/select";
 import { cn } from "../../../lib/utils";
+import { createPool, getUserCompetitions, type UserCompetition } from "../../../lib/api/endpoints";
 
-// Updated schema
 const schema = z.object({
-  name: z.string().trim().min(3, "League name must be at least 3 characters").max(60),
+  name: z.string().trim().min(3, "Pool name must be at least 3 characters").max(60),
   competition: z.string().min(1, "Select a competition"),
-  leagueType: z.enum(["free", "monetized"]),
+  poolType: z.enum(["free", "monetized"]),
   entryFee: z.coerce.number().optional(),
   maxPlayers: z.coerce.number().min(2, "At least 2 players").max(1000),
   privacy: z.string().min(1),
@@ -32,12 +33,12 @@ const schema = z.object({
   prizeType: z.string().min(1, "Select prize type"),
   introduction: z.string().max(1000, "Introduction must be under 1000 characters").optional(),
 }).refine((data) => {
-  if (data.leagueType === "monetized") {
+  if (data.poolType === "monetized") {
     return data.entryFee !== undefined && data.entryFee > 0;
   }
   return true;
 }, {
-  message: "Entry fee is required for monetized leagues",
+  message: "Entry fee is required for monetized pools",
   path: ["entryFee"],
 });
 
@@ -55,11 +56,13 @@ const PRIZE_OPTIONS = [
   { value: "prizes", label: "There are prizes" },
 ];
 
-export default function CreateLeaguePage() {
+export default function CreatePoolPage() {
+  const router = useRouter();
+  const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
   const [values, setValues] = useState({
     name: "",
     competition: "Premier League",
-    leagueType: "free" as "free" | "monetized",
+    poolType: "free" as "free" | "monetized",
     entryFee: "",
     maxPlayers: "20",
     privacy: "private",
@@ -73,14 +76,25 @@ export default function CreateLeaguePage() {
   const [invite, setInvite] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    getUserCompetitions()
+      .then((list) => {
+        if (list.length > 0) {
+          setCompetitions(list);
+          setValues((v) => ({ ...v, competition: list[0]._id }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   function set(key: keyof typeof values, value: string) {
     setValues((v) => ({ ...v, [key]: value }));
   }
 
-  function setLeagueType(type: "free" | "monetized") {
+  function setPoolType(type: "free" | "monetized") {
     setValues((v) => ({ 
       ...v, 
-      leagueType: type,
+      poolType: type,
       entryFee: type === "free" ? "" : v.entryFee,
     }));
   }
@@ -101,18 +115,36 @@ export default function CreateLeaguePage() {
     }
     setErrors({});
     setLoading(true);
-    // Backend integration point: POST /leagues
-    setTimeout(() => {
-      setLoading(false);
-      setInvite(`https://fantasypredict.app/join/${values.name.toLowerCase().replace(/\s+/g, "-")}`);
-      toast.success("League created");
-    }, 800);
+    void submitPool(parsed.data);
   }
 
-  const isMonetized = values.leagueType === "monetized";
+  async function submitPool(data: z.infer<typeof schema>) {
+    try {
+      const isMonetized = data.poolType === "monetized";
+      const created = await createPool({
+        name: data.name,
+        description: data.introduction || "A fantasy football pool",
+        privacy: data.privacy,
+        competition: data.competition,
+        maxMembers: data.maxPlayers,
+        config: {
+          amount: isMonetized ? data.entryFee ?? 0 : 0,
+          paid: isMonetized,
+        },
+      });
+      toast.success("Pool created");
+      router.push("/dashboard/pools");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create your pool");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const isMonetized = values.poolType === "monetized";
 
   return (
-    <AppShell title="Create a league" description="You can invite players as soon as the league is created.">
+    <AppShell title="Create a pool" description="You can invite players as soon as the pool is created.">
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         {/* Form Card */}
         <Card className="gap-0 p-4 sm:p-6 shadow-[var(--shadow-card)]">
@@ -127,39 +159,39 @@ export default function CreateLeaguePage() {
               />
             </Field>
 
-            {/* League Type – Free vs Monetized */}
-            <Field label="League type" error={errors.leagueType}>
+            {/* Pool Type – Free vs Monetized */}
+            <Field label="Pool type" error={errors.poolType}>
               <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     type="button"
-                    onClick={() => setLeagueType("free")}
+                    onClick={() => setPoolType("free")}
                     className={cn(
                       "w-full sm:flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all",
-                      values.leagueType === "free"
+                      values.poolType === "free"
                         ? "border-primary bg-primary text-primary-foreground shadow-[0_0_20px_rgba(29,78,216,0.2)]"
                         : "border-border bg-background hover:bg-accent hover:border-primary/30"
                     )}
                   >
-                    Free League
+                    Free Pool
                   </button>
                   <button
                     type="button"
-                    onClick={() => setLeagueType("monetized")}
+                    onClick={() => setPoolType("monetized")}
                     className={cn(
                       "w-full sm:flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-all",
-                      values.leagueType === "monetized"
+                      values.poolType === "monetized"
                         ? "border-gold bg-gold text-navy shadow-[0_0_20px_rgba(244,180,0,0.2)]"
                         : "border-border bg-background hover:bg-accent hover:border-gold/30"
                     )}
                   >
-                    Monetized League
+                    Monetized Pool
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {values.leagueType === "free" 
-                    ? "Free leagues have no entry fees. Perfect for playing with friends." 
-                    : "Monetized leagues have entry fees. The platform takes 10% and the remaining 90% goes to winners."}
+                  {values.poolType === "free" 
+                    ? "Free pools have no entry fees. Perfect for playing with friends." 
+                    : "Monetized pools have entry fees. The platform takes 10% and the remaining 90% goes to winners."}
                 </p>
               </div>
             </Field>
@@ -226,11 +258,15 @@ export default function CreateLeaguePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {["Premier League", "Champions League", "La Liga", "Serie A", "Bundesliga"].map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
+                    {competitions.length > 0 ? (
+                      competitions.map((c) => (
+                          <SelectItem key={c._id} value={c._id}>
+                            {c.name}
+                          </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="_default">Premier League</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </Field>
@@ -268,7 +304,7 @@ export default function CreateLeaguePage() {
               <div className="rounded-xl border border-gold/30 bg-gold/5 p-3 sm:p-4 text-sm">
                 <p className="font-semibold text-gold">Platform Fee: 10%</p>
                 <p className="text-muted-foreground text-xs sm:text-sm">
-                  The platform takes 10% of the total entry fees. The remaining 90% goes to league 
+                  The platform takes 10% of the total entry fees. The remaining 90% goes to pool 
                   winners based on your prize distribution settings.
                 </p>
                 {values.entryFee && values.maxPlayers && (
@@ -310,7 +346,7 @@ export default function CreateLeaguePage() {
                 </Field>
               ) : (
                 <Field label="Prize distribution" error={undefined}>
-                  <Input value="No prizes (Free league)" disabled className="w-full text-muted-foreground" />
+                  <Input value="No prizes (Free pool)" disabled className="w-full text-muted-foreground" />
                 </Field>
               )}
             </div>
@@ -320,19 +356,19 @@ export default function CreateLeaguePage() {
               <Input type="date" value={values.startDate} onChange={(e) => set("startDate", e.target.value)} className="w-full" />
             </Field>
 
-            <Button type="submit" size="lg" disabled={loading} className="w-full sm:w-auto">
-              {loading ? "Creating league…" : "Create league"}
+            <Button type="submit" size="lg" disabled={loading || !values.name || !values.competition || !values.poolFor || !values.startDate} className="w-full sm:w-auto">
+              {loading ? "Creating pool…" : "Create pool"}
             </Button>
           </form>
         </Card>
 
-        {/* Invitation Link Card – Responsive */}
+        {/* Invitation Link Card */}
         <Card className="gap-0 self-start p-4 sm:p-6 shadow-[var(--shadow-card)]">
           <h2 className="text-base font-semibold">Invitation link</h2>
           {invite ? (
             <>
               <p className="mt-2 text-sm text-muted-foreground">
-                Share this link with players. It expires when the league fills up.
+                Share this link with players. It expires when the pool fills up.
               </p>
               <p className="mt-4 rounded-xl bg-muted px-4 py-3 text-xs break-all">{invite}</p>
               <Button
@@ -348,7 +384,7 @@ export default function CreateLeaguePage() {
             </>
           ) : (
             <p className="mt-2 text-sm text-muted-foreground">
-              Your invitation link is generated as soon as the league is created.
+              Your invitation link is generated as soon as the pool is created.
             </p>
           )}
         </Card>

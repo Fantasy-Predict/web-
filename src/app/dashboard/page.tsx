@@ -1,50 +1,101 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
-import { LeagueCard, MatchCard, StatCard } from "../../../src/components/app/card";
-import { currentUser, formatNaira, leaderboard, leagues, matches } from "../../app/lib/mock-data";
-import { calculatePoints, getOutcomeFromScore } from "../../app/lib/scoring";
+import { Badge } from "../../components/ui/badge";
+import { Skeleton } from "../../components/ui/skeleton";
+import { MatchCard, StatCard } from "../../../src/components/app/card";
+import { formatNaira, type LeaderboardRow, type Match } from "../../app/lib/mock-data";
+import {
+  getLeaderboard,
+  getMatches,
+  getProfile,
+  getUserCompetitions,
+  getWallet,
+  type UserCompetition,
+  type UserProfile,
+} from "../../app/lib/api/endpoints";
+import { useNotifications, notifySystem } from "../../app/lib/notifications";
 
-export const metadata: Metadata = {
-  title: "Dashboard — Fantasy Predict",
-  description:
-    "Your Fantasy Predict dashboard: wallet balance, points, active leagues, upcoming fixtures and weekly rankings.",
-  openGraph: {
-    title: "Dashboard — Fantasy Predict",
-    description: "Track your points, leagues and upcoming fixtures.",
-  },
-};
+const TOP_LEAGUES = ["Premier League", "La Liga", "Bundesliga", "Ligue 1", "Serie A"];
+
+function formatKickoff(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
 
 export default function DashboardPage() {
-  const upcoming = matches.filter((m) => m.status === "upcoming").slice(0, 3);
-  const finished = matches.filter((m) => m.status === "finished");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [balance, setBalance] = useState(0);
+  const [matchList, setMatchList] = useState<Match[]>([]);
+  const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
+  const [board, setBoard] = useState<LeaderboardRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const compNameMap = useRef<Map<string, string>>(new Map());
+  const { notifications } = useNotifications();
 
-  // Calculate points from finished matches (example)
-  const totalPointsFromFinished = finished.reduce((total, match) => {
-    if (match.score) {
-      // Mock prediction for demonstration
-      const mockPrediction = {
-        outcome: getOutcomeFromScore(match.score.home, match.score.away),
-        homeScore: match.score.home - 1,
-        awayScore: match.score.away + 1,
-      };
-      const actualResult = {
-        outcome: getOutcomeFromScore(match.score.home, match.score.away),
-        homeScore: match.score.home,
-        awayScore: match.score.away,
-      };
-      const result = calculatePoints(mockPrediction, actualResult);
-      return total + result.points;
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const [profileData, wallet, comps, rows] = await Promise.all([
+          getProfile(),
+          getWallet(),
+          getUserCompetitions(),
+          getLeaderboard(),
+        ]);
+        comps?.forEach((c) => compNameMap.current.set(c._id, c.name));
+        const topLeagueComps = (comps ?? []).filter((c) => TOP_LEAGUES.includes(c.name));
+        const allMatchesData = await Promise.all(
+          topLeagueComps.map((c) => getMatches(c._id).catch(() => [])),
+        );
+        if (!active) return;
+        setProfile(profileData ?? null);
+        setBalance(wallet?.balance ?? 0);
+        const allMatches = allMatchesData.flat()
+          .filter((m) => m && m.id && m.home && m.away)
+          .map((m) => ({
+            ...m,
+            competitionName: compNameMap.current.get(m.competition) ?? m.competition,
+            kickoff: formatKickoff(m.kickoff),
+          }));
+        const upcoming = allMatches
+          .filter((m) => m.status === "upcoming")
+          .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
+          .slice(0, 5);
+        setMatchList(upcoming);
+        setCompetitions(comps ?? []);
+        setBoard([...(rows ?? [])].sort((a, b) => b.total - a.total));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Unable to load your dashboard");
+      } finally {
+        if (active) setLoading(false);
+      }
     }
-    return total;
-  }, 0);
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const displayName = profile?.firstName || profile?.username || profile?.email || "champ";
+  const upcoming = matchList;
+  const ownIndex = board.findIndex((row) => row.id === profile?._id || row.username === displayName);
+  const ownPoints = ownIndex >= 0 ? board[ownIndex].total : 0;
+  const ownRank = ownIndex >= 0 ? ownIndex + 1 : null;
 
   return (
     <AppShell
-      title={`Welcome back, ${currentUser.username}`}
-      description="Matchweek 21 predictions close on Saturday at 15:00."
+      title={`Welcome back, ${loading ? "champ" : displayName}`}
+      description="Your season dashboard — predictions, points and standings in one place."
       actions={
         <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
           <Link href="/dashboard/predict">Make Predictions</Link>
@@ -60,21 +111,41 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="mt-4 grid gap-4">
-          {upcoming.map((match) => (
-            <MatchCard
-              key={match.id}
-              match={match}
-              footer={
-                <div className="grid grid-cols-3 gap-2">
-                  {["Home win", "Draw", "Away win"].map((option) => (
-                    <Button key={option} asChild variant="outline" size="sm">
-                      <Link href="/dashboard/predict">{option}</Link>
-                    </Button>
-                  ))}
+          {loading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+                <Skeleton className="h-3 w-36" />
+                <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <Skeleton className="h-5 w-32 justify-self-end" />
                 </div>
-              }
-            />
-          ))}
+              </div>
+            ))
+          ) : upcoming.length > 0 ? (
+            upcoming.map((match) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                footer={
+                  <div className="grid grid-cols-3 gap-2">
+                    {["Home win", "Draw", "Away win"].map((option) => (
+                      <Button key={option} asChild variant="outline" size="sm">
+                        <Link href="/dashboard/predict">{option}</Link>
+                      </Button>
+                    ))}
+                  </div>
+                }
+              />
+            ))
+          ) : (
+            <Card className="p-6 text-center shadow-[var(--shadow-card)]">
+              <p className="text-sm font-semibold">No upcoming fixtures right now</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Check back when the next matchday is announced.
+              </p>
+            </Card>
+          )}
         </div>
         <div className="mt-6 text-center">
           <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
@@ -85,15 +156,26 @@ export default function DashboardPage() {
 
       {/* Stats Row */}
       <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Wallet balance" value={formatNaira(currentUser.balance)} hint="Available for entry fees" />
-        <StatCard 
-          label="Total points" 
-          value={(currentUser.points + totalPointsFromFinished).toLocaleString()} 
-          accent="primary" 
-          hint={`+${currentUser.weeklyPoints} this week`} 
-        />
-        <StatCard label="Global rank" value={`#${currentUser.rank}`} accent="gold" hint="Up 2 positions" />
-        <StatCard label="Win rate" value={`${currentUser.winRate}%`} accent="success" hint="Correct outcomes this season" />
+        {loading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index} className="gap-0 p-5 shadow-[var(--shadow-card)]">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="mt-3 h-7 w-28" />
+            </Card>
+          ))
+        ) : (
+          <>
+            <StatCard label="Wallet balance" value={formatNaira(balance)} hint="Available for entry fees" />
+            <StatCard
+              label="Total points"
+              value={ownPoints.toLocaleString()}
+              accent="primary"
+              hint="Season standings"
+            />
+            <StatCard label="Global rank" value={ownRank ? `#${ownRank}` : "—"} accent="gold" hint="Across all players" />
+            <StatCard label="Active pools" value={competitions.length.toLocaleString()} accent="success" hint="Competitions available" />
+          </>
+        )}
       </div>
 
       {/* Scoring System Quick Reference */}
@@ -120,25 +202,44 @@ export default function DashboardPage() {
 
       {/* Secondary Sections */}
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        {/* Active Leagues */}
+        {/* Active Pools */}
         <section>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Active Leagues</h2>
-            <Link href="/dashboard/leagues" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-              Manage leagues
+            <h2 className="text-lg font-semibold">Active Pools</h2>
+            <Link href="/dashboard/pools" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              Manage pools
             </Link>
           </div>
-          <div className="mt-4 space-y-4">
-            {leagues
-              .filter((l) => l.rank)
-              .slice(0, 2)
-              .map((league) => (
-                <LeagueCard key={league.id} league={league} />
-              ))}
-            {leagues.filter((l) => l.rank).length > 2 && (
-              <div className="text-center text-sm text-muted-foreground">
-                +{leagues.filter((l) => l.rank).length - 2} more leagues
-              </div>
+          <div className="mt-4 space-y-3">
+            {loading ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="rounded-2xl border bg-card p-4 shadow-[var(--shadow-card)]">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="mt-2 h-3 w-20" />
+                </div>
+              ))
+            ) : competitions.length > 0 ? (
+              competitions.slice(0, 6).map((competition) => (
+                <div
+                  key={competition._id}
+                  className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3 shadow-[var(--shadow-card)]"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{competition.name}</p>
+                    <p className="text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+                      {competition.type}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{competition.code}</Badge>
+                </div>
+              ))
+            ) : (
+              <Card className="p-6 text-center shadow-[var(--shadow-card)]">
+                <p className="text-sm font-semibold">No pools available yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Join or create a pool to get started.
+                </p>
+              </Card>
             )}
           </div>
         </section>
@@ -153,29 +254,45 @@ export default function DashboardPage() {
               </Link>
             </div>
             <Card className="mt-4 gap-0 divide-y divide-border p-0 shadow-[var(--shadow-card)]">
-              {leaderboard.slice(0, 5).map((row, index) => (
-                <div key={row.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3.5">
-                  <span className="num w-6 text-sm font-bold text-muted-foreground">{index + 1}</span>
-                  <span className="truncate text-sm font-semibold">{row.username}</span>
-                  <span className="num text-sm font-bold">{row.weekly}</span>
-                </div>
-              ))}
+              {loading
+                ? Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3.5">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-10" />
+                    </div>
+                  ))
+                : board.slice(0, 5).map((row, index) => (
+                    <div
+                      key={row.id}
+                      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3.5"
+                    >
+                      <span className="num w-6 text-sm font-bold text-muted-foreground">{index + 1}</span>
+                      <span className="truncate text-sm font-semibold">{row.username}</span>
+                      <span className="num text-sm font-bold">{row.weekly}</span>
+                    </div>
+                  ))}
             </Card>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold">Notifications</h2>
             <Card className="mt-4 gap-0 divide-y divide-border p-0 shadow-[var(--shadow-card)]">
-              {[
-                ["Prediction deadline", "Matchweek 21 closes in 2 days"],
-                ["League update", "Office Rivals added 2 new members"],
-                ["Payment confirmed", "₦20,000 deposit was successful"],
-              ].map(([title, body]) => (
-                <div key={title} className="px-5 py-4">
-                  <p className="text-sm font-semibold">{title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{body}</p>
+              {notifications.length === 0 ? (
+                <div className="px-5 py-6 text-center">
+                  <p className="text-sm font-semibold">No notifications</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    You&apos;ll see updates about predictions, pools and payments here.
+                  </p>
                 </div>
-              ))}
+              ) : (
+                notifications.slice(0, 5).map((n) => (
+                  <div key={n.id} className="px-5 py-4">
+                    <p className="text-sm font-semibold">{n.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{n.body}</p>
+                  </div>
+                ))
+              )}
             </Card>
           </section>
         </div>

@@ -1,7 +1,7 @@
 import { cn } from "../../app/lib/utils";
 import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import type { League, Match } from "../../app/lib/mock-data";
+import type { Pool, Match } from "../../app/lib/mock-data";
 import { formatNaira } from "../../app/lib/mock-data";
 import Link from "next/link";
 import { Button } from "../../components/ui/button";
@@ -59,7 +59,7 @@ export function MatchCard({
     <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <p className="truncate text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-          {match.competition}
+          {match.competitionName ?? match.competition}
         </p>
         <MatchStatus status={match.status} kickoff={match.kickoff} />
       </div>
@@ -127,15 +127,15 @@ export function MatchStatus({ status, kickoff }: { status: Match["status"]; kick
   );
 }
 
-export function LeagueCard({ league }: { league: League }) {
-  const isFree = league.type === "free";
+export function PoolCard({ pool, onJoin }: { pool: Pool; onJoin?: () => void }) {
+  const isFree = pool.type === "free";
 
   return (
     <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold">{league.name}</h3>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{league.competition}</p>
+          <h3 className="truncate text-base font-semibold">{pool.name}</h3>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{pool.competition}</p>
         </div>
         <div className="flex items-center gap-2">
           {isFree ? (
@@ -147,8 +147,8 @@ export function LeagueCard({ league }: { league: League }) {
               Monetized
             </Badge>
           )}
-          <Badge variant={league.privacy === "private" ? "secondary" : "outline"} className="shrink-0">
-            {league.privacy === "private" ? "Private" : "Public"}
+          <Badge variant={pool.privacy === "private" ? "secondary" : "outline"} className="shrink-0">
+            {pool.privacy === "private" ? "Private" : "Public"}
           </Badge>
         </div>
       </div>
@@ -157,19 +157,19 @@ export function LeagueCard({ league }: { league: League }) {
         <div>
           <dt className="text-xs text-muted-foreground">Entry</dt>
           <dd className="num mt-1 font-semibold">
-            {isFree ? "Free" : formatNaira(league.entryFee)}
+            {isFree ? "Free" : formatNaira(pool.entryFee)}
           </dd>
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Prize pool</dt>
           <dd className="num mt-1 font-semibold text-gold">
-            {isFree ? "—" : formatNaira(league.prizePool)}
+            {isFree ? "—" : formatNaira(pool.prizePool)}
           </dd>
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Players</dt>
           <dd className="num mt-1 font-semibold">
-            {league.players}/{league.maxPlayers}
+            {pool.players}/{pool.maxPlayers}
           </dd>
         </div>
       </dl>
@@ -177,25 +177,31 @@ export function LeagueCard({ league }: { league: League }) {
       <div className="mt-5">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Season progress</span>
-          <span className="num">{league.progress}%</span>
+          <span className="num">{pool.progress}%</span>
         </div>
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-[width] duration-500"
-            style={{ width: `${league.progress}%` }}
+            style={{ width: `${pool.progress}%` }}
           />
         </div>
       </div>
 
       <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <p className="truncate text-xs text-muted-foreground">
-          {league.rank ? `Your position: #${league.rank}` : "You have not joined this league"}
+          {onJoin ? "Available to join" : "Your pool"}
         </p>
-        <Button asChild size="sm" variant={league.rank ? "outline" : "default"}>
-          <Link href={`/dashboard/leagues/${league.id}`}>
-            {league.rank ? "View" : "Join"}
-          </Link>
-        </Button>
+        {onJoin ? (
+          <Button size="sm" onClick={onJoin}>
+            Join
+          </Button>
+        ) : (
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/dashboard/pools/${pool.id}`}>
+              View
+            </Link>
+          </Button>
+        )}
       </div>
     </Card>
   );

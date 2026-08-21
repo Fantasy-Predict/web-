@@ -2,17 +2,19 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { clearSession } from "../../app/lib/api/session";
 import { cn } from "../../app/lib/utils";
 
 const ADMIN_NAV = [
   { to: "/admin", label: "Overview" },
   { to: "/admin/users", label: "Users" },
-  { to: "/admin/leagues", label: "Leagues" },
+  { to: "/admin/pools", label: "Pools" },
   { to: "/admin/results", label: "Fixtures & results" },
   { to: "/admin/payments", label: "Payments" },
 ] as const;
@@ -33,6 +35,12 @@ export function AdminShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  function handleLogout() {
+    clearSession();
+    router.push("/login");
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,8 +75,15 @@ export function AdminShell({
             ← Back to player app
           </Link>
         </nav>
-        <div className="border-t border-sidebar-border p-4">
+        <div className="border-t border-sidebar-border p-4 space-y-2">
           <ThemeToggle className="w-full justify-between" />
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            Log out
+          </button>
         </div>
       </aside>
 
@@ -116,7 +131,7 @@ export function AdminShell({
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-border bg-background/95 backdrop-blur sm:hidden">
         {ADMIN_NAV.map((item) => (
           <Link
             key={item.to}
@@ -129,6 +144,13 @@ export function AdminShell({
             {item.label}
           </Link>
         ))}
+        <button
+          onClick={handleLogout}
+          className="px-1 py-3 text-center text-[10px] font-semibold text-muted-foreground"
+        >
+          <LogOut className="mx-auto mb-0.5 h-4 w-4" />
+          Log out
+        </button>
       </nav>
     </div>
   );

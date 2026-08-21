@@ -24,12 +24,12 @@ const STORIES = [
   {
     year: "Early 2026",
     title: "Beta Launch",
-    body: "A limited group of football fans tested the platform, providing feedback that shaped the scoring system and league mechanics.",
+    body: "A limited group of football fans tested the platform, providing feedback that shaped the scoring system and pool mechanics.",
   },
   {
     year: "Mid 2026",
     title: "Community Growth",
-    body: "Word spread. Leagues formed organically. Friends invited friends. The competition became real.",
+    body: "Word spread. Pools formed organically. Friends invited friends. The competition became real.",
   },
   {
     year: "2026 & Beyond",
@@ -53,7 +53,7 @@ const MISSION_VISION = [
 
 const HOW_IT_WORKS = [
   { step: "01", title: "Create Your Account", body: "Create your profile and enter the Fantasy Predict community." },
-  { step: "02", title: "Join or Create a League", body: "Choose between free leagues for casual play with friends or monetized leagues with entry fees and real prize pools." },
+  { step: "02", title: "Join or Create a Pool", body: "Choose between free pools for casual play with friends or monetized pools with entry fees and real prize pools." },
   { step: "03", title: "Make Your Predictions", body: "Predict match outcomes and exact scores before deadlines." },
   { step: "04", title: "Earn Points", body: "Score 5 points for exact predictions, 3 points for close calls, and 2 points for correct outcomes." },
   { step: "05", title: "Climb The Leaderboard", body: "Track your performance throughout the season and compete for the top spot." },
@@ -85,7 +85,7 @@ const TRUST_SIGNALS = [
   },
   {
     title: "Clear Prize Distribution",
-    body: "League rewards are visible before participation.",
+    body: "Pool rewards are visible before participation.",
   },
   {
     title: "Secure Payments",
@@ -98,7 +98,7 @@ const TRUST_SIGNALS = [
 ];
 
 const STATS = [
-  { value: "100+", label: "Active Leagues" },
+  { value: "100+", label: "Active Pools" },
   { value: "2,000+", label: "Active Players" },
   { value: "50,000+", label: "Predictions Submitted" },
 ];
@@ -130,10 +130,10 @@ export default function AboutClient() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
-              <Link href="/dashboard/leagues/create">Create Your League</Link>
+              <Link href="/dashboard/pools/create">Create Your Pool</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
-              <Link href="/dashboard/leagues">Start Predicting</Link>
+              <Link href="/dashboard/pools">Start Predicting</Link>
             </Button>
           </div>
         </div>
@@ -253,7 +253,7 @@ export default function AboutClient() {
             <p className="text-xs font-semibold tracking-[0.18em] text-gold uppercase">Trust &amp; Fair Play</p>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Built Around Fair Competition</h2>
             <p className="mt-4 max-w-2xl mx-auto text-sm text-muted-foreground">
-              Every league, every prediction, and every prize follows the same transparent rules.
+              Every pool, every prediction, and every prize follows the same transparent rules.
             </p>
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -364,14 +364,14 @@ export default function AboutClient() {
             Ready To Prove Your Football Knowledge?
           </h2>
           <p className="mt-4 max-w-lg mx-auto text-sm leading-relaxed text-muted-foreground">
-            Join thousands of fans already competing. Create your league or join an existing one today.
+            Join thousands of fans already competing. Create your pool or join an existing one today.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
-              <Link href="/dashboard/leagues/create">Create Your League</Link>
+              <Link href="/dashboard/pools/create">Create Your Pool</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/dashboard/leagues">Join A League</Link>
+              <Link href="/dashboard/pools">Join A Pool</Link>
             </Button>
           </div>
         </Card>
