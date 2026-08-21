@@ -6,7 +6,29 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { leaderboard, matches } from "../../app/lib/mock-data";
+import type { Match, LeaderboardRow } from "../../app/lib/mock-data";
+
+const DEMO_MATCH: Match = {
+  id: "m1",
+  competition: "Premier League",
+  home: "Arsenal",
+  away: "Chelsea",
+  homeShort: "ARS",
+  awayShort: "CHE",
+  kickoff: "Sat 15:00",
+  status: "upcoming",
+};
+
+const DEMO_LEADERBOARD: LeaderboardRow[] = [
+  { id: "u1", username: "adaokoye", country: "Nigeria", total: 1284, weekly: 96, movement: 2 },
+  { id: "u2", username: "tundeb", country: "Nigeria", total: 1251, weekly: 88, movement: -1 },
+  { id: "u3", username: "m.hassan", country: "Egypt", total: 1230, weekly: 104, movement: 3 },
+  { id: "u4", username: "kwesi_a", country: "Ghana", total: 1198, weekly: 72, movement: 0 },
+  { id: "u5", username: "sarah.k", country: "Kenya", total: 1176, weekly: 81, movement: 1 },
+  { id: "u6", username: "olumide", country: "Nigeria", total: 1140, weekly: 65, movement: -2 },
+  { id: "u7", username: "danielp", country: "South Africa", total: 1122, weekly: 70, movement: 4 },
+  { id: "u8", username: "amaka.e", country: "Nigeria", total: 1098, weekly: 59, movement: -3 },
+];
 
 /* ------------------------------------------------------------------ */
 /* Team crest orbit — theme-token driven                               */
@@ -49,7 +71,7 @@ export function TeamCrestOrbit() {
 
 export function HeroPredictionWidget() {
   const [pick, setPick] = useState<"1" | "X" | "2">("1");
-  const match = matches[0];
+  const match = DEMO_MATCH;
   if (!match) return null;
 
   return (
@@ -366,7 +388,7 @@ export function PoolTiers() {
 /* ------------------------------------------------------------------ */
 
 export function TopPlayersChart() {
-  const top = [...leaderboard].sort((a, b) => b.total - a.total).slice(0, 8);
+  const top = [...DEMO_LEADERBOARD].sort((a, b) => b.total - a.total).slice(0, 8);
   const max = top[0]?.total ?? 1;
 
   return (

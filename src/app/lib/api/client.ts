@@ -1,4 +1,4 @@
-import { API_BASE_URL, MOCK_MODE } from "./config";
+import { API_BASE_URL } from "./config";
 import {
   clearSession,
   getRefreshToken,
@@ -24,16 +24,11 @@ export type ApiRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   token?: string | null;
-  mock?: () => unknown;
   /** When false, returns the full response body (e.g. login, which puts the token in meta). Defaults to true. */
   unwrap?: boolean;
   /** Internal: prevents infinite refresh loops. */
   _isRetry?: boolean;
 };
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function errorMessage(status: number, body: unknown): string {
   if (body && typeof body === "object" && "message" in body) {
@@ -44,12 +39,7 @@ function errorMessage(status: number, body: unknown): string {
 }
 
 export async function apiFetch<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { method = "GET", body, token, mock, unwrap = true } = options;
-
-  if (MOCK_MODE && mock) {
-    await delay(450 + Math.random() * 450);
-    return mock() as T;
-  }
+  const { method = "GET", body, token, unwrap = true } = options;
 
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";

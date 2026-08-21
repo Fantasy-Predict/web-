@@ -20,7 +20,6 @@ import {
   DialogTrigger,
 } from "../../../components/ui/dialog";
 import { StatCard } from "../../../components/app/card";
-import { MOCK_MODE } from "../../lib/api/config";
 import { createWithdrawal, getBankAccount, getProfile, getTransactions, getWallet, getPayUrl, type BankAccount } from "../../lib/api/endpoints";
 import { formatNaira, type Transaction } from "../../lib/mock-data";
 
@@ -171,17 +170,13 @@ function MoneyDialog({ mode, trigger, userEmail }: { mode: "deposit" | "withdraw
     setLoading(true);
     try {
       if (mode === "deposit") {
-        if (MOCK_MODE) {
-          toast.success("Redirecting to Paystack to complete your deposit");
-        } else {
-          if (!userEmail) {
-            toast.error("Unable to determine your email. Please try again.");
-            return;
-          }
-          const payUrl = getPayUrl(userEmail, value);
-          window.location.href = payUrl;
+        if (!userEmail) {
+          toast.error("Unable to determine your email. Please try again.");
           return;
         }
+        const payUrl = getPayUrl(userEmail, value);
+        window.location.href = payUrl;
+        return;
       } else {
         if (!linkedBank) {
           toast.error("Link a bank account in Settings → Payments first");

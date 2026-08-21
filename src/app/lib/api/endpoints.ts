@@ -1,16 +1,7 @@
 import { apiFetch } from "./client";
 import { API_BASE_URL } from "./config";
 import { getToken, setRefreshToken } from "./session";
-// TODO: remove adminStats import once MOCK_MODE is fully removed
 import {
-  adminStats,
-  adminUsers,
-} from "../admin-data";
-import {
-  leaderboard,
-  pools,
-  matches,
-  transactions,
   type LeaderboardRow,
   type Pool,
   type Match,
@@ -101,15 +92,6 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     method: "POST",
     body: payload,
     unwrap: false,
-    mock: () => ({
-      data: {
-        email: payload.to,
-        username: payload.to.split("@")[0],
-        userType: "user",
-        verificationStatus: true,
-      },
-      meta: { token: "mock-user-token" },
-    }),
   });
   const rt =
     res?.meta?.refreshToken ??
@@ -130,10 +112,6 @@ export async function adminLogin(payload: { email: string; password: string }): 
     method: "POST",
     body: payload,
     unwrap: false,
-    mock: () => ({
-      data: { email: payload.email, userType: "admin" },
-      meta: { token: "mock-admin-token" },
-    }),
   });
   return {
     token: res?.meta?.token,
@@ -146,7 +124,6 @@ export async function register(payload: RegisterPayload): Promise<{ success: boo
   return apiFetch("/v1/users", {
     method: "POST",
     body: payload,
-    mock: () => ({ success: true }),
   });
 }
 
@@ -154,7 +131,6 @@ export async function verifyAccount(payload: { email: string; otp: string }): Pr
   return apiFetch("/v1/users/verify-account", {
     method: "POST",
     body: payload,
-    mock: () => ({ success: true }),
   });
 }
 
@@ -162,7 +138,6 @@ export async function resendCode(payload: { email: string }): Promise<{ success:
   return apiFetch("/v1/users/resend-code", {
     method: "POST",
     body: payload,
-    mock: () => ({ success: true }),
   });
 }
 
@@ -170,7 +145,6 @@ export async function forgotPassword(payload: { email: string }): Promise<{ succ
   return apiFetch("/v1/users/forget-password", {
     method: "POST",
     body: payload,
-    mock: () => ({ success: true }),
   });
 }
 
@@ -182,7 +156,6 @@ export async function resetPassword(payload: {
   return apiFetch("/v1/users/reset-password", {
     method: "POST",
     body: payload,
-    mock: () => ({ success: true }),
   });
 }
 
@@ -199,7 +172,6 @@ export async function changePassword(payload: { oldPassword: string; password: s
     method: "PATCH",
     body: payload,
     token: getToken(),
-    mock: () => ({ success: true }),
   });
 }
 
@@ -222,7 +194,6 @@ export async function getProfile(): Promise<UserProfile> {
   const res = await apiFetch<UserProfile | { data?: UserProfile }>("/v1/users/profile", {
     token: getToken(),
     unwrap: false,
-    mock: () => ({ username: "adaokoye", email: "ada@example.com", firstName: "Ada", lastName: "Okoye" }),
   });
   return (res as { data?: UserProfile })?.data ?? (res as UserProfile);
 }
@@ -242,7 +213,6 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<User
     method: "PUT",
     body: payload,
     token: getToken(),
-    mock: () => ({ ...payload }),
   });
 }
 
@@ -254,7 +224,6 @@ export async function sendNotification(payload: {
     body: { sendNotification: payload.sendNotification },
     unwrap: false,
     token: getToken(),
-    mock: () => ({ success: true }),
   });
 }
 
@@ -343,7 +312,6 @@ export async function getMatches(competition: string): Promise<Match[]> {
   const matchPath = `/v1/matches?competition=${encodeURIComponent(competition)}`;
   const res = await apiFetch<MatchDoc[] | { docs?: MatchDoc[] }>(matchPath, {
     token: getToken(),
-    mock: () => matches,
   });
 
   const list = Array.isArray(res) ? res : (res?.docs ?? []);
@@ -379,7 +347,6 @@ export async function createPrediction(payload: PredictionPayload): Promise<{ su
     method: "POST",
     body: payload,
     token: getToken(),
-    mock: () => ({ success: true }),
   });
 }
 
@@ -396,7 +363,6 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     }>
   >("/v1/predictions", {
     token: getToken(),
-    mock: () => leaderboard,
   });
   return (res ?? []).map((row, index) => ({
     id: row._id ?? row.id ?? `row-${index}`,
@@ -404,7 +370,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
       row.username || `${row.firstName ?? ""} ${row.lastName ?? ""}`.trim() || row.email || "Player",
     country: "",
     total: row.predictions?.totalPoints ?? 0,
-    weekly: 0, // TODO: backend does not expose weeklyPoints yet — hidden in UI
+    weekly: 0,
     movement: 0,
   }));
 }
@@ -425,7 +391,6 @@ export async function getWallet(): Promise<Wallet> {
   const res = await apiFetch<{ wallet?: Wallet; balance?: number; currency?: string; data?: { wallet?: Wallet; balance?: number; currency?: string } }>("/v1/wallets", {
     token: getToken(),
     unwrap: false,
-    mock: () => ({ wallet: { balance: 42500, currency: "NGN" } }),
   });
   const d = res?.data ?? res;
   if (d?.wallet) return d.wallet;
@@ -442,7 +407,6 @@ export async function verifyPayment(payload: { reference?: string; transactionId
     method: "POST",
     body: payload,
     token: getToken(),
-    mock: () => ({ success: true }),
   });
 }
 
@@ -460,7 +424,6 @@ type TransactionDoc = {
 export async function getTransactions(): Promise<Transaction[]> {
   const res = await apiFetch<TransactionDoc[] | { docs?: TransactionDoc[] }>("/v1/transactions", {
     token: getToken(),
-    mock: () => ({ docs: transactions }),
   });
   const list = Array.isArray(res) ? res : (res?.docs ?? []);
   return list.map((tx) => ({
@@ -487,9 +450,12 @@ export async function createWithdrawal(payload: WithdrawalPayload): Promise<{ su
     method: "POST",
     body: payload,
     token: getToken(),
-    mock: () => ({ success: true }),
   });
 }
+
+// ============================================================
+// Competitions
+// ============================================================
 
 export type UserCompetition = {
   _id: string;
@@ -503,12 +469,6 @@ export async function getUserCompetitions(): Promise<UserCompetition[]> {
   const res = await apiFetch<UserCompetition[] | { data?: UserCompetition[] | { docs?: UserCompetition[] }; docs?: UserCompetition[] }>("/v1/competitions", {
     token: getToken(),
     unwrap: false,
-    mock: () => ({
-      docs: [
-        { _id: "c1", name: "Premier League", code: "PL", type: "LEAGUE", default: true },
-        { _id: "c2", name: "Champions League", code: "CL", type: "CUP" },
-      ],
-    }),
   });
   if (Array.isArray(res)) return res;
   const data = (res as { data?: unknown })?.data;
@@ -547,10 +507,6 @@ export type PoolDoc = {
   code?: string;
 };
 
-/**
- * Best-effort mapping from a backend pool document to the frontend Pool
- * shape. Already-shaped Pool objects (e.g. mock data) pass straight through.
- */
 export function normalizePool(pool: PoolDoc | Pool, opts?: { mine?: boolean }): Pool {
   if ("players" in pool && "type" in pool && pool.name) {
     return pool as unknown as Pool;
@@ -617,7 +573,6 @@ export async function getPools(
   const qs = params.toString();
   const res = await apiFetch<{ data?: PaginatedResponse<PoolDoc> } | PaginatedResponse<PoolDoc> | PoolDoc[]>(`/v1/pools?${qs}`, {
     token: getToken(),
-    mock: () => pools,
     unwrap: false,
   });
   const list = Array.isArray(res) ? res
@@ -633,7 +588,6 @@ export async function getPool(id: string): Promise<Pool> {
   const res = await apiFetch<PoolDoc | Pool | { data?: PoolDoc | Pool }>(`/v1/pools/${id}`, {
     token: getToken(),
     unwrap: false,
-    mock: () => pools.find((l) => l.id === id) ?? pools[0],
   });
   const d = (res as { data?: PoolDoc | Pool })?.data ?? res;
   return normalizePool(d as PoolDoc | Pool, { mine: true });
@@ -653,7 +607,6 @@ export async function createPool(payload: CreatePoolPayload): Promise<{ _id?: st
     method: "POST",
     body: payload,
     token: getToken(),
-    mock: () => ({ _id: "mock-pool-1" }),
   });
 }
 
@@ -665,7 +618,6 @@ export async function joinPool(payload: {
     method: "POST",
     body: payload,
     token: getToken(),
-    mock: () => ({ success: true }),
   });
 }
 
@@ -693,14 +645,6 @@ export async function getPoolMembers(poolId: string): Promise<PoolMember[]> {
     {
       token: getToken(),
       unwrap: false,
-      mock: () =>
-        leaderboard.slice(0, 6).map((row, index) => ({
-          userId: row.id,
-          username: row.username,
-          country: row.country,
-          points: row.total,
-          position: index + 1,
-        })),
     },
   );
   const list = Array.isArray(res) ? res : res?.data?.docs ?? [];
@@ -731,7 +675,6 @@ export async function updatePoolMemberStatus(
 export async function getPoolLeaderboard(): Promise<LeaderboardEntry[]> {
   return apiFetch("/v1/pools/leadboard/pool", {
     token: getToken(),
-    mock: () => leaderboard,
   });
 }
 
@@ -745,7 +688,6 @@ export async function setPin(payload: { pin: string }): Promise<{ success?: bool
     body: { pin: payload.pin, code: payload.pin },
     unwrap: false,
     token: getToken(),
-    mock: () => ({ success: true }),
   });
 }
 
@@ -769,13 +711,6 @@ export async function getBanks(): Promise<Bank[]> {
   const res = await apiFetch<Bank[] | { data?: Bank[]; docs?: Bank[] }>("/v1/banks", {
     token: getToken(),
     unwrap: false,
-    mock: () => [
-      { name: "Guaranty Trust Bank", code: "058" },
-      { name: "Access Bank", code: "044" },
-      { name: "First Bank of Nigeria", code: "011" },
-      { name: "United Bank for Africa", code: "033" },
-      { name: "Zenith Bank", code: "057" },
-    ],
   });
   if (Array.isArray(res)) return res;
   const d = (res as { data?: unknown })?.data;
@@ -786,7 +721,6 @@ export async function getBanks(): Promise<Bank[]> {
 export async function getBankAccount(): Promise<BankAccount | null> {
   const res = await apiFetch<{ account?: BankAccount; data?: { account?: BankAccount } }>("/v1/banks/account", {
     token: getToken(),
-    mock: () => null,
     unwrap: false,
   });
   return res?.account ?? res?.data?.account ?? null;
@@ -812,7 +746,6 @@ export async function verifyBankAccount(payload: {
     body: payload,
     token: getToken(),
     unwrap: false,
-    mock: () => ({ accountName: "Demo User" }),
   });
   const d = res?.data ?? res;
   return {
@@ -825,7 +758,6 @@ export async function verifyBankAccount(payload: {
 // Feedback
 // ============================================================
 
-// TODO: confirm field names with backend — OpenAPI spec has no request body schema
 export type FeedbackPayload = {
   name: string;
   email: string;
@@ -838,7 +770,6 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<{ succes
     method: "POST",
     body: payload,
     unwrap: false,
-    mock: () => ({ success: true }),
   });
 }
 
@@ -860,16 +791,6 @@ export type AdminDashboard = {
 export async function getAdminDashboard(): Promise<AdminDashboard> {
   return apiFetch<AdminDashboard>("/v1/admins/dashboard", {
     token: getToken(),
-    mock: () => ({
-      totalUsers: adminStats.totalUsers,
-      activeUsers: adminStats.activeUsers,
-      totalPools: adminStats.totalPools,
-      predictionsThisWeek: adminStats.predictionsThisWeek,
-      depositsThisMonth: adminStats.depositsThisMonth,
-      withdrawalsThisMonth: adminStats.withdrawalsThisMonth,
-      pendingPayouts: adminStats.pendingPayouts,
-      platformRevenue: adminStats.platformRevenue,
-    }),
   });
 }
 
@@ -886,6 +807,5 @@ export type AdminUser = {
 export async function getAdminUsers(): Promise<AdminUser[]> {
   return apiFetch<AdminUser[]>("/v1/admins", {
     token: getToken(),
-    mock: () => adminUsers,
   });
 }
