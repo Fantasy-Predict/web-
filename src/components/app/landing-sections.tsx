@@ -200,6 +200,7 @@ export function SeasonCountdown() {
   );
 }
 
+
 /** Small inline countdown chip reused in the closing CTA. */
 export function CountdownChip() {
   const time = useSeasonCountdown();
