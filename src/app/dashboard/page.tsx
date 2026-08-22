@@ -13,6 +13,7 @@ import { formatNaira, type LeaderboardRow, type Match } from "../../app/lib/mock
 import {
   getLeaderboard,
   getMatches,
+  getMatchScores,
   getProfile,
   getUserCompetitions,
   getWallet,
@@ -20,8 +21,6 @@ import {
   type UserProfile,
 } from "../../app/lib/api/endpoints";
 import { useNotifications, notifySystem } from "../../app/lib/notifications";
-
-const TOP_LEAGUES = ["Premier League", "La Liga", "Bundesliga", "Ligue 1", "Serie A"];
 
 function formatKickoff(iso: string): string {
   if (!iso) return "";
@@ -36,6 +35,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [balance, setBalance] = useState(0);
   const [matchList, setMatchList] = useState<Match[]>([]);
+  const [recentPredictions, setRecentPredictions] = useState<Match[]>([]);
   const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
   const [board, setBoard] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,13 +53,16 @@ export default function DashboardPage() {
           getLeaderboard(),
         ]);
         comps?.forEach((c) => compNameMap.current.set(c._id, c.name));
-        const topLeagueComps = (comps ?? []).filter((c) => TOP_LEAGUES.includes(c.name));
+
         const allMatchesData = await Promise.all(
-          topLeagueComps.map((c) => getMatches(c._id).catch(() => [])),
+          (comps ?? []).map((c) => getMatches(c._id).catch(() => [])),
         );
+        const allScoresData = await Promise.all(
+          (comps ?? []).map((c) => getMatchScores(c._id).catch(() => [])),
+        );
+
         if (!active) return;
-        setProfile(profileData ?? null);
-        setBalance(wallet?.balance ?? 0);
+
         const allMatches = allMatchesData.flat()
           .filter((m) => m && m.id && m.home && m.away)
           .map((m) => ({
@@ -67,11 +70,45 @@ export default function DashboardPage() {
             competitionName: compNameMap.current.get(m.competition) ?? m.competition,
             kickoff: formatKickoff(m.kickoff),
           }));
-        const upcoming = allMatches
+
+        const allScores = allScoresData.flat()
+          .filter((m) => m && m.id && m.home && m.away)
+          .map((m) => ({
+            ...m,
+            competitionName: compNameMap.current.get(m.competition) ?? m.competition,
+            kickoff: formatKickoff(m.kickoff),
+          }));
+
+        const mergedAll = [...allMatches];
+        const mergedIds = new Set(allMatches.map((m) => m.id));
+        for (const sm of allScores) {
+          if (!mergedIds.has(sm.id)) {
+            mergedAll.push(sm);
+          }
+        }
+
+        const upcoming = mergedAll
           .filter((m) => m.status === "upcoming")
-          .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
+          .sort((a, b) => {
+            const da = a.kickoff.length > 10 ? new Date(a.kickoff).getTime() : 0;
+            const db = b.kickoff.length > 10 ? new Date(b.kickoff).getTime() : 0;
+            return da - db;
+          })
           .slice(0, 5);
         setMatchList(upcoming);
+
+        const withPredictions = mergedAll
+          .filter((m) => m.prediction && m.prediction.length > 0 && m.prediction[0].outcome)
+          .sort((a, b) => {
+            const da = a.kickoff.length > 10 ? new Date(a.kickoff).getTime() : 0;
+            const db = b.kickoff.length > 10 ? new Date(b.kickoff).getTime() : 0;
+            return db - da;
+          })
+          .slice(0, 3);
+        setRecentPredictions(withPredictions);
+
+        setProfile(profileData ?? null);
+        setBalance(wallet?.balance ?? 0);
         setCompetitions(comps ?? []);
         setBoard([...(rows ?? [])].sort((a, b) => b.total - a.total));
       } catch (error) {
@@ -151,6 +188,53 @@ export default function DashboardPage() {
           <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
             <Link href="/dashboard/predict">View All Predictions</Link>
           </Button>
+        </div>
+      </section>
+
+      {/* Your Recent Predictions */}
+      <section className="mt-10">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Your Recent Predictions</h2>
+          <Link href="/dashboard/predict" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+            Make more
+          </Link>
+        </div>
+        <div className="mt-4 grid gap-4">
+          {loading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+                <Skeleton className="h-3 w-36" />
+                <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <Skeleton className="h-5 w-32 justify-self-end" />
+                </div>
+                <Skeleton className="mt-5 h-8 w-40" />
+              </div>
+            ))
+          ) : recentPredictions.length > 0 ? (
+            recentPredictions.map((match) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                footer={
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Your prediction</span>
+                    <span className="num text-sm font-bold text-primary">
+                      {match.prediction?.[0]?.outcome ?? "—"}
+                    </span>
+                  </div>
+                }
+              />
+            ))
+          ) : (
+            <Card className="p-6 text-center shadow-[var(--shadow-card)]">
+              <p className="text-sm font-semibold">No predictions yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Start predicting to see your recent picks here.
+              </p>
+            </Card>
+          )}
         </div>
       </section>
 

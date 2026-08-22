@@ -19,17 +19,15 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import type { Match } from "../../lib/mock-data";
-import { cn } from "../../lib/utils";
-import { createPrediction, getMatches, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
-import { calculatePoints, getOutcomeFromScore, type Prediction } from "../../lib/scoring";
+import { createPrediction, getMatches, getMatchScores, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
+import { calculatePoints, getOutcomeFromScore } from "../../lib/scoring";
 import { notifyPrediction } from "../../lib/notifications";
 
 type Pick = {
-  outcome?: "home" | "draw" | "away";
   home?: string;
   away?: string;
   locked?: boolean;
-  prediction?: Prediction;
+  prediction?: { outcome: "home" | "draw" | "away"; homeScore: number; awayScore: number };
 };
 
 function formatKickoff(iso: string): string {
@@ -53,6 +51,7 @@ export default function PredictPage() {
   const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
   const [selectedCompetition, setSelectedCompetition] = useState<string>("");
   const [matchdayIndex, setMatchdayIndex] = useState(0);
+  const [filterDate, setFilterDate] = useState<string>("");
 
   const compNameMap = useState(() => new Map<string, string>())[0];
 
@@ -83,8 +82,12 @@ export default function PredictPage() {
       setLoading(true);
       setMatchdayIndex(0);
       try {
-        const matchesData = await getMatches(selectedCompetition);
+        const [matchesData, scoresData] = await Promise.all([
+          getMatches(selectedCompetition, filterDate || undefined),
+          getMatchScores(selectedCompetition).catch(() => []),
+        ]);
         if (!active) return;
+
         const enriched = (matchesData ?? [])
           .filter((m) => m && m.id && m.home && m.away)
           .map((m) => ({
@@ -92,7 +95,48 @@ export default function PredictPage() {
             competitionName: compNameMap.get(m.competition) ?? m.competition,
             kickoff: formatKickoff(m.kickoff),
           }));
+
+        const scoreEnriched = (scoresData ?? [])
+          .filter((m) => m && m.id && m.home && m.away)
+          .map((m) => ({
+            ...m,
+            competitionName: compNameMap.get(m.competition) ?? m.competition,
+            kickoff: formatKickoff(m.kickoff),
+          }));
+
+        const mergedIds = new Set(enriched.map((m) => m.id));
+        for (const sm of scoreEnriched) {
+          if (!mergedIds.has(sm.id)) {
+            enriched.push(sm);
+          }
+        }
+
         setAllMatches(enriched);
+
+        const newPicks: Record<string, Pick> = {};
+        for (const m of enriched) {
+          if (m.prediction && m.prediction.length > 0) {
+            const pred = m.prediction[0];
+            const outcomeStr = pred.outcome;
+            if (outcomeStr && outcomeStr.includes("-")) {
+              const parts = outcomeStr.split("-");
+              newPicks[m.id] = {
+                home: parts[0] ?? "",
+                away: parts[1] ?? "",
+                locked: true,
+                prediction: {
+                  outcome: getOutcomeFromScore(
+                    parseInt(parts[0]) || 0,
+                    parseInt(parts[1]) || 0,
+                  ),
+                  homeScore: parseInt(parts[0]) || 0,
+                  awayScore: parseInt(parts[1]) || 0,
+                },
+              };
+            }
+          }
+        }
+        setPicks(newPicks);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load fixtures");
       } finally {
@@ -103,7 +147,7 @@ export default function PredictPage() {
     return () => {
       active = false;
     };
-  }, [selectedCompetition]);
+  }, [selectedCompetition, filterDate]);
 
   const matchdays = useMemo(() => {
     const dayMap = new Map<string, Match[]>();
@@ -127,31 +171,45 @@ export default function PredictPage() {
   const upcoming = currentMatches.filter((m) => m.status === "upcoming");
   const finished = currentMatches.filter((m) => m.status === "finished");
 
-  const completed = upcoming.filter((m) => picks[m.id]?.outcome).length;
+  const completed = upcoming.filter((m) => {
+    const pick = picks[m.id];
+    return pick && pick.home && pick.away;
+  }).length;
   const progress = upcoming.length > 0 ? (completed / upcoming.length) * 100 : 0;
 
   async function handleSubmit() {
     setSubmitting(true);
-    const completedPicks = Object.entries(picks).filter(([, pick]) => pick.outcome);
+    const filledPicks = Object.entries(picks).filter(
+      ([, pick]) => pick.home && pick.away,
+    );
 
     try {
       await Promise.all(
-        completedPicks.map(([matchId, pick]) => {
+        filledPicks.map(([matchId, pick]) => {
           const match = allMatches.find((m) => m.id === matchId);
-          if (!match || !pick.outcome) return Promise.resolve();
+          if (!match || !pick.home || !pick.away) return Promise.resolve();
           return createPrediction({
             match: match.id,
             competition: match.competition,
-            outcome: pick.outcome,
+            outcome: `${pick.home}-${pick.away}`,
             pool: poolId,
           });
         }),
       );
+      setPicks((prev) => {
+        const next = { ...prev };
+        for (const [matchId] of filledPicks) {
+          if (next[matchId]) {
+            next[matchId] = { ...next[matchId], locked: true };
+          }
+        }
+        return next;
+      });
       setSubmitted(true);
       toast.success(`Predictions submitted for Matchday ${currentDayLabel ?? ""}`);
       notifyPrediction(
         "Predictions submitted",
-        `You predicted ${completedPicks.length} match${completedPicks.length === 1 ? "" : "es"} for Matchday ${currentDayLabel ?? ""}.`,
+        `You submitted ${filledPicks.length} prediction${filledPicks.length === 1 ? "" : "s"} for Matchday ${currentDayLabel ?? ""}.`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to submit predictions");
@@ -163,10 +221,10 @@ export default function PredictPage() {
   return (
     <AppShell
       title={currentDayLabel ? `Matchday ${currentDayLabel}` : "Predictions"}
-      description="Predictions lock at each match kickoff. You can edit until then."
+      description="Predictions lock at each match kickoff. You can update your predictions anytime before kickoff."
     >
       {competitions.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
           <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All competitions" />
@@ -179,6 +237,20 @@ export default function PredictPage() {
               ))}
             </SelectContent>
           </Select>
+          <Input
+            type="date"
+            value={filterDate}
+            onChange={(e) => { setFilterDate(e.target.value); setMatchdayIndex(0); }}
+            className="w-[180px]"
+          />
+          {filterDate && (
+            <button
+              onClick={() => { setFilterDate(""); setMatchdayIndex(0); }}
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
 
@@ -255,22 +327,17 @@ export default function PredictPage() {
             </div>
           ))
         ) : upcoming.length > 0 ? (
-          upcoming.map((match, index) => (
+          upcoming.map((match) => (
             <PredictionRow
               key={match.id}
               match={match}
-              locked={index === upcoming.length - 1}
+              locked={!!picks[match.id]?.locked}
               pick={picks[match.id] ?? {}}
               onChange={(next) => setPicks((prev) => ({
                 ...prev,
                 [match.id]: {
                   ...prev[match.id],
                   ...next,
-                  prediction: next.outcome && next.home && next.away ? {
-                    outcome: next.outcome,
-                    homeScore: parseInt(next.home) || 0,
-                    awayScore: parseInt(next.away) || 0,
-                  } : undefined
                 }
               }))}
             />
@@ -308,12 +375,14 @@ export default function PredictPage() {
                 match={match}
                 scoringResult={scoringResult}
                 footer={
-                  scoringResult && (
+                  scoringResult ? (
                     <div className="mt-2 text-sm">
                       <span className="font-medium">You earned: </span>
                       <span className="font-bold text-primary">{scoringResult.points} points</span>
                       <span className="text-muted-foreground"> ({scoringResult.label})</span>
                     </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted-foreground">No prediction submitted</p>
                   )
                 }
               />
@@ -348,27 +417,20 @@ function PredictionRow({
   locked: boolean;
   onChange: (next: Pick) => void;
 }) {
-  const options: { key: "home" | "draw" | "away"; label: string }[] = [
-    { key: "home", label: "Home win" },
-    { key: "draw", label: "Draw" },
-    { key: "away", label: "Away win" },
-  ];
-
   return (
-    <Card className={cn("gap-0 p-5 shadow-[var(--shadow-card)]", locked && "opacity-70")}>
+    <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <p className="truncate text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
           {match.competitionName ?? match.competition}
         </p>
         {locked ? (
           <Badge variant="secondary" className="shrink-0">
-            Locked
+            Submitted
           </Badge>
-        ) : (
-          <span className="num shrink-0 text-xs font-semibold text-muted-foreground">
-            {match.kickoff}
-          </span>
-        )}
+        ) : null}
+        <span className="num shrink-0 text-xs font-semibold text-muted-foreground">
+          {match.kickoff}
+        </span>
       </div>
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
@@ -383,50 +445,35 @@ function PredictionRow({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-[1.6fr_1fr]">
-        <div className="grid grid-cols-3 gap-2">
-          {options.map((option) => (
-            <button
-              key={option.key}
-              disabled={locked}
-              onClick={() => onChange({ outcome: option.key })}
-              className={cn(
-                "rounded-xl border px-3 py-2.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed",
-                pick.outcome === option.key
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-input bg-card hover:bg-accent",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="mt-5 flex items-center justify-center gap-3">
+        <div className="flex flex-col items-center gap-1">
           <Input
             inputMode="numeric"
-            disabled={locked}
             placeholder="0"
-            aria-label={`${match.home} exact score`}
-            className="num h-10 text-center"
+            aria-label={`${match.home} predicted score`}
+            className="num h-12 w-16 text-center text-lg font-bold"
             value={pick.home ?? ""}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, "").slice(0, 2);
-              onChange({ home: value });
+              onChange({ home: value, away: pick.away });
             }}
           />
-          <span className="text-xs font-semibold text-muted-foreground">score</span>
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase">{match.homeShort}</span>
+        </div>
+        <span className="text-lg font-bold text-muted-foreground">-</span>
+        <div className="flex flex-col items-center gap-1">
           <Input
             inputMode="numeric"
-            disabled={locked}
             placeholder="0"
-            aria-label={`${match.away} exact score`}
-            className="num h-10 text-center"
+            aria-label={`${match.away} predicted score`}
+            className="num h-12 w-16 text-center text-lg font-bold"
             value={pick.away ?? ""}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, "").slice(0, 2);
-              onChange({ away: value });
+              onChange({ home: pick.home, away: value });
             }}
           />
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase">{match.awayShort}</span>
         </div>
       </div>
     </Card>

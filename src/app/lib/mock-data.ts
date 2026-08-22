@@ -12,6 +12,7 @@ export type Match = {
   kickoff: string;
   status: "upcoming" | "live" | "finished";
   score?: { home: number; away: number };
+  prediction?: { outcome: string }[];
 };
 
 export type Pool = {

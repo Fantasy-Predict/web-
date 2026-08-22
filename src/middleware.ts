@@ -5,8 +5,8 @@ const TOKEN_KEY = "fp_token";
 const USER_TYPE_KEY = "fp_user_type";
 const LOGIN_TIME_KEY = "fp_login_time";
 
-/** 4 hours in milliseconds. */
-const MAX_TOKEN_AGE_MS = 4 * 60 * 60 * 1000;
+/** 1 hour in milliseconds. */
+const MAX_TOKEN_AGE_MS = 1 * 60 * 60 * 1000;
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Reject tokens older than 24 hours (cookie-based age check).
+  // Reject tokens older than 1 hour (cookie-based age check).
   if ((isDashboard || isAdmin) && token && loginTimeCookie) {
     const age = Date.now() - Number(loginTimeCookie);
     if (age > MAX_TOKEN_AGE_MS) {

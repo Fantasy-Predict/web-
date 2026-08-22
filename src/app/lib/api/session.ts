@@ -5,8 +5,8 @@ const REFRESH_TOKEN_KEY = "fp_refresh_token";
 const LOGIN_TIME_KEY = "fp_login_time";
 const JOINED_POOLS_KEY = "fp_joined_pools";
 
-/** Max token age in ms before we consider it expired (4 hours). */
-const MAX_TOKEN_AGE_MS = 4 * 60 * 60 * 1000;
+/** Max token age in ms before we consider it expired (1 hour). */
+const MAX_TOKEN_AGE_MS = 1 * 60 * 60 * 1000;
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;

@@ -49,7 +49,7 @@ export type LoginResponse = {
 export type PredictionPayload = {
   match: string;
   competition: string;
-  outcome: "home" | "draw" | "away";
+  outcome: string;
   pool?: string;
 };
 
@@ -277,7 +277,7 @@ function extractTeamShort(
   return fallback;
 }
 
-export async function getMatches(competition: string): Promise<Match[]> {
+export async function getMatches(competition: string, date?: string): Promise<Match[]> {
   type MatchDoc = {
     _id?: string;
     id?: string;
@@ -309,7 +309,8 @@ export async function getMatches(competition: string): Promise<Match[]> {
     prediction?: unknown[];
   };
 
-  const matchPath = `/v1/matches?competition=${encodeURIComponent(competition)}`;
+  let matchPath = `/v1/matches?competition=${encodeURIComponent(competition)}`;
+  if (date) matchPath += `&date=${encodeURIComponent(date)}`;
   const res = await apiFetch<MatchDoc[] | { docs?: MatchDoc[] }>(matchPath, {
     token: getToken(),
   });
@@ -341,6 +342,7 @@ export async function getMatches(competition: string): Promise<Match[]> {
       : m.homeScore !== undefined
         ? { home: m.homeScore ?? 0, away: m.awayScore ?? 0 }
         : undefined,
+    prediction: Array.isArray(m.prediction) ? m.prediction.map((p: any) => ({ outcome: p.outcome })) : undefined,
   }));
 }
 
@@ -371,6 +373,7 @@ export async function getMatchScores(competition: string): Promise<Match[]> {
     awayScore?: number;
     matchday?: string;
     matchId?: string;
+    prediction?: unknown[];
   };
 
   const res = await apiFetch<ScoreDoc[] | { docs?: ScoreDoc[] }>(
@@ -405,6 +408,7 @@ export async function getMatchScores(competition: string): Promise<Match[]> {
       : m.homeScore !== undefined
         ? { home: m.homeScore ?? 0, away: m.awayScore ?? 0 }
         : undefined,
+    prediction: Array.isArray((m as any).prediction) ? (m as any).prediction.map((p: any) => ({ outcome: p.outcome })) : undefined,
   }));
 }
 

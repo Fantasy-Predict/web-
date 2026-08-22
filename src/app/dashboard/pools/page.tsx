@@ -89,8 +89,17 @@ export default function PoolsPage() {
         setDiscoverPools(allDiscoverPools);
       } else {
         const myIds = new Set(myPools.map((p) => p.id));
-        const results = await getPools({ name: query.trim() });
-        setDiscoverPools(results.filter((p) => !myIds.has(p.id)));
+        const results = await getPools({ name: query.trim() }).catch(() => []);
+        let filtered = results.filter((p) => !myIds.has(p.id));
+        if (filtered.length === 0 && allDiscoverPools.length > 0) {
+          const q = query.trim().toLowerCase();
+          filtered = allDiscoverPools.filter(
+            (p) =>
+              !myIds.has(p.id) &&
+              (p.name.toLowerCase().includes(q) || p.competition.toLowerCase().includes(q)),
+          );
+        }
+        setDiscoverPools(filtered);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to search pools");
