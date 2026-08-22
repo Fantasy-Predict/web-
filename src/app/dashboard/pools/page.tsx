@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
@@ -13,12 +14,17 @@ import { addJoinedPoolId, getJoinedPoolIds } from "../../lib/api/session";
 import type { Pool } from "../../lib/mock-data";
 
 export default function PoolsPage() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
   const [myPools, setMyPools] = useState<Pool[]>([]);
   const [discoverPools, setDiscoverPools] = useState<Pool[]>([]);
+  const [allDiscoverPools, setAllDiscoverPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(true);
-  const [discoverQuery, setDiscoverQuery] = useState("");
+  const [discoverQuery, setDiscoverQuery] = useState(initialQuery);
   const [discoverLoading, setDiscoverLoading] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(initialQuery ? "discover" : "mine");
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
   const loadMyPools = useCallback(async () => {
     try {
@@ -51,6 +57,7 @@ export default function PoolsPage() {
     try {
       const all = await getPools();
       const filtered = all.filter((p) => !myPoolIds.has(p.id));
+      setAllDiscoverPools(filtered);
       setDiscoverPools(filtered);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to load discover pools");
@@ -75,18 +82,32 @@ export default function PoolsPage() {
     return () => { active = false; };
   }, [loadMyPools, loadDiscoverPools]);
 
-  const searchDiscover = useCallback(async () => {
+  const doSearch = useCallback(async (query: string) => {
     setDiscoverLoading(true);
     try {
-      const results = await getPools({ name: discoverQuery || undefined });
-      const myIds = new Set(myPools.map((p) => p.id));
-      setDiscoverPools(results.filter((p) => !myIds.has(p.id)));
+      if (!query.trim()) {
+        setDiscoverPools(allDiscoverPools);
+      } else {
+        const myIds = new Set(myPools.map((p) => p.id));
+        const results = await getPools({ name: query.trim() });
+        setDiscoverPools(results.filter((p) => !myIds.has(p.id)));
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to search pools");
     } finally {
       setDiscoverLoading(false);
     }
-  }, [discoverQuery, myPools]);
+  }, [allDiscoverPools, myPools]);
+
+  function searchDiscover() {
+    doSearch(discoverQuery);
+  }
+
+  function handleQueryChange(value: string) {
+    setDiscoverQuery(value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => doSearch(value), 300);
+  }
 
   async function handleJoin(pool: Pool) {
     if (pool.privacy === "private") {
@@ -120,6 +141,12 @@ export default function PoolsPage() {
     }
   }
 
+  useEffect(() => {
+    if (initialQuery) {
+      doSearch(initialQuery);
+    }
+  }, [initialQuery, doSearch]);
+
   return (
     <AppShell
       title="Pools"
@@ -130,7 +157,7 @@ export default function PoolsPage() {
         </Button>
       }
     >
-      <Tabs defaultValue="mine">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="mine">My pools</TabsTrigger>
           <TabsTrigger value="discover">Discover</TabsTrigger>
@@ -157,16 +184,17 @@ export default function PoolsPage() {
           )}
         </TabsContent>
         <TabsContent value="discover" className="mt-6">
-          <div className="relative max-w-sm">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              value={discoverQuery}
-              onChange={(e) => setDiscoverQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && searchDiscover()}
-              placeholder="Search pools by name"
-              className="h-10 w-full rounded-xl border border-input bg-card pr-3 pl-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
+          <div className="flex gap-2 max-w-sm">
+            <div className="relative flex-1">
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="search"
+                value={discoverQuery}
+                onChange={(e) => handleQueryChange(e.target.value)}
+                placeholder="Search pools by name"
+                className="h-10 w-full rounded-xl border border-input bg-card pr-3 pl-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
           </div>
           {discoverLoading ? (
             <p className="mt-6 text-sm text-muted-foreground">Searching pools…</p>

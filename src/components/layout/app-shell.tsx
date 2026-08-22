@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Bell, LogOut, Search } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "../theme-toggle";
@@ -40,7 +40,10 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [initials, setInitials] = useState("FP");
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchDebounce = useRef<ReturnType<typeof setTimeout>>(null);
   const { notifications, unreadCount } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -127,6 +130,22 @@ export function AppShell({
                 <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="search"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                    if (e.target.value.trim()) {
+                      searchDebounce.current = setTimeout(() => {
+                        router.push(`/dashboard/pools?q=${encodeURIComponent(e.target.value.trim())}`);
+                      }, 500);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchQuery.trim()) {
+                      if (searchDebounce.current) clearTimeout(searchDebounce.current);
+                      router.push(`/dashboard/pools?q=${encodeURIComponent(searchQuery.trim())}`);
+                    }
+                  }}
                   placeholder="Search pools, players"
                   className="h-9 w-full rounded-xl border border-input bg-card pr-3 pl-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select";
-import { getMatches, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
+import { getMatches, getMatchScores, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
 import type { Match } from "../../lib/mock-data";
 
 const STATUS_FILTERS = ["All", "Upcoming", "Finished"] as const;
@@ -71,12 +71,25 @@ export default function FixturesPage() {
       setLoadingMatches(true);
       setVisibleCount(PAGE_SIZE);
       try {
-        const data = await getMatches(selectedCompetition);
+        const [matchData, scoreData] = await Promise.all([
+          getMatches(selectedCompetition),
+          getMatchScores(selectedCompetition).catch(() => []),
+        ]);
         if (!active) return;
-        const enriched = data.map((m) => ({
+
+        const scoreMap = new Map<string, { home: number; away: number }>();
+        for (const s of scoreData) {
+          if (s.score) scoreMap.set(s.id, s.score);
+        }
+
+        const enriched = matchData.map((m) => ({
           ...m,
           competitionName: compNameMap.current.get(m.competition) ?? m.competition,
           kickoff: formatKickoff(m.kickoff),
+          score: scoreMap.get(m.id) ?? m.score,
+          status: (scoreMap.has(m.id) && m.status !== "live")
+            ? "finished" as const
+            : m.status,
         }));
         setMatches(enriched);
       } catch (error) {

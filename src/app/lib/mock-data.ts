@@ -7,6 +7,8 @@ export type Match = {
   away: string;
   homeShort: string;
   awayShort: string;
+  homeCrest?: string;
+  awayCrest?: string;
   kickoff: string;
   status: "upcoming" | "live" | "finished";
   score?: { home: number; away: number };

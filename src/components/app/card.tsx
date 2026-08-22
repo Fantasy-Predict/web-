@@ -38,9 +38,29 @@ export function StatCard({
   );
 }
 
-export function TeamCrest({ short }: { short: string }) {
+export function TeamCrest({ short, crest }: { short: string; crest?: string }) {
+  if (crest) {
+    return (
+      <span className="relative grid h-[44px] w-[44px] shrink-0 place-items-center overflow-hidden rounded-xl bg-muted">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={crest}
+          alt={short}
+          className="h-full w-full object-contain p-1"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+            if (fallback) fallback.style.display = "grid";
+          }}
+        />
+        <span className="hidden h-full w-full place-items-center text-[11px] font-bold tracking-wide">
+          {short}
+        </span>
+      </span>
+    );
+  }
   return (
-    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted text-[11px] font-bold tracking-wide">
+    <span className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-xl bg-muted text-[11px] font-bold tracking-wide">
       {short}
     </span>
   );
@@ -64,8 +84,8 @@ export function MatchCard({
         <MatchStatus status={match.status} kickoff={match.kickoff} />
       </div>
       <div className="mt-4 grid gap-3">
-        <MatchRow short={match.homeShort} name={match.home} score={match.score?.home} />
-        <MatchRow short={match.awayShort} name={match.away} score={match.score?.away} />
+        <MatchRow short={match.homeShort} name={match.home} score={match.score?.home} crest={match.homeCrest} />
+        <MatchRow short={match.awayShort} name={match.away} score={match.score?.away} crest={match.awayCrest} />
       </div>
 
       {/* Points earned display */}
@@ -99,10 +119,10 @@ export function MatchCard({
   );
 }
 
-function MatchRow({ short, name, score }: { short: string; name: string; score?: number }) {
+function MatchRow({ short, name, score, crest }: { short: string; name: string; score?: number; crest?: string }) {
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-      <TeamCrest short={short} />
+      <TeamCrest short={short} crest={crest} />
       <span className="truncate text-sm font-semibold">{name}</span>
       <span className="num text-sm font-bold text-muted-foreground">{score ?? "–"}</span>
     </div>
@@ -129,6 +149,7 @@ export function MatchStatus({ status, kickoff }: { status: Match["status"]; kick
 
 export function PoolCard({ pool, onJoin }: { pool: Pool; onJoin?: () => void }) {
   const isFree = pool.type === "free";
+  const isFull = pool.players >= pool.maxPlayers;
 
   return (
     <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
@@ -189,11 +210,11 @@ export function PoolCard({ pool, onJoin }: { pool: Pool; onJoin?: () => void }) 
 
       <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <p className="truncate text-xs text-muted-foreground">
-          {onJoin ? "Available to join" : "Your pool"}
+          {isFull ? "Pool is full" : onJoin ? "Available to join" : "Your pool"}
         </p>
         {onJoin ? (
-          <Button size="sm" onClick={onJoin}>
-            Join
+          <Button size="sm" onClick={onJoin} disabled={isFull}>
+            {isFull ? "Full" : "Join"}
           </Button>
         ) : (
           <Button asChild size="sm" variant="outline">

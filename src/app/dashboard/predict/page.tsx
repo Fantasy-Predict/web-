@@ -373,13 +373,13 @@ function PredictionRow({
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <TeamCrest short={match.homeShort} />
+          <TeamCrest short={match.homeShort} crest={match.homeCrest} />
           <span className="truncate text-sm font-semibold">{match.home}</span>
         </div>
         <span className="text-xs font-semibold text-muted-foreground">v</span>
         <div className="flex min-w-0 items-center justify-end gap-3">
           <span className="truncate text-sm font-semibold">{match.away}</span>
-          <TeamCrest short={match.awayShort} />
+          <TeamCrest short={match.awayShort} crest={match.awayCrest} />
         </div>
       </div>
 
