@@ -360,10 +360,10 @@ export default function FaqClient() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
-              <Link href="/dashboard/pools/create">Create League</Link>
+              <Link href="/register">Create League</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/dashboard/pools">Join Pool</Link>
+              <Link href="/help">Learn More</Link>
             </Button>
           </div>
         </Card>

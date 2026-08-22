@@ -142,8 +142,8 @@ export function HeroPredictionWidget() {
 /* Shared countdown hook                                               */
 /* ------------------------------------------------------------------ */
 
-/** Premier League 2026/27 opening match: Arsenal vs Coventry City, Fri 21 Aug 2026, 20:00 BST */
-export const SEASON_KICKOFF = new Date("2026-08-21T19:00:00Z");
+/** Premier League 2026/27 opening match: Newcastle vs Liverpool, Sun 23 Aug 2026, 16:30 BST */
+export const SEASON_KICKOFF = new Date("2026-08-23T15:30:00Z");
 
 function diff(target: Date) {
   const ms = Math.max(0, target.getTime() - Date.now());
@@ -178,11 +178,11 @@ export function SeasonCountdown() {
     <section className="border-y border-border bg-card/40">
       <div className="mx-auto grid gap-10 lg:px-36 px-5 py-16 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-8">
         <div data-aos="fade-up">
-          <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Season countdown</p>
-          <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Kickoff is 21 August <br /> Arsenal vs Coventry</h2>
+          <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Up next</p>
+          <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Newcastle vs Liverpool <br /> Sunday, 23 August</h2>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Matchweek 1 predictions open two weeks before kickoff.           Set up your pool now so your room is full and
-            paid up before the first whistle.
+            Two Premier League heavyweights, one electric St. James' Park atmosphere — this fixture never disappoints.
+            Get your predictions in and your pool locked before kickoff.
           </p>
         </div>
         <div className="grid grid-cols-4 gap-3 sm:gap-4" data-aos="zoom-in" data-aos-delay="150">
@@ -309,7 +309,7 @@ const TIERS = [
     prizePool: "Bragging rights",
     detail: "100+ active pools",
     cta: "Browse Free Pools",
-    href: "/dashboard/pools?type=free",
+    href: "/register",
     featured: false,
   },
   {
@@ -320,7 +320,7 @@ const TIERS = [
     prizePool: "You decide",
     detail: "Varies by pool",
     cta: "Create Monetized Pool",
-    href: "/dashboard/pools/create",
+    href: "/register",
     featured: true,
   },
   {
@@ -331,7 +331,7 @@ const TIERS = [
     prizePool: "You decide",
     detail: "Instant invite link",
     cta: "Create Pool",
-    href: "/dashboard/pools/create",
+    href: "/register",
     featured: false,
   },
 ];

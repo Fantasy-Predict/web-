@@ -130,10 +130,10 @@ export default function AboutClient() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
-              <Link href="/dashboard/pools/create">Create Your Pool</Link>
+              <Link href="/register">Create Your Pool</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
-              <Link href="/dashboard/pools">Start Predicting</Link>
+              <Link href="/register">Start Predicting</Link>
             </Button>
           </div>
         </div>
@@ -368,10 +368,10 @@ export default function AboutClient() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-gold text-navy hover:bg-gold/90">
-              <Link href="/dashboard/pools/create">Create Your Pool</Link>
+              <Link href="/register">Create Your Pool</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/dashboard/pools">Join A Pool</Link>
+              <Link href="/register">Join A Pool</Link>
             </Button>
           </div>
         </Card>

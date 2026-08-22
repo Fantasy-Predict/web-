@@ -331,10 +331,10 @@ export default function PageClient() {
 
                             <div className="mt-8 flex flex-wrap gap-3" data-aos="fade-up" data-aos-delay="150">
                                 <Button asChild size="lg" className="bg-primary text-white hover:bg-primary/90">
-                                    <Link href="/dashboard/pools/create">Create a pool</Link>
+                                    <Link href="/register">Register Now</Link>
                                 </Button>
                                 <Button asChild size="lg" variant="outline" className="border-white/30 hover:bg-white/10">
-                                    <Link href="/dashboard/pools">Join a pool</Link>
+                                    <Link href="/login">Login</Link>
                                 </Button>
                             </div>
 

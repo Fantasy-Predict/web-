@@ -8,7 +8,6 @@ const GROUPS: { title: string; links: { to: string; label: string }[] }[] = [
       { to: "/", label: "Home" },
       { to: "/about", label: "About" },
       { to: "/dashboard/leaderboard", label: "Leaderboard" },
-      { to: "/dashboard", label: "Dashboard" },
     ],
   },
   {

@@ -331,10 +331,10 @@ export default function HelpClient() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg">
-              <Link href="/dashboard/pools/create">Create League</Link>
+              <Link href="/register">Create League</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/dashboard/pools">Join Pool</Link>
+              <Link href="/register">Join Pool</Link>
             </Button>
           </div>
         </Card>
