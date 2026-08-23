@@ -9,14 +9,14 @@ import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { MatchCard, StatCard } from "../../../src/components/app/card";
-import { formatNaira, type LeaderboardRow, type Match } from "../../app/lib/mock-data";
+import { formatNaira, type Match } from "../../app/lib/mock-data";
 import {
-  getLeaderboard,
   getMatches,
   getMatchScores,
   getProfile,
   getUserCompetitions,
   getWallet,
+  getCompLeaderboard,
   type UserCompetition,
   type UserProfile,
 } from "../../app/lib/api/endpoints";
@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const [matchList, setMatchList] = useState<Match[]>([]);
   const [recentPredictions, setRecentPredictions] = useState<Match[]>([]);
   const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
-  const [board, setBoard] = useState<LeaderboardRow[]>([]);
+  const [board, setBoard] = useState<{ id: string; username: string; total: number; exact: number; close: number; slam: number; rank: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const compNameMap = useRef<Map<string, string>>(new Map());
   const { notifications } = useNotifications();
@@ -46,13 +46,31 @@ export default function DashboardPage() {
     let active = true;
     async function load() {
       try {
-        const [profileData, wallet, comps, rows] = await Promise.all([
+        const [profileData, wallet, comps] = await Promise.all([
           getProfile(),
           getWallet(),
           getUserCompetitions(),
-          getLeaderboard(),
         ]);
         comps?.forEach((c) => compNameMap.current.set(c._id, c.name));
+
+        const defaultComp = comps?.find((c) => c.default) ?? comps?.[0];
+        let lbBoard: typeof board = [];
+        if (defaultComp) {
+          try {
+            const lb = await getCompLeaderboard(defaultComp._id);
+            lbBoard = (lb.board ?? []).map((e) => ({
+              id: e.userId,
+              username: e.username || `${e.firstName} ${e.lastName}`.trim(),
+              total: e.total,
+              exact: e.exact,
+              close: e.close,
+              slam: e.slam,
+              rank: e.rank,
+            }));
+          } catch {
+            // leaderboard fetch failed silently
+          }
+        }
 
         const allMatchesData = await Promise.all(
           (comps ?? []).map((c) => getMatches(c._id).catch(() => [])),
@@ -110,7 +128,7 @@ export default function DashboardPage() {
         setProfile(profileData ?? null);
         setBalance(wallet?.balance ?? 0);
         setCompetitions(comps ?? []);
-        setBoard([...(rows ?? [])].sort((a, b) => b.total - a.total));
+        setBoard([...lbBoard].sort((a, b) => a.rank - b.rank));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load your dashboard");
       } finally {
@@ -125,9 +143,9 @@ export default function DashboardPage() {
 
   const displayName = profile?.firstName || profile?.username || profile?.email || "champ";
   const upcoming = matchList;
-  const ownIndex = board.findIndex((row) => row.id === profile?._id || row.username === displayName);
-  const ownPoints = ownIndex >= 0 ? board[ownIndex].total : 0;
-  const ownRank = ownIndex >= 0 ? ownIndex + 1 : null;
+  const ownEntry = board.find((row) => row.id === profile?._id);
+  const ownPoints = ownEntry?.total ?? 0;
+  const ownRank = ownEntry?.rank ?? null;
 
   return (
     <AppShell
@@ -351,9 +369,9 @@ export default function DashboardPage() {
                       key={row.id}
                       className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3.5"
                     >
-                      <span className="num w-6 text-sm font-bold text-muted-foreground">{index + 1}</span>
+                      <span className="num w-6 text-sm font-bold text-muted-foreground">{row.rank || index + 1}</span>
                       <span className="truncate text-sm font-semibold">{row.username}</span>
-                      <span className="num text-sm font-bold">{row.weekly}</span>
+                      <span className="num text-sm font-bold">{row.total}</span>
                     </div>
                   ))}
             </Card>

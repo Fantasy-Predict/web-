@@ -16,6 +16,7 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/dashboard/fixtures", label: "Fixtures" },
   { to: "/dashboard/predict", label: "Predict" },
+  { to: "/dashboard/results", label: "Results" },
   { to: "/dashboard/pools", label: "Pools" },
   { to: "/dashboard/leaderboard", label: "Leaderboard" },
   { to: "/dashboard/wallet", label: "Wallet" },
@@ -24,7 +25,7 @@ const NAV = [
 ] as const;
 
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/dashboard", "/dashboard/predict", "/dashboard/pools", "/dashboard/wallet", "/dashboard/profile"].includes(n.to),
+  ["/dashboard", "/dashboard/predict", "/dashboard/results", "/dashboard/pools", "/dashboard/wallet", "/dashboard/profile"].includes(n.to),
 );
 
 export function AppShell({
@@ -224,7 +225,7 @@ export function AppShell({
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-border bg-background/95 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-border bg-background/95 backdrop-blur lg:hidden">
         {MOBILE_NAV.map((item) => {
           const isActive = pathname === item.to;
           return (

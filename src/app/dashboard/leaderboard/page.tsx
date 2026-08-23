@@ -6,21 +6,58 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "../../../components/ui/card";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { getLeaderboard } from "../../lib/api/endpoints";
-import type { LeaderboardRow } from "../../lib/mock-data";
+import { Badge } from "../../../components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import {
+  getCompLeaderboard,
+  getUserCompetitions,
+  type CompLeaderboardEntry,
+  type UserCompetition,
+} from "../../lib/api/endpoints";
 import { cn } from "../../lib/utils";
 
 export default function LeaderboardPage() {
-  const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [board, setBoard] = useState<CompLeaderboardEntry[]>([]);
+  const [personalRank, setPersonalRank] = useState<CompLeaderboardEntry | null>(null);
+  const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
+  const [selectedCompetition, setSelectedCompetition] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const data = await getLeaderboard();
+        const comps = await getUserCompetitions().catch(() => []);
         if (!active) return;
-        setRows([...(data ?? [])].sort((a, b) => b.total - a.total));
+        setCompetitions(comps);
+        if (comps.length > 0) {
+          const defaultComp = comps.find((c) => c.default) ?? comps[0];
+          setSelectedCompetition(defaultComp._id);
+        }
+      } catch {
+        // continue
+      }
+    }
+    load();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      if (!selectedCompetition) return;
+      setLoading(true);
+      try {
+        const data = await getCompLeaderboard(selectedCompetition);
+        if (!active) return;
+        setBoard([...(data.board ?? [])].sort((a, b) => a.rank - b.rank));
+        setPersonalRank(data.personalRank?.[0] ?? null);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load the leaderboard");
       } finally {
@@ -28,16 +65,60 @@ export default function LeaderboardPage() {
       }
     }
     load();
-    return () => {
-      active = false;
-    };
-  }, []);
+    return () => { active = false; };
+  }, [selectedCompetition]);
 
-  const [first, second, third, ...rest] = rows;
+  const [first, second, third, ...rest] = board;
   const podium = [second, first, third];
 
   return (
-    <AppShell title="Leaderboard" description="Global standings for the 2026 season.">
+    <AppShell title="Leaderboard" description="Standings ranked by prediction accuracy.">
+      {competitions.length > 0 && (
+        <div className="mb-6">
+          <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All competitions" />
+            </SelectTrigger>
+            <SelectContent>
+              {competitions.map((c) => (
+                <SelectItem key={c._id} value={c._id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {personalRank && (
+        <Card className="mb-6 gap-0 border-primary/30 bg-primary/5 p-5 shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">Your Rank</p>
+              <p className="mt-2 font-display text-3xl font-bold text-primary">#{personalRank.rank}</p>
+            </div>
+            <div className="flex gap-6 text-center">
+              <div>
+                <p className="num font-display text-xl font-bold text-green-600 dark:text-green-400">{personalRank.exact}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Exact</p>
+              </div>
+              <div>
+                <p className="num font-display text-xl font-bold text-blue-600 dark:text-blue-400">{personalRank.close}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Close</p>
+              </div>
+              <div>
+                <p className="num font-display text-xl font-bold text-gold">{personalRank.slam}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Outcome</p>
+              </div>
+              <div>
+                <p className="num font-display text-xl font-bold">{personalRank.total}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Total</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
@@ -49,22 +130,23 @@ export default function LeaderboardPage() {
             </Card>
           ))}
         </div>
-      ) : rows.length === 0 ? (
+      ) : board.length === 0 ? (
         <Card className="p-8 text-center shadow-[var(--shadow-card)]">
           <p className="text-sm font-semibold">No rankings yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Rankings appear once players start scoring points.
+            Rankings appear once matches are scored.
           </p>
         </Card>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            {podium.map((row, index) => {
-              if (!row) return null;
+            {podium.map((entry, index) => {
+              if (!entry) return null;
               const place = index === 1 ? 1 : index === 0 ? 2 : 3;
+              const name = entry.username || `${entry.firstName} ${entry.lastName}`.trim();
               return (
                 <Card
-                  key={row.id}
+                  key={entry.userId}
                   className={cn(
                     "items-center gap-0 p-6 text-center shadow-[var(--shadow-card)]",
                     place === 1 && "border-gold/50 bg-gold/5 sm:-mt-4",
@@ -80,58 +162,57 @@ export default function LeaderboardPage() {
                   </span>
                   <Avatar className="mt-4 h-14 w-14">
                     <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
-                      {row.username.slice(0, 2).toUpperCase()}
+                      {name.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="mt-4 text-sm font-semibold">{row.username}</p>
-                  <p className="num mt-4 font-display text-2xl font-bold">{row.total.toLocaleString()}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">total points</p>
+                  <p className="mt-4 text-sm font-semibold">{name}</p>
+                  <p className="num mt-4 font-display text-2xl font-bold">{entry.total}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">points</p>
+                  <div className="mt-3 flex gap-3 text-[10px] text-muted-foreground">
+                    <span>{entry.exact} exact</span>
+                    <span>{entry.close} close</span>
+                    <span>{entry.slam} outcome</span>
+                  </div>
                 </Card>
               );
             })}
           </div>
 
           <Card className="mt-8 gap-0 overflow-hidden p-0 shadow-[var(--shadow-card)]">
-            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_4.5rem] gap-3 border-b border-border px-5 py-3 text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase sm:grid-cols-[2.5rem_minmax(0,1fr)_5rem]">
+            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3rem_4.5rem] gap-2 border-b border-border px-5 py-3 text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
               <span>#</span>
               <span>Player</span>
+              <span className="text-center">Exc</span>
+              <span className="text-center">Cls</span>
+              <span className="text-center">Slm</span>
               <span className="text-right">Total</span>
             </div>
-            {rest.map((row, index) => (
-              <div
-                key={row.id}
-                className="grid grid-cols-[2.5rem_minmax(0,1fr)_4.5rem] items-center gap-3 border-b border-border px-5 py-3.5 text-sm last:border-0 sm:grid-cols-[2.5rem_minmax(0,1fr)_5rem]"
-              >
-                <span className="num font-semibold text-muted-foreground">{index + 4}</span>
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="bg-muted text-[10px] font-semibold">
-                      {row.username.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="truncate font-medium">{row.username}</span>
-                  <Movement value={row.movement} />
+            {rest.map((entry, index) => {
+              const name = entry.username || `${entry.firstName} ${entry.lastName}`.trim();
+              return (
+                <div
+                  key={entry.userId}
+                  className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3rem_4.5rem] items-center gap-2 border-b border-border px-5 py-3.5 text-sm last:border-0"
+                >
+                  <span className="num font-semibold text-muted-foreground">{index + 4}</span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="bg-muted text-[10px] font-semibold">
+                        {name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate font-medium">{name}</span>
+                  </div>
+                  <span className="num text-center text-xs font-semibold text-green-600 dark:text-green-400">{entry.exact}</span>
+                  <span className="num text-center text-xs font-semibold text-blue-600 dark:text-blue-400">{entry.close}</span>
+                  <span className="num text-center text-xs font-semibold text-gold">{entry.slam}</span>
+                  <span className="num text-right font-bold">{entry.total}</span>
                 </div>
-                <span className="num text-right font-bold">{row.total.toLocaleString()}</span>
-              </div>
-            ))}
+              );
+            })}
           </Card>
         </>
       )}
     </AppShell>
-  );
-}
-
-function Movement({ value }: { value: number }) {
-  if (value === 0) return <span className="text-xs text-muted-foreground">–</span>;
-  return (
-    <span
-      className={cn(
-        "num shrink-0 text-xs font-semibold",
-        value > 0 ? "text-success" : "text-destructive",
-      )}
-    >
-      {value > 0 ? `+${value}` : value}
-    </span>
   );
 }

@@ -445,6 +445,68 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   }));
 }
 
+export type CompLeaderboardEntry = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  username?: string;
+  email: string;
+  exact: number;
+  close: number;
+  slam: number;
+  total: number;
+  rank: number;
+};
+
+export type CompLeaderboardResponse = {
+  board: CompLeaderboardEntry[];
+  personalRank: CompLeaderboardEntry[];
+};
+
+export async function getCompLeaderboard(competition: string): Promise<CompLeaderboardResponse> {
+  const res = await apiFetch<{
+    data?: {
+      board?: Array<{
+        Cls?: number;
+        Exact?: number;
+        Slam?: number;
+        Total?: number;
+        rank?: number;
+        user?: { _id?: string; firstName?: string; lastName?: string; username?: string; email?: string };
+      }>;
+      personalRank?: Array<{
+        Cls?: number;
+        Exact?: number;
+        Slam?: number;
+        Total?: number;
+        rank?: number;
+        user?: { _id?: string; firstName?: string; lastName?: string; username?: string; email?: string };
+      }>;
+    };
+  }>(`/v1/predictions/comp-leaderboard?competition=${encodeURIComponent(competition)}`, {
+    token: getToken(),
+    unwrap: false,
+  });
+
+  const mapEntry = (raw: NonNullable<NonNullable<NonNullable<typeof res>["data"]>["board"]>[number]): CompLeaderboardEntry => ({
+    userId: raw.user?._id ?? "",
+    firstName: raw.user?.firstName ?? "",
+    lastName: raw.user?.lastName ?? "",
+    username: raw.user?.username,
+    email: raw.user?.email ?? "",
+    exact: raw.Exact ?? 0,
+    close: raw.Cls ?? 0,
+    slam: raw.Slam ?? 0,
+    total: raw.Total ?? 0,
+    rank: raw.rank ?? 0,
+  });
+
+  return {
+    board: (res?.data?.board ?? []).map(mapEntry),
+    personalRank: (res?.data?.personalRank ?? []).map(mapEntry),
+  };
+}
+
 // ============================================================
 // Wallets / Payments / Withdrawals / Transactions
 // ============================================================
@@ -565,7 +627,7 @@ export type PoolDoc = {
   title?: string;
   description?: string;
   privacy?: string;
-  competition?: string | { name?: string; code?: string };
+  competition?: string | { _id?: string; name?: string; code?: string };
   icon?: string;
   config?: PoolConfig;
   members?: unknown[] | { length?: number };
@@ -586,6 +648,10 @@ export function normalizePool(pool: PoolDoc | Pool, opts?: { mine?: boolean }): 
     typeof p.competition === "object" && p.competition
       ? p.competition.name ?? p.competition.code ?? ""
       : (p.competition ?? "");
+  const competitionId =
+    typeof p.competition === "object" && p.competition
+      ? p.competition._id
+      : undefined;
   const isPaid = p.config?.paid === true;
   const players = p.totalMembers ?? (Array.isArray(p.members)
     ? p.members.length
@@ -604,6 +670,7 @@ export function normalizePool(pool: PoolDoc | Pool, opts?: { mine?: boolean }): 
     id: p._id ?? p.id ?? "",
     name: p.name ?? p.title ?? "Untitled pool",
     competition,
+    competitionId,
     entryFee,
     players,
     maxPlayers: p.maxMembers ?? players,

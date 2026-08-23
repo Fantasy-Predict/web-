@@ -19,6 +19,7 @@ export type Pool = {
   id: string;
   name: string;
   competition: string;
+  competitionId?: string;
   entryFee: number;
   players: number;
   maxPlayers: number;

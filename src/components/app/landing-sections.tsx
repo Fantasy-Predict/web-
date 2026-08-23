@@ -143,7 +143,7 @@ export function HeroPredictionWidget() {
 /* ------------------------------------------------------------------ */
 
 /** Premier League 2026/27 opening match: Newcastle vs Liverpool, Sun 23 Aug 2026, 16:30 BST */
-export const SEASON_KICKOFF = new Date("2026-08-23T15:30:00Z");
+export const SEASON_KICKOFF = new Date("2026-08-24T19:00:00Z");
 
 function diff(target: Date) {
   const ms = Math.max(0, target.getTime() - Date.now());
@@ -179,10 +179,10 @@ export function SeasonCountdown() {
       <div className="mx-auto grid gap-10 lg:px-36 px-5 py-16 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-8">
         <div data-aos="fade-up">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Up next</p>
-          <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Newcastle vs Liverpool <br /> Sunday, 23 August</h2>
+          <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Fulham vs Chelsea <br /> Monday Night Football, 8pm</h2>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Two Premier League heavyweights, one electric St. James' Park atmosphere — this fixture never disappoints.
-            Get your predictions in and your pool locked before kickoff.
+            West London bragging rights are on the line at Craven Cottage — Monday Night Football doesn't get much spicier
+            than a local derby. Get your predictions in and your pool locked before kickoff.
           </p>
         </div>
         <div className="grid grid-cols-4 gap-3 sm:gap-4" data-aos="zoom-in" data-aos-delay="150">

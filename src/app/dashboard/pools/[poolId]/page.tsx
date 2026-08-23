@@ -11,7 +11,7 @@ import { Badge } from "../../../../components/ui/badge";
 import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
 import { StatCard } from "../../../../components/app/card";
 import { formatNaira, type Pool } from "../../../lib/mock-data";
-import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, type PoolMember } from "../../../lib/api/endpoints";
+import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, type PoolMember, type CompLeaderboardEntry } from "../../../lib/api/endpoints";
 import { addJoinedPoolId } from "../../../lib/api/session";
 import { notifyPool } from "../../../lib/notifications";
 import { InviteButton } from "./invite-button";
@@ -33,6 +33,7 @@ export default function PoolDetailPage() {
 
   const [pool, setPool] = useState<Pool | null>(null);
   const [members, setMembers] = useState<PoolMember[]>([]);
+  const [leaderboard, setLeaderboard] = useState<CompLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -56,6 +57,25 @@ export default function PoolDetailPage() {
         setPool(poolData ?? null);
         setMembers(poolMembers ?? []);
         setCurrentUserId(profile?._id ?? null);
+
+        let compId = poolData?.competitionId;
+        if (!compId) {
+          try {
+            const comps = await getUserCompetitions();
+            const defaultComp = comps.find((c) => c.default) ?? comps[0];
+            if (defaultComp) compId = defaultComp._id;
+          } catch {
+            // ignore
+          }
+        }
+        if (compId) {
+          try {
+            const lb = await getCompLeaderboard(compId);
+            if (active) setLeaderboard(lb.board ?? []);
+          } catch {
+            // leaderboard fetch failed silently
+          }
+        }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load this pool");
       } finally {
@@ -131,6 +151,19 @@ export default function PoolDetailPage() {
   const totalPot = pool.entryFee * pool.maxPlayers;
   const platformFee = isMonetized ? Math.round(totalPot * 0.1) : 0;
   const prizePoolAfterFee = isMonetized ? totalPot - platformFee : 0;
+
+  function lookupLeaderboard(member: PoolMember): CompLeaderboardEntry | undefined {
+    const uid = member.userId || member.user?._id;
+    return leaderboard.find((e) => e.userId === uid);
+  }
+
+  const sortedMembers = [...members].sort((a, b) => {
+    const aLb = lookupLeaderboard(a);
+    const bLb = lookupLeaderboard(b);
+    const aPoints = aLb?.total ?? a.points ?? -1;
+    const bPoints = bLb?.total ?? b.points ?? -1;
+    return bPoints - aPoints;
+  });
 
   return (
     <AppShell
@@ -238,31 +271,76 @@ export default function PoolDetailPage() {
       <div className="mt-10 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <section>
           <h2 className="text-lg font-semibold">Members</h2>
-          <Card className="mt-4 gap-0 divide-y divide-border p-0 shadow-[var(--shadow-card)]">
-            {members.length ? (
-              members.map((member, index) => {
-                const displayName = member.username || "Member";
+          <Card className="mt-4 gap-0 overflow-hidden p-0 shadow-[var(--shadow-card)]">
+            <div className="grid grid-cols-[2.8rem_minmax(0,1fr)_auto] gap-3 border-b border-border px-5 py-2.5 text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+              <span>Rank</span>
+              <span>Member</span>
+              <span className="text-right">Points</span>
+            </div>
+            {sortedMembers.length ? (
+              sortedMembers.map((member, index) => {
+                const displayName = member.username || `${member.firstName ?? ""} ${member.lastName ?? ""}`.trim() || "Member";
                 const initials = displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                const lbEntry = lookupLeaderboard(member);
+                const pts = lbEntry?.total ?? member.points;
+                const rank = lbEntry?.rank ?? (index + 1);
+                const isTop1 = rank === 1;
+                const isTop3 = rank <= 3;
                 return (
-                <div key={member._id ?? index} className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3.5">
-                  <span className="num text-sm font-bold text-muted-foreground">{member.position ?? index + 1}</span>
+                <div
+                  key={member._id ?? index}
+                  className={cn(
+                    "grid grid-cols-[2.8rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-4 last:border-0",
+                    isTop1 && "bg-gold/5",
+                  )}
+                >
+                  <div className="flex items-center justify-center">
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
+                        isTop1 && "bg-gold text-navy",
+                        !isTop1 && "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {rank}
+                    </span>
+                  </div>
                   <div className="flex min-w-0 items-center gap-3">
-                    <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarFallback className="bg-muted text-[10px] font-semibold">
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarFallback className={cn(
+                        "text-[10px] font-semibold",
+                        isTop1 ? "bg-gold text-navy" : "bg-muted text-muted-foreground",
+                      )}>
                         {initials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{displayName}</p>
+                      <p className={cn("truncate text-sm font-medium", isTop1 && "font-semibold")}>{displayName}</p>
                       {member.status === "pending" && (
-                        <p className="truncate text-xs text-muted-foreground">Pending approval</p>
+                        <p className="truncate text-xs text-amber-600 dark:text-amber-400">Pending approval</p>
+                      )}
+                      {lbEntry && (
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {lbEntry.exact > 0 && <span className="text-green-600 dark:text-green-400">{lbEntry.exact} exact</span>}
+                          {lbEntry.exact > 0 && lbEntry.close > 0 && <span> · </span>}
+                          {lbEntry.close > 0 && <span className="text-blue-600 dark:text-blue-400">{lbEntry.close} close</span>}
+                          {lbEntry.close > 0 && lbEntry.slam > 0 && <span> · </span>}
+                          {lbEntry.slam > 0 && <span className="text-gold">{lbEntry.slam} outcome</span>}
+                          {lbEntry.exact === 0 && lbEntry.close === 0 && lbEntry.slam === 0 && <span>No points yet</span>}
+                        </p>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {typeof member.points === "number" && (
-                      <span className="num text-sm font-bold">{member.points.toLocaleString()}</span>
-                    )}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className={cn(
+                        "num font-display text-lg font-bold",
+                        isTop1 ? "text-gold" : "text-foreground",
+                      )}>
+                        {typeof pts === "number" ? pts.toLocaleString() : "—"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">pts</p>
+                    </div>
                     {showApproveDecline && member.status === "pending" && (
                       <div className="flex gap-1.5">
                         <Button
