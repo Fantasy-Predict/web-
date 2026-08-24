@@ -8,7 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { ApiError } from "@/app/lib/api/client";
 import { adminLogin, login, updateProfile } from "@/app/lib/api/endpoints";
-import { notifySystem } from "@/app/lib/notifications";
+
 import {
   clearSession,
   setSessionCookies,
@@ -94,7 +94,6 @@ export default function LoginPage() {
     }
 
     toast.success(userType === "admin" ? "Welcome back, admin" : "Welcome back");
-    notifySystem("Welcome back", "You're logged in. Check your dashboard for the latest updates.");
 
     let destination = "/dashboard";
     if (userType === "admin") {

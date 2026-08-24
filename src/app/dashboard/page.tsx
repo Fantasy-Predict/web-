@@ -20,7 +20,7 @@ import {
   type UserCompetition,
   type UserProfile,
 } from "../../app/lib/api/endpoints";
-import { useNotifications, notifySystem } from "../../app/lib/notifications";
+import { useNotifications } from "../../app/lib/notifications";
 
 function formatKickoff(iso: string): string {
   if (!iso) return "";
@@ -108,6 +108,10 @@ export default function DashboardPage() {
         const upcoming = mergedAll
           .filter((m) => m.status === "upcoming")
           .sort((a, b) => {
+            const aIsPL = (a.competitionName ?? "").toLowerCase().includes("premier");
+            const bIsPL = (b.competitionName ?? "").toLowerCase().includes("premier");
+            if (aIsPL && !bIsPL) return -1;
+            if (!aIsPL && bIsPL) return 1;
             const da = a.kickoff.length > 10 ? new Date(a.kickoff).getTime() : 0;
             const db = b.kickoff.length > 10 ? new Date(b.kickoff).getTime() : 0;
             return da - db;
@@ -390,7 +394,12 @@ export default function DashboardPage() {
               ) : (
                 notifications.slice(0, 5).map((n) => (
                   <div key={n.id} className="px-5 py-4">
-                    <p className="text-sm font-semibold">{n.title}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold">{n.title}</p>
+                      <span className="text-[10px] tabular-nums text-muted-foreground">
+                        {new Date(n.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })}
+                      </span>
+                    </div>
                     <p className="mt-1 text-xs text-muted-foreground">{n.body}</p>
                   </div>
                 ))
