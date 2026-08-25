@@ -387,7 +387,7 @@ export default function PoolDetailPage() {
                 (correct margin, e.g., predicted 2-1, actual 3-2).
               </li>
               <li>
-                <span className="font-semibold text-foreground">Correct outcome:</span> 2 points
+                <span className="font-semibold text-foreground">Correct outcome:</span> 1 point
                 (correct win/draw result).
               </li>
               <li>

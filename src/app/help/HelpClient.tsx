@@ -53,7 +53,7 @@ const POPULAR_QUESTIONS = [
   },
   {
     q: "How are points calculated?",
-    a: "Points are awarded based on prediction accuracy using the following system: Exact score → 5 points | Close (correct goal margin) → 3 points | Correct outcome → 2 points | Wrong → 0 points. Full scoring rules are published inside each league.",
+    a: "Points are awarded based on prediction accuracy using the following system: Exact score → 5 points | Close (correct goal margin) → 3 points | Correct outcome → 1 point | Wrong → 0 points. Full scoring rules are published inside each league.",
   },
   {
     q: "What is the difference between Free and Monetized leagues?",

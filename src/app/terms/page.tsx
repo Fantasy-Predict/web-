@@ -249,7 +249,7 @@ export default function TermsClient() {
                 <ul className="list-disc pl-5 space-y-1.5">
                   <li><strong className="text-foreground">Exact score:</strong> 5 points</li>
                   <li><strong className="text-foreground">Close (correct goal margin):</strong> 3 points</li>
-                  <li><strong className="text-foreground">Correct outcome:</strong> 2 points</li>
+                  <li><strong className="text-foreground">Correct outcome:</strong> 1 point</li>
                   <li><strong className="text-foreground">Wrong:</strong> 0 points</li>
                 </ul>
                 <p>

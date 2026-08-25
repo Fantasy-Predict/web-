@@ -294,7 +294,7 @@ export default function DashboardPage() {
             {[
               { label: "Exact", points: 5, color: "text-green-600 dark:text-green-400" },
               { label: "Close", points: 3, color: "text-blue-600 dark:text-blue-400" },
-              { label: "Correct", points: 2, color: "text-gold" },
+              { label: "Correct", points: 1, color: "text-gold" },
               { label: "Wrong", points: 0, color: "text-red-600 dark:text-red-400" },
             ].map((item) => (
               <div key={item.label} className="text-center">

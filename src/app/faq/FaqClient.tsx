@@ -115,7 +115,7 @@ const FAQ_CATEGORIES = [
     questions: [
       {
         q: "How are points calculated?",
-        a: "Points are awarded based on prediction accuracy: Exact score → 5 points | Close (correct goal margin) → 3 points | Correct outcome → 2 points | Wrong → 0 points.",
+        a: "Points are awarded based on prediction accuracy: Exact score → 5 points | Close (correct goal margin) → 3 points | Correct outcome → 1 point | Wrong → 0 points.",
       },
       {
         q: "What is considered a 'Close' prediction?",

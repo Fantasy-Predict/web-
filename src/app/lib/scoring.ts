@@ -24,7 +24,7 @@ export type ScoringResult = {
  * Points System:
  * - Exact score: 5 points
  * - Close (goal margin): 3 points
- * - Correct outcome: 2 points
+ * - Correct outcome: 1 point
  * - Wrong: 0 points
  */
 export function calculatePoints(
@@ -58,7 +58,7 @@ export function calculatePoints(
   // 3. Check Outcome (Correct)
   if (prediction.outcome === actual.outcome) {
     return {
-      points: 2,
+      points: 1,
       label: "Correct",
       description: "Correct outcome (win/draw/loss).",
     };

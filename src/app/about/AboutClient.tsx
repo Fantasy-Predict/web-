@@ -55,7 +55,7 @@ const HOW_IT_WORKS = [
   { step: "01", title: "Create Your Account", body: "Create your profile and enter the Fantasy Predict community." },
   { step: "02", title: "Join or Create a Pool", body: "Choose between free pools for casual play with friends or monetized pools with entry fees and real prize pools." },
   { step: "03", title: "Make Your Predictions", body: "Predict match outcomes and exact scores before deadlines." },
-  { step: "04", title: "Earn Points", body: "Score 5 points for exact predictions, 3 points for close calls, and 2 points for correct outcomes." },
+  { step: "04", title: "Earn Points", body: "Score 5 points for exact predictions, 3 points for close calls, and 1 point for correct outcomes." },
   { step: "05", title: "Climb The Leaderboard", body: "Track your performance throughout the season and compete for the top spot." },
 ];
 

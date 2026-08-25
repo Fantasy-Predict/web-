@@ -103,7 +103,7 @@ export function MatchCard({
                 "px-3 py-1 text-xs font-semibold",
                 scoringResult.points === 5 && "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400",
                 scoringResult.points === 3 && "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                scoringResult.points === 2 && "border-gold/30 bg-gold/10 text-gold",
+                scoringResult.points === 1 && "border-gold/30 bg-gold/10 text-gold",
                 scoringResult.points === 0 && "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400"
               )}
             >
