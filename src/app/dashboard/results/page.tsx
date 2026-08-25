@@ -5,12 +5,11 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
-import { Badge } from "../../../components/ui/badge";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { MatchCard, StatCard } from "../../../components/app/card";
 import type { Match } from "../../lib/mock-data";
-import { getMatches, getMatchScores, getUserCompetitions } from "../../lib/api/endpoints";
-import { calculatePoints, getOutcomeFromScore } from "../../lib/scoring";
+import { getMatchScores, getUserCompetitions } from "../../lib/api/endpoints";
+import type { ScoringResult } from "../../lib/scoring";
 
 function formatKickoff(iso: string): string {
   if (!iso) return "";
@@ -19,6 +18,13 @@ function formatKickoff(iso: string): string {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+function scoringFromPoints(points: number): ScoringResult {
+  if (points === 5) return { points: 5, label: "Exact", description: "Perfect prediction! Exact score matched." };
+  if (points === 3) return { points: 3, label: "Close", description: "Correct goal margin." };
+  if (points >= 1) return { points, label: "Correct", description: "Correct outcome (win/draw/loss)." };
+  return { points: 0, label: "Wrong", description: "Incorrect prediction." };
 }
 
 export default function ResultsPage() {
@@ -35,22 +41,11 @@ export default function ResultsPage() {
         const comps = await getUserCompetitions().catch(() => []);
         comps?.forEach((c) => compNameMap.set(c._id, c.name));
 
-        const allMatchesData = await Promise.all(
-          (comps ?? []).map((c) => getMatches(c._id).catch(() => [])),
-        );
         const allScoresData = await Promise.all(
           (comps ?? []).map((c) => getMatchScores(c._id).catch(() => [])),
         );
 
         if (!active) return;
-
-        const allM = allMatchesData.flat()
-          .filter((m) => m && m.id && m.home && m.away)
-          .map((m) => ({
-            ...m,
-            competitionName: compNameMap.get(m.competition) ?? m.competition,
-            kickoff: formatKickoff(m.kickoff),
-          }));
 
         const allS = allScoresData.flat()
           .filter((m) => m && m.id && m.home && m.away)
@@ -60,14 +55,7 @@ export default function ResultsPage() {
             kickoff: formatKickoff(m.kickoff),
           }));
 
-        const mergedIds = new Set(allM.map((m) => m.id));
-        for (const sm of allS) {
-          if (!mergedIds.has(sm.id)) {
-            allM.push(sm);
-          }
-        }
-
-        setAllMatches(allM);
+        setAllMatches(allS);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load your results");
       } finally {
@@ -103,39 +91,11 @@ export default function ResultsPage() {
   const currentMatches = currentGW ? currentGW[1] : [];
 
   let totalPoints = 0;
-  const gwPoints = currentMatches.reduce((sum, match) => {
-    const outcomeStr = match.prediction?.[0]?.outcome;
-    if (!outcomeStr || !outcomeStr.includes("-") || !match.score) return sum;
-    const parts = outcomeStr.split("-");
-    const pred = {
-      outcome: getOutcomeFromScore(parseInt(parts[0]) || 0, parseInt(parts[1]) || 0),
-      homeScore: parseInt(parts[0]) || 0,
-      awayScore: parseInt(parts[1]) || 0,
-    };
-    const actual = {
-      outcome: getOutcomeFromScore(match.score.home, match.score.away),
-      homeScore: match.score.home,
-      awayScore: match.score.away,
-    };
-    return sum + calculatePoints(pred, actual).points;
-  }, 0);
-
   for (const m of matchesWithPredictions) {
-    const outcomeStr = m.prediction?.[0]?.outcome;
-    if (!outcomeStr || !outcomeStr.includes("-") || !m.score) continue;
-    const parts = outcomeStr.split("-");
-    const pred = {
-      outcome: getOutcomeFromScore(parseInt(parts[0]) || 0, parseInt(parts[1]) || 0),
-      homeScore: parseInt(parts[0]) || 0,
-      awayScore: parseInt(parts[1]) || 0,
-    };
-    const actual = {
-      outcome: getOutcomeFromScore(m.score.home, m.score.away),
-      homeScore: m.score.home,
-      awayScore: m.score.away,
-    };
-    totalPoints += calculatePoints(pred, actual).points;
+    totalPoints += m.prediction?.[0]?.point ?? 0;
   }
+
+  const gwPoints = currentMatches.reduce((sum, match) => sum + (match.prediction?.[0]?.point ?? 0), 0);
 
   const finishedCount = currentMatches.filter((m) => m.status === "finished").length;
   const upcomingCount = currentMatches.filter((m) => m.status === "upcoming").length;
@@ -231,22 +191,8 @@ export default function ResultsPage() {
         ) : currentMatches.length > 0 ? (
           currentMatches.map((match) => {
             const outcomeStr = match.prediction?.[0]?.outcome;
-            let scoringResult = null;
-
-            if (outcomeStr && outcomeStr.includes("-") && match.score) {
-              const parts = outcomeStr.split("-");
-              const prediction = {
-                outcome: getOutcomeFromScore(parseInt(parts[0]) || 0, parseInt(parts[1]) || 0),
-                homeScore: parseInt(parts[0]) || 0,
-                awayScore: parseInt(parts[1]) || 0,
-              };
-              const actual = {
-                outcome: getOutcomeFromScore(match.score.home, match.score.away),
-                homeScore: match.score.home,
-                awayScore: match.score.away,
-              };
-              scoringResult = calculatePoints(prediction, actual);
-            }
+            const backendPoints = match.prediction?.[0]?.point;
+            const scoringResult = backendPoints != null ? scoringFromPoints(backendPoints) : null;
 
             return (
               <MatchCard

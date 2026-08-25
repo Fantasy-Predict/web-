@@ -341,8 +341,10 @@ export async function getMatches(competition: string, date?: string): Promise<Ma
       ? { home: m.score.home ?? 0, away: m.score.away ?? 0 }
       : m.homeScore !== undefined
         ? { home: m.homeScore ?? 0, away: m.awayScore ?? 0 }
-        : undefined,
-    prediction: Array.isArray(m.prediction) ? m.prediction.map((p: any) => ({ outcome: p.outcome })) : undefined,
+        : (typeof m.homeTeam === "object" && m.homeTeam && "score" in m.homeTeam && typeof m.awayTeam === "object" && m.awayTeam && "score" in m.awayTeam)
+          ? { home: (m.homeTeam as any).score ?? 0, away: (m.awayTeam as any).score ?? 0 }
+          : undefined,
+    prediction: Array.isArray(m.prediction) ? m.prediction.map((p: any) => ({ outcome: p.outcome, point: p.point })) : undefined,
   }));
 }
 
@@ -407,8 +409,10 @@ export async function getMatchScores(competition: string): Promise<Match[]> {
       ? { home: m.score.home ?? 0, away: m.score.away ?? 0 }
       : m.homeScore !== undefined
         ? { home: m.homeScore ?? 0, away: m.awayScore ?? 0 }
-        : undefined,
-    prediction: Array.isArray((m as any).prediction) ? (m as any).prediction.map((p: any) => ({ outcome: p.outcome })) : undefined,
+        : (typeof m.homeTeam === "object" && m.homeTeam && "score" in m.homeTeam && typeof m.awayTeam === "object" && m.awayTeam && "score" in m.awayTeam)
+          ? { home: (m.homeTeam as any).score ?? 0, away: (m.awayTeam as any).score ?? 0 }
+          : undefined,
+    prediction: Array.isArray((m as any).prediction) ? (m as any).prediction.map((p: any) => ({ outcome: p.outcome, point: p.point })) : undefined,
   }));
 }
 

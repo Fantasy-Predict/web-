@@ -20,7 +20,7 @@ import {
 } from "../../../components/ui/select";
 import type { Match } from "../../lib/mock-data";
 import { createPrediction, getMatches, getMatchScores, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
-import { calculatePoints, getOutcomeFromScore } from "../../lib/scoring";
+import { getOutcomeFromScore } from "../../lib/scoring";
 import { notifyPrediction } from "../../lib/notifications";
 
 type Pick = {
@@ -104,9 +104,15 @@ export default function PredictPage() {
             kickoff: formatKickoff(m.kickoff),
           }));
 
-        const mergedIds = new Set(enriched.map((m) => m.id));
+        const scoreOnly = new Map(scoreEnriched.map((m) => [m.id, m]));
+        for (let i = 0; i < enriched.length; i++) {
+          const sm = scoreOnly.get(enriched[i].id);
+          if (sm) {
+            enriched[i] = { ...enriched[i], ...sm, competitionName: enriched[i].competitionName, kickoff: enriched[i].kickoff };
+          }
+        }
         for (const sm of scoreEnriched) {
-          if (!mergedIds.has(sm.id)) {
+          if (!enriched.some((m) => m.id === sm.id)) {
             enriched.push(sm);
           }
         }
@@ -357,17 +363,10 @@ export default function PredictPage() {
         <div className="mt-10 grid gap-5">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Results</h3>
           {finished.map((match) => {
-            const pick = picks[match.id];
-            let scoringResult = null;
-
-            if (pick?.prediction && match.score) {
-              const actualResult = {
-                outcome: getOutcomeFromScore(match.score.home, match.score.away),
-                homeScore: match.score.home,
-                awayScore: match.score.away,
-              };
-              scoringResult = calculatePoints(pick.prediction, actualResult);
-            }
+            const backendPoints = match.prediction?.[0]?.point;
+            const scoringResult = backendPoints != null
+              ? { points: backendPoints, label: (backendPoints >= 5 ? "Exact" : backendPoints >= 3 ? "Close" : backendPoints >= 1 ? "Correct" : "Wrong") as "Exact" | "Close" | "Correct" | "Wrong", description: "" }
+              : null;
 
             return (
               <MatchCard

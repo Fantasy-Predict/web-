@@ -97,10 +97,13 @@ export default function DashboardPage() {
             kickoff: formatKickoff(m.kickoff),
           }));
 
-        const mergedAll = [...allMatches];
-        const mergedIds = new Set(allMatches.map((m) => m.id));
+        const scoreMap = new Map(allScores.map((m) => [m.id, m]));
+        const mergedAll = allMatches.map((m) => {
+          const sm = scoreMap.get(m.id);
+          return sm ? { ...m, ...sm } : m;
+        });
         for (const sm of allScores) {
-          if (!mergedIds.has(sm.id)) {
+          if (!mergedAll.some((m) => m.id === sm.id)) {
             mergedAll.push(sm);
           }
         }
@@ -235,20 +238,27 @@ export default function DashboardPage() {
               </div>
             ))
           ) : recentPredictions.length > 0 ? (
-            recentPredictions.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                footer={
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Your prediction</span>
-                    <span className="num text-sm font-bold text-primary">
-                      {match.prediction?.[0]?.outcome ?? "—"}
-                    </span>
-                  </div>
-                }
-              />
-            ))
+            recentPredictions.map((match) => {
+              const pts = match.prediction?.[0]?.point;
+              const scoringResult = pts != null
+                ? { points: pts, label: (pts >= 5 ? "Exact" : pts >= 3 ? "Close" : pts >= 1 ? "Correct" : "Wrong") as "Exact" | "Close" | "Correct" | "Wrong", description: "" }
+                : null;
+              return (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  scoringResult={scoringResult}
+                  footer={
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Your prediction</span>
+                      <span className="num text-sm font-bold text-primary">
+                        {match.prediction?.[0]?.outcome ?? "—"}
+                      </span>
+                    </div>
+                  }
+                />
+              );
+            })
           ) : (
             <Card className="p-6 text-center shadow-[var(--shadow-card)]">
               <p className="text-sm font-semibold">No predictions yet</p>
