@@ -53,20 +53,37 @@ export default function DashboardPage() {
         ]);
         comps?.forEach((c) => compNameMap.current.set(c._id, c.name));
 
-        const defaultComp = comps?.find((c) => c.default) ?? comps?.[0];
+        const defaultComps = (comps ?? []).filter((c) => c.default);
         let lbBoard: typeof board = [];
-        if (defaultComp) {
+        if (defaultComps.length > 0) {
           try {
-            const lb = await getCompLeaderboard(defaultComp._id);
-            lbBoard = (lb.board ?? []).map((e) => ({
-              id: e.userId,
-              username: e.username || `${e.firstName} ${e.lastName}`.trim(),
-              total: e.total,
-              exact: e.exact,
-              close: e.close,
-              slam: e.slam,
-              rank: e.rank,
-            }));
+            const allLb = await Promise.all(
+              defaultComps.map((c) => getCompLeaderboard(c._id).catch(() => ({ board: [], personalRank: [] }))),
+            );
+            const merged = new Map<string, { id: string; username: string; total: number; exact: number; close: number; slam: number; rank: number }>();
+            for (const lb of allLb) {
+              for (const e of lb.board ?? []) {
+                const existing = merged.get(e.userId);
+                if (existing) {
+                  existing.total += e.total;
+                  existing.exact += e.exact;
+                  existing.close += e.close;
+                  existing.slam += e.slam;
+                } else {
+                  merged.set(e.userId, {
+                    id: e.userId,
+                    username: e.username || `${e.firstName} ${e.lastName}`.trim(),
+                    total: e.total,
+                    exact: e.exact,
+                    close: e.close,
+                    slam: e.slam,
+                    rank: 0,
+                  });
+                }
+              }
+            }
+            lbBoard = [...merged.values()].sort((a, b) => b.total - a.total);
+            lbBoard.forEach((e, i) => { e.rank = i + 1; });
           } catch {
             // leaderboard fetch failed silently
           }
@@ -378,13 +395,18 @@ export default function DashboardPage() {
                       <Skeleton className="h-4 w-10" />
                     </div>
                   ))
-                : board.slice(0, 5).map((row, index) => (
+                : board.slice(0, 3).map((row, index) => (
                     <div
                       key={row.id}
                       className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3.5"
                     >
                       <span className="num w-6 text-sm font-bold text-muted-foreground">{row.rank || index + 1}</span>
-                      <span className="truncate text-sm font-semibold">{row.username}</span>
+                      <span className="flex min-w-0 items-center gap-2 truncate text-sm font-semibold">
+                        {row.username}
+                        {row.id === ownEntry?.id && (
+                          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">You</span>
+                        )}
+                      </span>
                       <span className="num text-sm font-bold">{row.total}</span>
                     </div>
                   ))}

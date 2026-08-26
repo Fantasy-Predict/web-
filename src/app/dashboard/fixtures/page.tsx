@@ -53,7 +53,7 @@ export default function FixturesPage() {
         comps.forEach((c) => map.set(c._id, c.name));
         compNameMap.current = map;
         if (comps.length > 0) {
-          const defaultComp = comps.find((c) => c.default) ?? comps[0];
+          const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
           setSelectedCompetition(defaultComp._id);
         }
       } catch {
@@ -78,8 +78,10 @@ export default function FixturesPage() {
         if (!active) return;
 
         const scoreMap = new Map<string, { home: number; away: number }>();
+        const scorePredictionMap = new Map<string, { outcome: string; point?: number }[]>();
         for (const s of scoreData) {
           if (s.score) scoreMap.set(s.id, s.score);
+          if (s.prediction) scorePredictionMap.set(s.id, s.prediction);
         }
 
         const enriched = matchData.map((m) => ({
@@ -87,10 +89,25 @@ export default function FixturesPage() {
           competitionName: compNameMap.current.get(m.competition) ?? m.competition,
           kickoff: formatKickoff(m.kickoff),
           score: scoreMap.get(m.id) ?? m.score,
+          prediction: scorePredictionMap.get(m.id) ?? m.prediction,
           status: (scoreMap.has(m.id) && m.status !== "live")
             ? "finished" as const
             : m.status,
         }));
+
+        for (const s of scoreData) {
+          if (!enriched.some((m) => m.id === s.id)) {
+            enriched.push({
+              ...s,
+              score: s.score,
+              prediction: s.prediction,
+              competitionName: compNameMap.current.get(s.competition) ?? s.competition,
+              kickoff: formatKickoff(s.kickoff),
+              status: "finished" as const,
+            });
+          }
+        }
+
         setMatches(enriched);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load fixtures");

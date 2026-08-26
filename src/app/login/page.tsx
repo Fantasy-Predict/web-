@@ -102,7 +102,6 @@ export default function LoginPage() {
       destination = `/verify-account?email=${encodeURIComponent(loginId ?? "")}`;
     }
     router.push(destination);
-    router.refresh();
   }
 
   return (

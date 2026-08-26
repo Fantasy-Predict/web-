@@ -37,7 +37,7 @@ export default function LeaderboardPage() {
         if (!active) return;
         setCompetitions(comps);
         if (comps.length > 0) {
-          const defaultComp = comps.find((c) => c.default) ?? comps[0];
+          const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
           setSelectedCompetition(defaultComp._id);
         }
       } catch {
@@ -160,12 +160,17 @@ export default function LeaderboardPage() {
                   >
                     #{place}
                   </span>
-                  <Avatar className="mt-4 h-14 w-14">
+                  <Avatar className="mx-auto mt-4 h-14 w-14">
                     <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
-                      {name.slice(0, 2).toUpperCase()}
+                      {`${entry.firstName?.[0] ?? ""}${entry.lastName?.[0] ?? ""}`.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="mt-4 text-sm font-semibold">{name}</p>
+                  <p className="mt-4 text-sm font-semibold">
+                    {name}
+                    {entry.userId === personalRank?.userId && (
+                      <span className="ml-2 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">You</span>
+                    )}
+                  </p>
                   <p className="num mt-4 font-display text-2xl font-bold">{entry.total}</p>
                   <p className="mt-1 text-xs text-muted-foreground">points</p>
                   <div className="mt-3 flex gap-3 text-[10px] text-muted-foreground">
@@ -198,10 +203,15 @@ export default function LeaderboardPage() {
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarFallback className="bg-muted text-[10px] font-semibold">
-                        {name.slice(0, 2).toUpperCase()}
+                        {`${entry.firstName?.[0] ?? ""}${entry.lastName?.[0] ?? ""}`.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="truncate font-medium">{name}</span>
+                    <span className="flex min-w-0 items-center gap-2 truncate font-medium">
+                      {name}
+                      {entry.userId === personalRank?.userId && (
+                        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">You</span>
+                      )}
+                    </span>
                   </div>
                   <span className="num text-center text-xs font-semibold text-green-600 dark:text-green-400">{entry.exact}</span>
                   <span className="num text-center text-xs font-semibold text-blue-600 dark:text-blue-400">{entry.close}</span>

@@ -64,7 +64,7 @@ export default function PredictPage() {
         setCompetitions(comps);
         comps.forEach((c) => compNameMap.set(c._id, c.name));
         if (comps.length > 0) {
-          const defaultComp = comps.find((c) => c.default) ?? comps[0];
+          const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
           setSelectedCompetition(defaultComp._id);
         }
       } catch {
@@ -96,28 +96,33 @@ export default function PredictPage() {
             kickoff: formatKickoff(m.kickoff),
           }));
 
-        const scoreEnriched = (scoresData ?? [])
-          .filter((m) => m && m.id && m.home && m.away)
-          .map((m) => ({
-            ...m,
-            competitionName: compNameMap.get(m.competition) ?? m.competition,
-            kickoff: formatKickoff(m.kickoff),
-          }));
-
-        const scoreOnly = new Map(scoreEnriched.map((m) => [m.id, m]));
-        for (let i = 0; i < enriched.length; i++) {
-          const sm = scoreOnly.get(enriched[i].id);
-          if (sm) {
-            enriched[i] = { ...enriched[i], ...sm, competitionName: enriched[i].competitionName, kickoff: enriched[i].kickoff };
-          }
+        const scoreMap = new Map<string, { home: number; away: number }>();
+        const scorePredictionMap = new Map<string, { outcome: string; point?: number }[]>();
+        for (const s of scoresData ?? []) {
+          if (s.score) scoreMap.set(s.id, s.score);
+          if (s.prediction) scorePredictionMap.set(s.id, s.prediction);
         }
-        for (const sm of scoreEnriched) {
-          if (!enriched.some((m) => m.id === sm.id)) {
-            enriched.push(sm);
+
+        for (let i = 0; i < enriched.length; i++) {
+          const sm = scoreMap.get(enriched[i].id);
+          if (sm) enriched[i] = { ...enriched[i], score: sm };
+          const sp = scorePredictionMap.get(enriched[i].id);
+          if (sp) enriched[i] = { ...enriched[i], prediction: sp };
+        }
+        for (const s of scoresData ?? []) {
+          if (s.id && s.home && s.away && !enriched.some((m) => m.id === s.id)) {
+            enriched.push({
+              ...s,
+              score: s.score,
+              prediction: s.prediction,
+              competitionName: compNameMap.get(s.competition) ?? s.competition,
+              kickoff: formatKickoff(s.kickoff),
+            });
           }
         }
 
         setAllMatches(enriched);
+        console.log("[PREDICT] allMatches:", enriched.length, "matchdays:", [...new Set(enriched.map(m => m.matchday))].sort(), "statuses:", [...new Set(enriched.map(m => m.status))]);
 
         const newPicks: Record<string, Pick> = {};
         for (const m of enriched) {

@@ -62,7 +62,7 @@ export default function PoolDetailPage() {
         if (!compId) {
           try {
             const comps = await getUserCompetitions();
-            const defaultComp = comps.find((c) => c.default) ?? comps[0];
+            const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
             if (defaultComp) compId = defaultComp._id;
           } catch {
             // ignore
