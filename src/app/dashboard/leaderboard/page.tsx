@@ -37,7 +37,7 @@ export default function LeaderboardPage() {
         if (!active) return;
         setCompetitions(comps);
         if (comps.length > 0) {
-          const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
+          const defaultComp = comps.find((c) => c.name === "Premier League" || c.code === "PL") ?? comps.find((c) => c.default) ?? comps[0];
           setSelectedCompetition(defaultComp._id);
         }
       } catch {

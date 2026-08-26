@@ -53,7 +53,7 @@ export default function FixturesPage() {
         comps.forEach((c) => map.set(c._id, c.name));
         compNameMap.current = map;
         if (comps.length > 0) {
-          const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
+          const defaultComp = comps.find((c) => c.name === "Premier League" || c.code === "PL") ?? comps.find((c) => c.default) ?? comps[0];
           setSelectedCompetition(defaultComp._id);
         }
       } catch {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { TeamCrest, MatchCard } from "../../../components/app/card";
+import { TeamCrest } from "../../../components/app/card";
 import {
   Select,
   SelectContent,
@@ -39,7 +39,27 @@ function formatKickoff(iso: string): string {
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-export default function PredictPage() {
+function LoadingSkeleton() {
+  return (
+    <AppShell title="Predictions" description="Loading fixtures…">
+      <div className="mt-4 grid gap-5">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+            <Skeleton className="h-3 w-36" />
+            <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-5 w-5 rounded-full" />
+              <Skeleton className="h-5 w-32 justify-self-end" />
+            </div>
+            <Skeleton className="mt-5 h-10 w-full" />
+          </div>
+        ))}
+      </div>
+    </AppShell>
+  );
+}
+
+function PredictContent() {
   const searchParams = useSearchParams();
   const poolId = searchParams.get("pool") ?? undefined;
 
@@ -50,10 +70,8 @@ export default function PredictPage() {
   const [submitted, setSubmitted] = useState(false);
   const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
   const [selectedCompetition, setSelectedCompetition] = useState<string>("");
-  const [matchdayIndex, setMatchdayIndex] = useState(0);
-  const [filterDate, setFilterDate] = useState<string>("");
 
-  const compNameMap = useState(() => new Map<string, string>())[0];
+  const compNameMap = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     let active = true;
@@ -62,9 +80,14 @@ export default function PredictPage() {
         const comps = await getUserCompetitions().catch(() => []);
         if (!active) return;
         setCompetitions(comps);
-        comps.forEach((c) => compNameMap.set(c._id, c.name));
+        const map = new Map<string, string>();
+        comps.forEach((c) => map.set(c._id, c.name));
+        compNameMap.current = map;
         if (comps.length > 0) {
-          const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
+          const defaultComp =
+            comps.find((c) => c.name === "Premier League" || c.code === "PL") ??
+            comps.find((c) => c.default) ??
+            comps[0];
           setSelectedCompetition(defaultComp._id);
         }
       } catch {
@@ -80,49 +103,45 @@ export default function PredictPage() {
     async function load() {
       if (!selectedCompetition) return;
       setLoading(true);
-      setMatchdayIndex(0);
       try {
-        const [matchesData, scoresData] = await Promise.all([
-          getMatches(selectedCompetition, filterDate || undefined),
+        const [matchData, scoreData] = await Promise.all([
+          getMatches(selectedCompetition),
           getMatchScores(selectedCompetition).catch(() => []),
         ]);
         if (!active) return;
 
-        const enriched = (matchesData ?? [])
-          .filter((m) => m && m.id && m.home && m.away)
-          .map((m) => ({
-            ...m,
-            competitionName: compNameMap.get(m.competition) ?? m.competition,
-            kickoff: formatKickoff(m.kickoff),
-          }));
-
         const scoreMap = new Map<string, { home: number; away: number }>();
         const scorePredictionMap = new Map<string, { outcome: string; point?: number }[]>();
-        for (const s of scoresData ?? []) {
+        for (const s of scoreData) {
           if (s.score) scoreMap.set(s.id, s.score);
           if (s.prediction) scorePredictionMap.set(s.id, s.prediction);
         }
 
-        for (let i = 0; i < enriched.length; i++) {
-          const sm = scoreMap.get(enriched[i].id);
-          if (sm) enriched[i] = { ...enriched[i], score: sm };
-          const sp = scorePredictionMap.get(enriched[i].id);
-          if (sp) enriched[i] = { ...enriched[i], prediction: sp };
-        }
-        for (const s of scoresData ?? []) {
+        const enriched = matchData.map((m) => ({
+          ...m,
+          competitionName: compNameMap.current.get(m.competition) ?? m.competition,
+          kickoff: formatKickoff(m.kickoff),
+          score: scoreMap.get(m.id) ?? m.score,
+          prediction: scorePredictionMap.get(m.id) ?? m.prediction,
+          status: (scoreMap.has(m.id) && m.status !== "live")
+            ? ("finished" as const)
+            : m.status,
+        }));
+
+        for (const s of scoreData) {
           if (s.id && s.home && s.away && !enriched.some((m) => m.id === s.id)) {
             enriched.push({
               ...s,
               score: s.score,
               prediction: s.prediction,
-              competitionName: compNameMap.get(s.competition) ?? s.competition,
+              competitionName: compNameMap.current.get(s.competition) ?? s.competition,
               kickoff: formatKickoff(s.kickoff),
+              status: "finished" as const,
             });
           }
         }
 
         setAllMatches(enriched);
-        console.log("[PREDICT] allMatches:", enriched.length, "matchdays:", [...new Set(enriched.map(m => m.matchday))].sort(), "statuses:", [...new Set(enriched.map(m => m.status))]);
 
         const newPicks: Record<string, Pick> = {};
         for (const m of enriched) {
@@ -155,32 +174,34 @@ export default function PredictPage() {
       }
     }
     load();
-    return () => {
-      active = false;
-    };
-  }, [selectedCompetition, filterDate]);
+    return () => { active = false; };
+  }, [selectedCompetition]);
 
-  const matchdays = useMemo(() => {
+  const matchdays = (() => {
     const dayMap = new Map<string, Match[]>();
     for (const m of allMatches) {
       const key = m.matchday ?? "unknown";
       if (!dayMap.has(key)) dayMap.set(key, []);
       dayMap.get(key)!.push(m);
     }
-    const sorted = [...dayMap.entries()].sort(([a], [b]) => {
+    return [...dayMap.entries()].sort(([a], [b]) => {
       const na = parseInt(a) || 0;
       const nb = parseInt(b) || 0;
       return na - nb;
     });
-    return sorted;
-  }, [allMatches]);
+  })();
 
-  const currentMatchday = matchdays[matchdayIndex];
-  const currentDayLabel = currentMatchday ? currentMatchday[0] : null;
-  const currentMatches = currentMatchday ? currentMatchday[1] : [];
+  const nextMatchdayEntry = matchdays.find(([, matches]) =>
+    matches.some((m) => m.status === "upcoming"),
+  );
 
-  const upcoming = currentMatches.filter((m) => m.status === "upcoming");
-  const finished = currentMatches.filter((m) => m.status === "finished");
+  const matchdayLabel = nextMatchdayEntry ? nextMatchdayEntry[0] : null;
+  const upcoming = nextMatchdayEntry
+    ? nextMatchdayEntry[1].filter((m) => m.status === "upcoming")
+    : [];
+  const finished = nextMatchdayEntry
+    ? nextMatchdayEntry[1].filter((m) => m.status === "finished")
+    : [];
 
   const completed = upcoming.filter((m) => {
     const pick = picks[m.id];
@@ -217,10 +238,10 @@ export default function PredictPage() {
         return next;
       });
       setSubmitted(true);
-      toast.success(`Predictions submitted for Matchday ${currentDayLabel ?? ""}`);
+      toast.success(`Predictions submitted for Matchday ${matchdayLabel ?? ""}`);
       notifyPrediction(
         "Predictions submitted",
-        `You submitted ${filledPicks.length} prediction${filledPicks.length === 1 ? "" : "s"} for Matchday ${currentDayLabel ?? ""}.`,
+        `You submitted ${filledPicks.length} prediction${filledPicks.length === 1 ? "" : "s"} for Matchday ${matchdayLabel ?? ""}.`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to submit predictions");
@@ -231,7 +252,7 @@ export default function PredictPage() {
 
   return (
     <AppShell
-      title={currentDayLabel ? `Matchday ${currentDayLabel}` : "Predictions"}
+      title={matchdayLabel ? `Matchday ${matchdayLabel}` : "Predictions"}
       description="Predictions lock at each match kickoff. You can update your predictions anytime before kickoff."
     >
       {competitions.length > 0 && (
@@ -248,20 +269,6 @@ export default function PredictPage() {
               ))}
             </SelectContent>
           </Select>
-          <Input
-            type="date"
-            value={filterDate}
-            onChange={(e) => { setFilterDate(e.target.value); setMatchdayIndex(0); }}
-            className="w-[180px]"
-          />
-          {filterDate && (
-            <button
-              onClick={() => { setFilterDate(""); setMatchdayIndex(0); }}
-              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-            >
-              Clear
-            </button>
-          )}
         </div>
       )}
 
@@ -275,31 +282,6 @@ export default function PredictPage() {
             <Link href="/dashboard/pools">Browse pools</Link>
           </Button>
         </Card>
-      )}
-
-      {/* Matchday navigation */}
-      {matchdays.length > 1 && (
-        <div className="mb-5 flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={matchdayIndex === 0}
-            onClick={() => { setMatchdayIndex((i) => i - 1); setSubmitted(false); }}
-          >
-            ← Previous
-          </Button>
-          <span className="num text-sm font-semibold text-muted-foreground">
-            {matchdayIndex + 1} / {matchdays.length}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={matchdayIndex >= matchdays.length - 1}
-            onClick={() => { setMatchdayIndex((i) => i + 1); setSubmitted(false); }}
-          >
-            Next →
-          </Button>
-        </div>
       )}
 
       <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
@@ -322,9 +304,10 @@ export default function PredictPage() {
         )}
       </Card>
 
-      {/* Upcoming matches */}
       <div className="mt-6 grid gap-5">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Upcoming {matchdayLabel ? `— Matchday ${matchdayLabel}` : ""}
+        </h3>
         {loading ? (
           Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
@@ -344,13 +327,15 @@ export default function PredictPage() {
               match={match}
               locked={!!picks[match.id]?.locked}
               pick={picks[match.id] ?? {}}
-              onChange={(next) => setPicks((prev) => ({
-                ...prev,
-                [match.id]: {
-                  ...prev[match.id],
-                  ...next,
-                }
-              }))}
+              onChange={(next) =>
+                setPicks((prev) => ({
+                  ...prev,
+                  [match.id]: {
+                    ...prev[match.id],
+                    ...next,
+                  },
+                }))
+              }
             />
           ))
         ) : (
@@ -363,39 +348,68 @@ export default function PredictPage() {
         )}
       </div>
 
-      {/* Finished matches – show scoring */}
       {finished.length > 0 && (
         <div className="mt-10 grid gap-5">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Results</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Results
+          </h3>
           {finished.map((match) => {
             const backendPoints = match.prediction?.[0]?.point;
-            const scoringResult = backendPoints != null
-              ? { points: backendPoints, label: (backendPoints >= 5 ? "Exact" : backendPoints >= 3 ? "Close" : backendPoints >= 1 ? "Correct" : "Wrong") as "Exact" | "Close" | "Correct" | "Wrong", description: "" }
-              : null;
+            const scoringResult =
+              backendPoints != null
+                ? ({
+                    points: backendPoints,
+                    label: (backendPoints >= 5
+                      ? "Exact"
+                      : backendPoints >= 3
+                        ? "Close"
+                        : backendPoints >= 1
+                          ? "Correct"
+                          : "Wrong") as "Exact" | "Close" | "Correct" | "Wrong",
+                    description: "",
+                  })
+                : null;
 
             return (
-              <MatchCard
-                key={match.id}
-                match={match}
-                scoringResult={scoringResult}
-                footer={
-                  scoringResult ? (
-                    <div className="mt-2 text-sm">
+              <Card key={match.id} className="gap-0 p-5 shadow-[var(--shadow-card)]">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <p className="truncate text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+                    {match.competitionName ?? match.competition}
+                  </p>
+                  <span className="num shrink-0 text-xs font-semibold text-muted-foreground">
+                    {match.kickoff}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <TeamCrest short={match.homeShort} crest={match.homeCrest} />
+                    <span className="truncate text-sm font-semibold">{match.home}</span>
+                  </div>
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {match.score ? `${match.score.home} - ${match.score.away}` : "v"}
+                  </span>
+                  <div className="flex min-w-0 items-center justify-end gap-3">
+                    <span className="truncate text-sm font-semibold">{match.away}</span>
+                    <TeamCrest short={match.awayShort} crest={match.awayCrest} />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  {scoringResult ? (
+                    <p className="text-sm">
                       <span className="font-medium">You earned: </span>
                       <span className="font-bold text-primary">{scoringResult.points} points</span>
                       <span className="text-muted-foreground"> ({scoringResult.label})</span>
-                    </div>
+                    </p>
                   ) : (
-                    <p className="mt-2 text-xs text-muted-foreground">No prediction submitted</p>
-                  )
-                }
-              />
+                    <p className="text-xs text-muted-foreground">No prediction submitted</p>
+                  )}
+                </div>
+              </Card>
             );
           })}
         </div>
       )}
 
-      {/* Submit button */}
       <div className="mt-8 flex justify-end">
         <Button
           onClick={handleSubmit}
@@ -403,7 +417,11 @@ export default function PredictPage() {
           size="lg"
           className="w-full sm:w-auto"
         >
-          {submitting ? "Submitting…" : !poolId ? "Select a pool first" : "Submit predictions"}
+          {submitting
+            ? "Submitting…"
+            : !poolId
+              ? "Select a pool first"
+              : "Submit predictions"}
         </Button>
       </div>
     </AppShell>
@@ -462,7 +480,9 @@ function PredictionRow({
               onChange({ home: value, away: pick.away });
             }}
           />
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase">{match.homeShort}</span>
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+            {match.homeShort}
+          </span>
         </div>
         <span className="text-lg font-bold text-muted-foreground">-</span>
         <div className="flex flex-col items-center gap-1">
@@ -477,9 +497,19 @@ function PredictionRow({
               onChange({ home: pick.home, away: value });
             }}
           />
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase">{match.awayShort}</span>
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+            {match.awayShort}
+          </span>
         </div>
       </div>
     </Card>
+  );
+}
+
+export default function PredictPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <PredictContent />
+    </Suspense>
   );
 }

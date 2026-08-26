@@ -21,7 +21,7 @@ export default function AdminResults() {
       try {
         const comps = await getUserCompetitions().catch(() => []);
         const nameMap = new Map(comps.map((c) => [c._id, c.name]));
-        const defaultComp = comps.find((c) => c.name === "Premier League") ?? comps.find((c) => c.default) ?? comps[0];
+        const defaultComp = comps.find((c) => c.name === "Premier League" || c.code === "PL") ?? comps.find((c) => c.default) ?? comps[0];
         if (!defaultComp) return;
         const data = await getMatches(defaultComp._id);
         if (!active) return;
