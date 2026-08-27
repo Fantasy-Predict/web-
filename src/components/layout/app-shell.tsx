@@ -3,7 +3,23 @@
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Bell, LogOut, Search, Menu } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type IconSvgObject = any;
+import {
+  Notification03Icon, // bell
+  Search01Icon,        // search — verify export name
+  Menu01Icon,           // hamburger — verify export name
+  Home09Icon,           // dashboard / picks
+  FootballIcon,         // fixtures
+  WhistleIcon,          // results
+  UserGroupIcon,        // pools — verify export name
+  ListOrderedIcon,      // leaderboard
+  Wallet02Icon,         // wallet
+  UserIcon,             // profile
+  Settings01Icon,       // settings
+} from "@hugeicons/core-free-icons";
+import { CircleUser, LogOut, TrendingUpDown } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "../theme-toggle";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
@@ -13,17 +29,29 @@ import { clearSession } from "../../app/lib/api/session";
 import { useNotifications, markAllRead } from "../../app/lib/notifications";
 import { cn } from "../../app/lib/utils";
 
-const NAV = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/dashboard/fixtures", label: "Fixtures" },
-  { to: "/dashboard/predict", label: "Predict" },
-  { to: "/dashboard/results", label: "Results" },
-  { to: "/dashboard/pools", label: "Pools" },
-  { to: "/dashboard/leaderboard", label: "Leaderboard" },
-  { to: "/dashboard/wallet", label: "Wallet" },
-  { to: "/dashboard/profile", label: "Profile" },
-  { to: "/dashboard/settings", label: "Settings" },
-] as const;
+type NavIcon =
+  | { kind: "huge"; icon: IconSvgObject }
+  | { kind: "lucide"; Icon: typeof TrendingUpDown };
+
+const NAV: { to: string; label: string; icon: NavIcon }[] = [
+  { to: "/dashboard", label: "Dashboard", icon: { kind: "huge", icon: Home09Icon } },
+  { to: "/dashboard/fixtures", label: "Fixtures", icon: { kind: "huge", icon: FootballIcon } },
+  { to: "/dashboard/predict", label: "Predict", icon: { kind: "lucide", Icon: TrendingUpDown } },
+  { to: "/dashboard/results", label: "Results", icon: { kind: "huge", icon: WhistleIcon } },
+  { to: "/dashboard/pools", label: "Pools", icon: { kind: "huge", icon: UserGroupIcon } },
+  { to: "/dashboard/leaderboard", label: "Leaderboard", icon: { kind: "huge", icon: ListOrderedIcon } },
+  { to: "/dashboard/wallet", label: "Wallet", icon: { kind: "huge", icon: Wallet02Icon } },
+  { to: "/dashboard/profile", label: "Profile", icon: { kind: "huge", icon: UserIcon } },
+  { to: "/dashboard/settings", label: "Settings", icon: { kind: "huge", icon: Settings01Icon } },
+];
+
+function NavIconRender({ icon }: { icon: NavIcon }) {
+  if (icon.kind === "lucide") {
+    const { Icon } = icon;
+    return <Icon size={18} strokeWidth={1.5} className="shrink-0" />;
+  }
+  return <HugeiconsIcon icon={icon.icon} size={18} strokeWidth={1.5} className="shrink-0" />;
+}
 
 export function AppShell({
   title,
@@ -102,12 +130,13 @@ export function AppShell({
                   href={item.to}
                   onClick={() => setSheetOpen(false)}
                   className={cn(
-                    "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-muted-foreground",
                   )}
                 >
+                  <NavIconRender icon={item.icon} />
                   {item.label}
                 </Link>
               );
@@ -122,7 +151,7 @@ export function AppShell({
               }}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut size={16} strokeWidth={1.5} />
               Log out
             </button>
           </div>
@@ -145,12 +174,13 @@ export function AppShell({
                   key={item.to}
                   href={item.to}
                   className={cn(
-                    "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-muted-foreground",
                   )}
                 >
+                  <NavIconRender icon={item.icon} />
                   {item.label}
                 </Link>
               );
@@ -162,7 +192,7 @@ export function AppShell({
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut size={16} strokeWidth={1.5} />
               Log out
             </button>
           </div>
@@ -178,10 +208,15 @@ export function AppShell({
                   onClick={() => setSheetOpen(true)}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border lg:hidden"
                 >
-                  <Menu className="h-5 w-5" />
+                  <CircleUser className="h-5 w-5" />
                 </button>
                 <div className="relative hidden w-full max-w-xs sm:block">
-                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <HugeiconsIcon
+                    icon={Search01Icon}
+                    size={16}
+                    strokeWidth={1.5}
+                    className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
+                  />
                   <input
                     type="search"
                     value={searchQuery}
@@ -206,6 +241,10 @@ export function AppShell({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-sm font-semibold">
+                  <span className="text-muted-foreground">₦</span>
+                  <span className="num">0.00</span>
+                </div>
                 <ThemeToggle />
                 <div className="relative" ref={notifRef}>
                   <button
@@ -216,7 +255,7 @@ export function AppShell({
                     }}
                     className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border hover:bg-accent"
                   >
-                    <Bell className="h-4 w-4" />
+                    <HugeiconsIcon icon={Notification03Icon} size={16} strokeWidth={1.5} />
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                         {unreadCount > 9 ? "9+" : unreadCount}
@@ -265,7 +304,7 @@ export function AppShell({
             </div>
           </header>
 
-          <main className="animate-rise px-5 pt-8 pb-14 lg:px-8">
+          <main className="animate-rise px-5 pt-8 pb-24 lg:px-8 lg:pb-14">
             <div className="mx-auto max-w-7xl">
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -281,6 +320,37 @@ export function AppShell({
               <div className="mt-8">{children}</div>
             </div>
           </main>
+
+          {/* Mobile bottom nav */}
+          <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-border bg-background/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+            {[
+              { to: "/dashboard", label: "Home", icon: Home09Icon },
+              { to: "/dashboard/fixtures", label: "Scores", icon: FootballIcon },
+              { to: "/dashboard/pools", label: "Pools", icon: UserGroupIcon },
+              { to: "/dashboard/results", label: "My Results", icon: WhistleIcon },
+              { to: "/dashboard/leaderboard", label: "Leaderboard", icon: ListOrderedIcon },
+            ].map((item) => {
+              const isActive = pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
+              return (
+                <Link
+                  key={item.to}
+                  href={item.to}
+                  className={cn(
+                    "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
+                    isActive ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    size={20}
+                    strokeWidth={isActive ? 2 : 1.5}
+                    className={cn("shrink-0", isActive && "text-primary")}
+                  />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </div>
     </>
