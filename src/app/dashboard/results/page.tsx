@@ -8,7 +8,7 @@ import { Button } from "../../../components/ui/button";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { MatchCard, StatCard } from "../../../components/app/card";
 import type { Match } from "../../lib/mock-data";
-import { getMatchScores, getUserCompetitions } from "../../lib/api/endpoints";
+import { getMatchScores, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
 import type { ScoringResult } from "../../lib/scoring";
 
 function formatKickoff(iso: string): string {
@@ -27,6 +27,22 @@ function scoringFromPoints(points: number): ScoringResult {
   return { points: 0, label: "Wrong", description: "Incorrect prediction." };
 }
 
+const PRIORITY_COMPETITIONS = ["Champions League", "Premier League", "La Liga"];
+
+function prioritizeCompetitions(comps: UserCompetition[]): UserCompetition[] {
+  const rest = comps.filter(
+    (c) => !PRIORITY_COMPETITIONS.some(
+      (name) => c.name.toLowerCase().includes(name.toLowerCase()),
+    ),
+  );
+  const priority = PRIORITY_COMPETITIONS
+    .map((name) => comps.find(
+      (c) => c.name.toLowerCase().includes(name.toLowerCase()) || c.code?.toLowerCase() === name.toLowerCase(),
+    ))
+    .filter((c): c is UserCompetition => !!c);
+  return [...priority, ...rest];
+}
+
 export default function ResultsPage() {
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,10 +55,11 @@ export default function ResultsPage() {
     async function load() {
       try {
         const comps = await getUserCompetitions().catch(() => []);
-        comps?.forEach((c) => compNameMap.set(c._id, c.name));
+        const prioritized = prioritizeCompetitions(comps ?? []);
+        prioritized.forEach((c) => compNameMap.set(c._id, c.name));
 
         const allScoresData = await Promise.all(
-          (comps ?? []).map((c) => getMatchScores(c._id).catch(() => [])),
+          prioritized.map((c) => getMatchScores(c._id).catch(() => [])),
         );
 
         if (!active) return;

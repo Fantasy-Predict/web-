@@ -63,7 +63,7 @@ function PredictContent() {
   const searchParams = useSearchParams();
   const poolId = searchParams.get("pool") ?? undefined;
 
-  const [allMatches, setAllMatches] = useState<Match[]>([]);
+  const [compMatches, setCompMatches] = useState<Record<string, Match[]>>({});
   const [loading, setLoading] = useState(true);
   const [picks, setPicks] = useState<Record<string, Pick>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -101,68 +101,84 @@ function PredictContent() {
   useEffect(() => {
     let active = true;
     async function load() {
-      if (!selectedCompetition) return;
+      if (competitions.length === 0) return;
       setLoading(true);
       try {
-        const [matchData, scoreData] = await Promise.all([
-          getMatches(selectedCompetition),
-          getMatchScores(selectedCompetition).catch(() => []),
-        ]);
+        const perComp = await Promise.all(
+          competitions.map(async (c) => {
+            const [matchData, scoreData] = await Promise.all([
+              getMatches(c._id).catch(() => []),
+              getMatchScores(c._id).catch(() => []),
+            ]);
+
+            const scoreMap = new Map<string, { home: number; away: number }>();
+            const scorePredictionMap = new Map<string, { outcome: string; point?: number }[]>();
+            for (const s of scoreData) {
+              if (s.id && s.home && s.away) {
+                if (s.score) scoreMap.set(s.id, s.score);
+                if (s.prediction) scorePredictionMap.set(s.id, s.prediction);
+              }
+            }
+
+            const enriched = matchData
+              .filter((m) => m && m.id && m.home && m.away)
+              .map((m) => ({
+                ...m,
+                competitionName: compNameMap.current.get(m.competition) ?? m.competition,
+                kickoff: formatKickoff(m.kickoff),
+                score: scoreMap.get(m.id) ?? m.score,
+                prediction: scorePredictionMap.get(m.id) ?? m.prediction,
+                status: (scoreMap.has(m.id) && m.status !== "live")
+                  ? ("finished" as const)
+                  : m.status,
+              }));
+
+            for (const s of scoreData) {
+              if (s.id && s.home && s.away && !enriched.some((m) => m.id === s.id)) {
+                enriched.push({
+                  ...s,
+                  score: s.score,
+                  prediction: s.prediction,
+                  competitionName: c.name,
+                  kickoff: formatKickoff(s.kickoff),
+                  status: "finished" as const,
+                });
+              }
+            }
+
+            return { compId: c._id, matches: enriched };
+          }),
+        );
         if (!active) return;
 
-        const scoreMap = new Map<string, { home: number; away: number }>();
-        const scorePredictionMap = new Map<string, { outcome: string; point?: number }[]>();
-        for (const s of scoreData) {
-          if (s.score) scoreMap.set(s.id, s.score);
-          if (s.prediction) scorePredictionMap.set(s.id, s.prediction);
+        const byComp: Record<string, Match[]> = {};
+        for (const entry of perComp) {
+          byComp[entry.compId] = entry.matches;
         }
-
-        const enriched = matchData.map((m) => ({
-          ...m,
-          competitionName: compNameMap.current.get(m.competition) ?? m.competition,
-          kickoff: formatKickoff(m.kickoff),
-          score: scoreMap.get(m.id) ?? m.score,
-          prediction: scorePredictionMap.get(m.id) ?? m.prediction,
-          status: (scoreMap.has(m.id) && m.status !== "live")
-            ? ("finished" as const)
-            : m.status,
-        }));
-
-        for (const s of scoreData) {
-          if (s.id && s.home && s.away && !enriched.some((m) => m.id === s.id)) {
-            enriched.push({
-              ...s,
-              score: s.score,
-              prediction: s.prediction,
-              competitionName: compNameMap.current.get(s.competition) ?? s.competition,
-              kickoff: formatKickoff(s.kickoff),
-              status: "finished" as const,
-            });
-          }
-        }
-
-        setAllMatches(enriched);
+        setCompMatches(byComp);
 
         const newPicks: Record<string, Pick> = {};
-        for (const m of enriched) {
-          if (m.prediction && m.prediction.length > 0) {
-            const pred = m.prediction[0];
-            const outcomeStr = pred.outcome;
-            if (outcomeStr && outcomeStr.includes("-")) {
-              const parts = outcomeStr.split("-");
-              newPicks[m.id] = {
-                home: parts[0] ?? "",
-                away: parts[1] ?? "",
-                locked: true,
-                prediction: {
-                  outcome: getOutcomeFromScore(
-                    parseInt(parts[0]) || 0,
-                    parseInt(parts[1]) || 0,
-                  ),
-                  homeScore: parseInt(parts[0]) || 0,
-                  awayScore: parseInt(parts[1]) || 0,
-                },
-              };
+        for (const entry of perComp) {
+          for (const m of entry.matches) {
+            if (m.prediction && m.prediction.length > 0) {
+              const pred = m.prediction[0];
+              const outcomeStr = pred.outcome;
+              if (outcomeStr && outcomeStr.includes("-")) {
+                const parts = outcomeStr.split("-");
+                newPicks[m.id] = {
+                  home: parts[0] ?? "",
+                  away: parts[1] ?? "",
+                  locked: true,
+                  prediction: {
+                    outcome: getOutcomeFromScore(
+                      parseInt(parts[0]) || 0,
+                      parseInt(parts[1]) || 0,
+                    ),
+                    homeScore: parseInt(parts[0]) || 0,
+                    awayScore: parseInt(parts[1]) || 0,
+                  },
+                };
+              }
             }
           }
         }
@@ -175,7 +191,9 @@ function PredictContent() {
     }
     load();
     return () => { active = false; };
-  }, [selectedCompetition]);
+  }, [competitions]);
+
+  const allMatches = selectedCompetition ? (compMatches[selectedCompetition] ?? []) : [];
 
   const matchdays = (() => {
     const dayMap = new Map<string, Match[]>();
@@ -191,16 +209,17 @@ function PredictContent() {
     });
   })();
 
-  const nextMatchdayEntry = matchdays.find(([, matches]) =>
+  const matchdayEntries = matchdays.filter(([, matches]) =>
     matches.some((m) => m.status === "upcoming"),
   );
 
-  const matchdayLabel = nextMatchdayEntry ? nextMatchdayEntry[0] : null;
-  const upcoming = nextMatchdayEntry
-    ? nextMatchdayEntry[1].filter((m) => m.status === "upcoming")
+  const currentMatchdayEntry = matchdayEntries[0] ?? null;
+  const matchdayLabel = currentMatchdayEntry ? currentMatchdayEntry[0] : null;
+  const upcoming = currentMatchdayEntry
+    ? currentMatchdayEntry[1].filter((m) => m.status === "upcoming")
     : [];
-  const finished = nextMatchdayEntry
-    ? nextMatchdayEntry[1].filter((m) => m.status === "finished")
+  const finished = currentMatchdayEntry
+    ? currentMatchdayEntry[1].filter((m) => m.status === "finished")
     : [];
 
   const completed = upcoming.filter((m) => {
@@ -274,9 +293,10 @@ function PredictContent() {
 
       {!poolId && (
         <Card className="mb-6 border-primary/30 bg-primary/5 p-5 shadow-[var(--shadow-card)]">
-          <p className="text-sm font-semibold">Select a pool first</p>
+          <p className="text-sm font-semibold">Quick predictions</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Join or create a pool, then come back to make predictions for that pool.
+            You are not in a pool right now, but you can still make predictions. They will count
+            towards the global competition leaderboard.
           </p>
           <Button asChild className="mt-3" size="sm" variant="outline">
             <Link href="/dashboard/pools">Browse pools</Link>
@@ -413,15 +433,11 @@ function PredictContent() {
       <div className="mt-8 flex justify-end">
         <Button
           onClick={handleSubmit}
-          disabled={submitting || completed === 0 || !poolId}
+          disabled={submitting || completed === 0}
           size="lg"
           className="w-full sm:w-auto"
         >
-          {submitting
-            ? "Submitting…"
-            : !poolId
-              ? "Select a pool first"
-              : "Submit predictions"}
+          {submitting ? "Submitting…" : "Submit predictions"}
         </Button>
       </div>
     </AppShell>
