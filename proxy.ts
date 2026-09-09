@@ -20,6 +20,7 @@ export function proxy(request: NextRequest) {
     if (!token || !isAdmin) return redirectTo("/login");
     return NextResponse.next();
   }
+  
 
   // User dashboard requires a session.
   if (pathname.startsWith("/dashboard")) {
