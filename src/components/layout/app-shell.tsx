@@ -24,7 +24,7 @@ import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "../theme-toggle";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Sheet, SheetContent, SheetTitle } from "../../components/ui/sheet";
-import { getProfile } from "../../app/lib/api/endpoints";
+import { getProfile, getWallet } from "../../app/lib/api/endpoints";
 import { clearSession } from "../../app/lib/api/session";
 import { useNotifications, markAllRead } from "../../app/lib/notifications";
 import { cn } from "../../app/lib/utils";
@@ -70,6 +70,7 @@ export function AppShell({
   const [initials, setInitials] = useState("FP");
   const [searchQuery, setSearchQuery] = useState("");
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const { notifications, unreadCount } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -100,6 +101,20 @@ export function AppShell({
       })
       .catch(() => {
         if (active) setInitials("FP");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getWallet()
+      .then((wallet) => {
+        if (active) setWalletBalance(wallet.balance);
+      })
+      .catch(() => {
+        // balance unavailable — keep null
       });
     return () => {
       active = false;
@@ -243,7 +258,7 @@ export function AppShell({
               <div className="flex shrink-0 items-center gap-2">
                 <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-sm font-semibold">
                   <span className="text-muted-foreground">₦</span>
-                  <span className="num">0.00</span>
+                  <span className="num">{walletBalance == null ? "—" : walletBalance.toLocaleString("en-NG")}</span>
                 </div>
                 <ThemeToggle />
                 <div className="relative" ref={notifRef}>

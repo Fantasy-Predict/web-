@@ -13,6 +13,7 @@ import { StatCard } from "../../../../components/app/card";
 import { formatNaira, type Pool } from "../../../lib/mock-data";
 import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, type PoolMember, type CompLeaderboardEntry } from "../../../lib/api/endpoints";
 import { addJoinedPoolId } from "../../../lib/api/session";
+import { applySeasonProgress } from "../../../lib/season-progress";
 import { notifyPool } from "../../../lib/notifications";
 import { InviteButton } from "./invite-button";
 import { cn } from "../../../lib/utils";
@@ -53,6 +54,8 @@ export default function PoolDetailPage() {
           getPoolMembers(poolId),
           getProfile().catch(() => null),
         ]);
+        if (!active) return;
+        if (poolData) await applySeasonProgress([poolData]).catch(() => {});
         if (!active) return;
         setPool(poolData ?? null);
         setMembers(poolMembers ?? []);

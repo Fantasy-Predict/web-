@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui
 import { EmptyState, PoolCard } from "../../../components/app/card";
 import { getPools, getPool, joinPool } from "../../lib/api/endpoints";
 import { addJoinedPoolId, getJoinedPoolIds } from "../../lib/api/session";
+import { applySeasonProgress } from "../../lib/season-progress";
 import type { Pool } from "../../lib/mock-data";
 
 export default function PoolsPage() {
@@ -44,6 +45,7 @@ export default function PoolsPage() {
         seen.add(p.id);
         return true;
       });
+      await applySeasonProgress(unique);
       setMyPools(unique);
       return unique;
     } catch (error) {
@@ -56,6 +58,7 @@ export default function PoolsPage() {
     setDiscoverLoading(true);
     try {
       const all = await getPools();
+      await applySeasonProgress(all);
       const filtered = all.filter((p) => !myPoolIds.has(p.id));
       setAllDiscoverPools(filtered);
       setDiscoverPools(filtered);
