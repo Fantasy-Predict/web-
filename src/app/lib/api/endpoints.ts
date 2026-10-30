@@ -1,6 +1,6 @@
 import { apiFetch } from "./client";
 import { API_BASE_URL } from "./config";
-import { getToken, setRefreshToken, addJoinedPoolId } from "./session";
+import { getToken, setToken, setRefreshToken, addJoinedPoolId } from "./session";
 import {
   type LeaderboardRow,
   type Pool,
@@ -208,12 +208,15 @@ export type UpdateProfilePayload = {
   favouriteTeam?: string;
 };
 
-export async function updateProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
-  return apiFetch<UserProfile>("/v1/users/profile", {
+export async function updateProfile(payload: UpdateProfilePayload): Promise<void> {
+  const res = await apiFetch<{ token?: string }>("/v1/users/profile", {
     method: "PUT",
     body: payload,
     token: getToken(),
   });
+  if (res && typeof res.token === "string") {
+    setToken(res.token);
+  }
 }
 
 export async function sendNotification(payload: {
@@ -703,6 +706,17 @@ type PaginatedResponse<T> = {
   hasMore?: boolean;
 };
 
+export async function getMyPools(): Promise<Pool[]> {
+  const res = await apiFetch<{ data?: PaginatedResponse<PoolDoc> } | PaginatedResponse<PoolDoc>>(`/v1/pools/mine`, {
+    token: getToken(),
+    unwrap: false,
+  });
+  const list = (res as { data?: PaginatedResponse<PoolDoc> })?.data?.docs
+    ?? (res as PaginatedResponse<PoolDoc>)?.docs
+    ?? [];
+  return list.map((pool) => normalizePool(pool));
+}
+
 export async function getPools(
   options: { page?: number; name?: string; privacy?: string; personal?: boolean } = {},
 ): Promise<Pool[]> {
@@ -762,15 +776,19 @@ export async function joinPool(payload: {
   });
 }
 
+export async function getPoolByCode(code: string): Promise<Pool> {
+  const data = await apiFetch<PoolDoc>(`/v1/pools/by-code/${encodeURIComponent(code)}`, {
+    token: getToken(),
+  });
+  return normalizePool(data);
+}
+
 export async function joinPoolByCode(code: string): Promise<{ success?: boolean; poolId?: string }> {
-  const pools = await getPools({ page: 1 });
-  const match = pools.find(
-    (p) => p.inviteCode?.toUpperCase() === code.toUpperCase(),
-  );
-  if (!match) throw new Error("Invalid invite code");
-  await joinPool({ poolId: match.id, code });
-  addJoinedPoolId(match.id);
-  return { success: true, poolId: match.id };
+  const pool = await getPoolByCode(code);
+  if (!pool.id) throw new Error("Invalid invite code");
+  await joinPool({ poolId: pool.id, code });
+  addJoinedPoolId(pool.id);
+  return { success: true, poolId: pool.id };
 }
 
 export type PoolMember = {

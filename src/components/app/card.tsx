@@ -158,7 +158,19 @@ export function PoolCard({ pool, onJoin }: { pool: Pool; onJoin?: () => void }) 
           <h3 className="truncate text-base font-semibold">{pool.name}</h3>
           <p className="mt-1 truncate text-xs text-muted-foreground">{pool.competition}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!onJoin && (
+            pool.isCreator
+              ? (
+                <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                  Captain
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                  Member
+                </Badge>
+              )
+          )}
           {isFree ? (
             <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400">
               Free

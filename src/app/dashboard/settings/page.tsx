@@ -165,7 +165,7 @@ export default function SettingsPage() {
   async function saveProfile() {
     setSavingProfile(true);
     try {
-      const updated = await updateProfile({
+      await updateProfile({
         firstName: profileForm.firstName.trim() || undefined,
         lastName: profileForm.lastName.trim() || undefined,
         username: profileForm.username.trim() || undefined,
@@ -173,7 +173,7 @@ export default function SettingsPage() {
         phoneNumber: profileForm.phoneNumber.trim() || undefined,
         favouriteTeam: profileForm.favouriteTeam.trim() || undefined,
       });
-      setProfile(updated ?? { ...profile, ...profileForm });
+      setProfile({ ...profile, ...profileForm });
       toast.success("Profile updated");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update your profile");

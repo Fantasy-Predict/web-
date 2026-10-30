@@ -9,8 +9,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "../../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { EmptyState, PoolCard } from "../../../components/app/card";
-import { getPools, getPool, joinPool } from "../../lib/api/endpoints";
-import { addJoinedPoolId, getJoinedPoolIds } from "../../lib/api/session";
+import { getMyPools, getPools, joinPool } from "../../lib/api/endpoints";
+import { addJoinedPoolId } from "../../lib/api/session";
 import { applySeasonProgress } from "../../lib/season-progress";
 import type { Pool } from "../../lib/mock-data";
 
@@ -29,25 +29,10 @@ export default function PoolsPage() {
 
   const loadMyPools = useCallback(async () => {
     try {
-      const apiPools = await getPools({ personal: true });
-      const apiIds = new Set(apiPools.map((p) => p.id));
-
-      // Also fetch any pools joined locally that the API might not return yet
-      const localIds = getJoinedPoolIds().filter((id) => !apiIds.has(id));
-      const localPools = await Promise.all(
-        localIds.map((id) => getPool(id).catch(() => null)),
-      );
-      const merged = [...apiPools, ...localPools.filter(Boolean) as Pool[]];
-      // Deduplicate by id
-      const seen = new Set<string>();
-      const unique = merged.filter((p) => {
-        if (seen.has(p.id)) return false;
-        seen.add(p.id);
-        return true;
-      });
-      await applySeasonProgress(unique);
-      setMyPools(unique);
-      return unique;
+      const pools = await getMyPools();
+      await applySeasonProgress(pools);
+      setMyPools(pools);
+      return pools;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to load your pools");
       return [];
