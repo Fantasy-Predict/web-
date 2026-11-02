@@ -240,15 +240,14 @@ export function SeasonCountdown() {
             <h2 className="mt-4 text-3xl font-bold sm:text-4xl">No featured match right now</h2>
           ) : (
             <>
-              <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-4 text-2xl font-bold sm:text-4xl">
                 {match.homeTeam.shortName || match.homeTeam.name} vs{" "}
                 {match.awayTeam.shortName || match.awayTeam.name}
-                <br />
-                <span className="text-xl font-semibold text-primary/80 sm:text-2xl">
-                  {formatMatchContext(match)}
-                </span>
               </h2>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-1 text-sm font-semibold tracking-wide text-primary">
+                {formatMatchContext(match)}
+              </p>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
                 {generateMatchBlurb(match)}
               </p>
             </>
