@@ -148,9 +148,9 @@ export const SEASON_KICKOFF = new Date("2026-08-24T19:00:00Z");
 
 function formatMatchContext(match: FeaturedMatch): string {
   const d = new Date(match.date);
-  const weekday = d.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
-  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
-  const isNight = d.getUTCHours() >= 18;
+  const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const isNight = d.getHours() >= 18;
   const suffix = isNight ? " Night" : "";
   return `${match.competitionName} · ${weekday}${suffix}, ${time}`;
 }
