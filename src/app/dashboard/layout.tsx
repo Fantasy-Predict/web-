@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getProfile } from "../lib/api/endpoints";
-import { clearSession, getToken, isTokenExpired } from "../lib/api/session";
+import { clearSession } from "../lib/api/session";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -12,12 +12,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     let active = true;
     async function validate() {
-      const token = getToken();
-      if (!token || isTokenExpired()) {
-        clearSession();
-        router.replace("/login");
-        return;
-      }
       try {
         await getProfile();
         if (active) setVerified(true);

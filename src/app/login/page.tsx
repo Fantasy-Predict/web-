@@ -11,9 +11,7 @@ import { adminLogin, login, updateProfile } from "@/app/lib/api/endpoints";
 
 import {
   clearSession,
-  setSessionCookies,
   setStoredUserType,
-  setToken,
 } from "@/app/lib/api/session";
 import { AuthLayout } from "@/components/layout/auth-layout";
 import { Button } from "../../components/ui/button";
@@ -74,18 +72,10 @@ export default function LoginPage() {
     isAdmin: boolean,
     loginId?: string,
   ) {
-    const token = response.token;
-    if (!token) {
-      setLoading(false);
-      toast.error("Login failed — no session token received. Please try again.");
-      return;
-    }
     const userType: "admin" | "user" = response.userType === "admin" ? "admin" : isAdmin ? "admin" : "user";
 
     clearSession();
-    setToken(token);
     setStoredUserType(userType);
-    setSessionCookies(token, userType);
 
     const pendingTeam = localStorage.getItem("fp_pending_favourite_team");
     if (pendingTeam) {

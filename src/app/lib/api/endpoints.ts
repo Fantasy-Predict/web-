@@ -1,6 +1,5 @@
 import { apiFetch } from "./client";
 import { API_BASE_URL } from "./config";
-import { getToken, setToken, setRefreshToken } from "./session";
 import {
   type LeaderboardRow,
   type Pool,
@@ -93,14 +92,8 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     body: payload,
     unwrap: false,
   });
-  const rt =
-    res?.meta?.refreshToken ??
-    res?.refreshToken ??
-    res?.data?.refreshToken;
-  if (rt) setRefreshToken(rt);
   return {
     token: res?.meta?.token,
-    refreshToken: rt,
     verificationStatus: res?.data?.verificationStatus,
     userType: res?.data?.userType === "admin" ? "admin" : "user",
     user: res?.data,
@@ -159,10 +152,9 @@ export async function resetPassword(payload: {
   });
 }
 
-export async function refreshToken(refreshTokenValue: string): Promise<{ token?: string; refreshToken?: string }> {
-  return apiFetch("/v1/users/refresh-token", {
+export async function refreshToken(): Promise<void> {
+  await apiFetch("/v1/users/refresh-token", {
     method: "POST",
-    body: { refreshToken: refreshTokenValue },
     unwrap: false,
   });
 }
@@ -171,7 +163,6 @@ export async function changePassword(payload: { oldPassword: string; password: s
   return apiFetch("/v1/users/change-password", {
     method: "PATCH",
     body: payload,
-    token: getToken(),
   });
 }
 
@@ -192,7 +183,6 @@ export type UserProfile = {
 
 export async function getProfile(): Promise<UserProfile> {
   const res = await apiFetch<UserProfile | { data?: UserProfile }>("/v1/users/profile", {
-    token: getToken(),
     unwrap: false,
   });
   return (res as { data?: UserProfile })?.data ?? (res as UserProfile);
@@ -209,14 +199,10 @@ export type UpdateProfilePayload = {
 };
 
 export async function updateProfile(payload: UpdateProfilePayload): Promise<void> {
-  const res = await apiFetch<{ token?: string }>("/v1/users/profile", {
+  await apiFetch("/v1/users/profile", {
     method: "PUT",
     body: payload,
-    token: getToken(),
   });
-  if (res && typeof res.token === "string") {
-    setToken(res.token);
-  }
 }
 
 export async function sendNotification(payload: {
@@ -226,7 +212,6 @@ export async function sendNotification(payload: {
     method: "POST",
     body: { sendNotification: payload.sendNotification },
     unwrap: false,
-    token: getToken(),
   });
 }
 
@@ -315,7 +300,7 @@ export async function getMatches(competition: string, date?: string): Promise<Ma
   let matchPath = `/v1/matches?competition=${encodeURIComponent(competition)}`;
   if (date) matchPath += `&date=${encodeURIComponent(date)}`;
   const res = await apiFetch<MatchDoc[] | { docs?: MatchDoc[] }>(matchPath, {
-    token: getToken(),
+
   });
 
   const list = Array.isArray(res) ? res : (res?.docs ?? []);
@@ -383,7 +368,7 @@ export async function getMatchScores(competition: string): Promise<Match[]> {
 
   const res = await apiFetch<ScoreDoc[] | { docs?: ScoreDoc[] }>(
     `/v1/matches/score?competition=${encodeURIComponent(competition)}`,
-    { token: getToken() },
+
   );
 
   const list = Array.isArray(res) ? res : (res?.docs ?? []);
@@ -423,7 +408,7 @@ export async function createPrediction(payload: PredictionPayload): Promise<{ su
   return apiFetch("/v1/predictions", {
     method: "POST",
     body: payload,
-    token: getToken(),
+
   });
 }
 
@@ -439,7 +424,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
       predictions?: { totalPoints?: number };
     }>
   >("/v1/predictions", {
-    token: getToken(),
+
   });
   return (res ?? []).map((row, index) => ({
     id: row._id ?? row.id ?? `row-${index}`,
@@ -491,7 +476,7 @@ export async function getCompLeaderboard(competition: string): Promise<CompLeade
       }>;
     };
   }>(`/v1/predictions/comp-leaderboard?competition=${encodeURIComponent(competition)}`, {
-    token: getToken(),
+
     unwrap: false,
   });
 
@@ -528,7 +513,7 @@ function formatTxDate(iso: string): string {
 
 export async function getWallet(): Promise<Wallet> {
   const res = await apiFetch<{ wallet?: Wallet; balance?: number; currency?: string; data?: { wallet?: Wallet; balance?: number; currency?: string } }>("/v1/wallets", {
-    token: getToken(),
+
     unwrap: false,
   });
   const d = res?.data ?? res;
@@ -545,7 +530,7 @@ export async function verifyPayment(payload: { reference?: string; transactionId
   return apiFetch("/v1/wallets/verify-payment", {
     method: "POST",
     body: payload,
-    token: getToken(),
+
   });
 }
 
@@ -562,7 +547,7 @@ type TransactionDoc = {
 
 export async function getTransactions(): Promise<Transaction[]> {
   const res = await apiFetch<TransactionDoc[] | { docs?: TransactionDoc[] }>("/v1/transactions", {
-    token: getToken(),
+
   });
   const list = Array.isArray(res) ? res : (res?.docs ?? []);
   return list.map((tx) => ({
@@ -588,7 +573,7 @@ export async function createWithdrawal(payload: WithdrawalPayload): Promise<{ su
   return apiFetch("/v1/withdrawals", {
     method: "POST",
     body: payload,
-    token: getToken(),
+
   });
 }
 
@@ -606,7 +591,7 @@ export type UserCompetition = {
 
 export async function getUserCompetitions(): Promise<UserCompetition[]> {
   const res = await apiFetch<UserCompetition[] | { data?: UserCompetition[] | { docs?: UserCompetition[] }; docs?: UserCompetition[] }>("/v1/competitions", {
-    token: getToken(),
+
     unwrap: false,
   });
   if (Array.isArray(res)) return res;
@@ -708,7 +693,7 @@ type PaginatedResponse<T> = {
 
 export async function getMyPools(): Promise<Pool[]> {
   const res = await apiFetch<{ data?: PaginatedResponse<PoolDoc> } | PaginatedResponse<PoolDoc>>(`/v1/pools/mine`, {
-    token: getToken(),
+
     unwrap: false,
   });
   const list = (res as { data?: PaginatedResponse<PoolDoc> })?.data?.docs
@@ -727,7 +712,7 @@ export async function getPools(
   if (options.personal) params.set("personal", "true");
   const qs = params.toString();
   const res = await apiFetch<{ data?: PaginatedResponse<PoolDoc> } | PaginatedResponse<PoolDoc> | PoolDoc[]>(`/v1/pools?${qs}`, {
-    token: getToken(),
+
     unwrap: false,
   });
   const list = Array.isArray(res) ? res
@@ -741,7 +726,7 @@ export async function getPools(
 
 export async function getPool(id: string): Promise<Pool> {
   const res = await apiFetch<PoolDoc | Pool | { data?: PoolDoc | Pool }>(`/v1/pools/${id}`, {
-    token: getToken(),
+
     unwrap: false,
   });
   const d = (res as { data?: PoolDoc | Pool })?.data ?? res;
@@ -761,7 +746,7 @@ export async function createPool(payload: CreatePoolPayload): Promise<{ _id?: st
   return apiFetch("/v1/pools", {
     method: "POST",
     body: payload,
-    token: getToken(),
+
   });
 }
 
@@ -772,13 +757,13 @@ export async function joinPool(payload: {
   return apiFetch("/v1/pool-members", {
     method: "POST",
     body: payload,
-    token: getToken(),
+
   });
 }
 
 export async function getPoolByCode(code: string): Promise<Pool> {
   const data = await apiFetch<PoolDoc>(`/v1/pools/by-code/${encodeURIComponent(code)}`, {
-    token: getToken(),
+
   });
   return normalizePool(data);
 }
@@ -812,7 +797,7 @@ export async function getPoolMembers(poolId: string): Promise<PoolMember[]> {
   const res = await apiFetch<{ data?: { docs?: PoolMember[] } } | PoolMember[]>(
     `/v1/pool-members?poolId=${encodeURIComponent(poolId)}`,
     {
-      token: getToken(),
+  
       unwrap: false,
     },
   );
@@ -836,14 +821,14 @@ export async function updatePoolMemberStatus(
   return apiFetch(`/v1/pool-members/${memberId}`, {
     method: "PATCH",
     body: { poolId, status },
-    token: getToken(),
+
     unwrap: false,
   });
 }
 
 export async function getPoolLeaderboard(): Promise<LeaderboardEntry[]> {
   return apiFetch("/v1/pools/leadboard/pool", {
-    token: getToken(),
+
   });
 }
 
@@ -855,7 +840,7 @@ export async function getPin(): Promise<{ hasPin: boolean }> {
   return apiFetch("/v1/pins", {
     method: "GET",
     unwrap: false,
-    token: getToken(),
+
   });
 }
 
@@ -864,7 +849,7 @@ export async function setPin(payload: { pin: string }): Promise<{ success?: bool
     method: "POST",
     body: { pin: payload.pin, code: payload.pin },
     unwrap: false,
-    token: getToken(),
+
   });
 }
 
@@ -886,7 +871,7 @@ export type BankAccount = {
 
 export async function getBanks(): Promise<Bank[]> {
   const res = await apiFetch<Bank[] | { data?: Bank[]; docs?: Bank[] }>("/v1/banks", {
-    token: getToken(),
+
     unwrap: false,
   });
   if (Array.isArray(res)) return res;
@@ -897,7 +882,7 @@ export async function getBanks(): Promise<Bank[]> {
 
 export async function getBankAccount(): Promise<BankAccount | null> {
   const res = await apiFetch<{ account?: BankAccount; data?: { account?: BankAccount } }>("/v1/banks/account", {
-    token: getToken(),
+
     unwrap: false,
   });
   return res?.account ?? res?.data?.account ?? null;
@@ -921,7 +906,7 @@ export async function verifyBankAccount(payload: {
   }>("/v1/banks/verify-account", {
     method: "POST",
     body: payload,
-    token: getToken(),
+
     unwrap: false,
   });
   const d = res?.data ?? res;

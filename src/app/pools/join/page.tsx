@@ -3,19 +3,18 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, CheckCircle, XCircle, LogIn } from "lucide-react";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { joinPoolByCode } from "@/app/lib/api/endpoints";
-import { getToken } from "@/app/lib/api/session";
 import { notifyPool } from "@/app/lib/notifications";
 
 function JoinPoolContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const code = searchParams.get("code") ?? "";
-  const [status, setStatus] = useState<"loading" | "success" | "error" | "need-login">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [poolId, setPoolId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -23,12 +22,6 @@ function JoinPoolContent() {
     if (!code) {
       setStatus("error");
       setErrorMsg("No invite code provided.");
-      return;
-    }
-
-    const token = getToken();
-    if (!token) {
-      setStatus("need-login");
       return;
     }
 
@@ -51,8 +44,6 @@ function JoinPoolContent() {
     };
   }, [code]);
 
-  const loginRedirect = `/login?redirect=${encodeURIComponent(`/pools/join?code=${code}`)}`;
-
   return (
     <Card className="w-full max-w-md items-center gap-0 p-8 text-center shadow-[var(--shadow-card)]">
       {!code ? (
@@ -72,23 +63,6 @@ function JoinPoolContent() {
           <h1 className="mt-4 text-lg font-bold">Joining pool…</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Hold on, we&apos;re adding you to the pool.
-          </p>
-        </>
-      ) : status === "need-login" ? (
-        <>
-          <LogIn className="h-12 w-12 text-primary" />
-          <h1 className="mt-4 text-lg font-bold">Login required</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You need to be logged in to join this pool.
-          </p>
-          <Button asChild className="mt-6" size="lg">
-            <Link href={loginRedirect}>Login to Join</Link>
-          </Button>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href={`/register?redirect=${encodeURIComponent(`/pools/join?code=${code}`)}`} className="font-semibold text-primary underline-offset-4 hover:underline">
-              Sign up
-            </Link>
           </p>
         </>
       ) : status === "success" ? (
