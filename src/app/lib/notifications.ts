@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  getNotifications,
+  markAllNotificationsRead,
+  clearNotifications as apiClearNotifications,
+  type BackendNotification,
+} from "./api/endpoints";
 
 export type Notification = {
   id: string;
@@ -11,100 +17,79 @@ export type Notification = {
   type: "prediction" | "pool" | "payment" | "system";
 };
 
-type NotificationInput = Omit<Notification, "id" | "timestamp" | "read">;
-
-const STORAGE_KEY = "fp_notifications";
-const MAX_NOTIFICATIONS = 50;
-
-function loadNotifications(): Notification[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveNotifications(notifications: Notification[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications.slice(0, MAX_NOTIFICATIONS)));
-}
-
-let listeners: Array<() => void> = [];
-
-function emitChange() {
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-export function addNotification(input: NotificationInput) {
-  const notifications = loadNotifications();
-  const newNotification: Notification = {
-    ...input,
-    id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    timestamp: Date.now(),
-    read: false,
+function fromBackend(n: BackendNotification): Notification {
+  return {
+    id: n._id,
+    title: n.title,
+    body: n.body,
+    timestamp: new Date(n.createdAt).getTime(),
+    read: n.read,
+    type: n.type,
   };
-  notifications.unshift(newNotification);
-  saveNotifications(notifications);
-  emitChange();
+}
+
+// No-ops — notifications are now created server-side
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function addNotification(_input: unknown) {}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function markRead(_id: string) {}
+export function notifyPrediction(_title: string, _body: string) {}
+export function notifyPool(_title: string, _body: string) {}
+export function notifyPayment(_title: string, _body: string) {}
+export function notifySystem(_title: string, _body: string) {}
+
+export function clearAllNotifications() {
+  apiClearNotifications().catch(() => {});
 }
 
 export function markAllRead() {
-  const notifications = loadNotifications().map((n) => ({ ...n, read: true }));
-  saveNotifications(notifications);
-  emitChange();
-}
-
-export function markRead(id: string) {
-  const notifications = loadNotifications().map((n) =>
-    n.id === id ? { ...n, read: true } : n
-  );
-  saveNotifications(notifications);
-  emitChange();
-}
-
-export function clearAllNotifications() {
-  saveNotifications([]);
-  emitChange();
+  markAllNotificationsRead().catch(() => {});
 }
 
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(() => loadNotifications());
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const isFetching = useRef(false);
 
-  const subscribe = useCallback(() => {
-    function onStoreChange() {
-      setNotifications(loadNotifications());
+  const fetchNotifications = useCallback(async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+    try {
+      const data = await getNotifications();
+      setNotifications(data.map(fromBackend));
+    } catch {
+      // API unreachable — keep prior state
+    } finally {
+      isFetching.current = false;
     }
-    listeners.push(onStoreChange);
-    return () => {
-      listeners = listeners.filter((l) => l !== onStoreChange);
-    };
   }, []);
 
   useEffect(() => {
-    return subscribe();
-  }, [subscribe]);
+    fetchNotifications();
+
+    function onFocus() {
+      fetchNotifications();
+    }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchNotifications]);
+
+  const handleMarkAllRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    markAllNotificationsRead().catch(() => {});
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    setNotifications([]);
+    apiClearNotifications().catch(() => {});
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  return { notifications, unreadCount, markAllRead, markRead, clearAllNotifications };
-}
-
-export function notifyPrediction(title: string, body: string) {
-  addNotification({ title, body, type: "prediction" });
-}
-
-export function notifyPool(title: string, body: string) {
-  addNotification({ title, body, type: "pool" });
-}
-
-export function notifyPayment(title: string, body: string) {
-  addNotification({ title, body, type: "payment" });
-}
-
-export function notifySystem(title: string, body: string) {
-  addNotification({ title, body, type: "system" });
+  return {
+    notifications,
+    unreadCount,
+    markAllRead: handleMarkAllRead,
+    markRead,
+    clearAllNotifications: handleClearAll,
+  };
 }

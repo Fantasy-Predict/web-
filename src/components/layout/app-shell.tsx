@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Sheet, SheetContent, SheetTitle } from "../../components/ui/sheet";
 import { getProfile, getWallet } from "../../app/lib/api/endpoints";
 import { clearSession } from "../../app/lib/api/session";
-import { useNotifications, markAllRead } from "../../app/lib/notifications";
+import { useNotifications } from "../../app/lib/notifications";
 import { cn } from "../../app/lib/utils";
 
 type NavIcon =
@@ -71,7 +71,7 @@ export function AppShell({
   const [searchQuery, setSearchQuery] = useState("");
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const { notifications, unreadCount } = useNotifications();
+  const { notifications, unreadCount, markAllRead } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const [sheetOpen, setSheetOpen] = useState(false);

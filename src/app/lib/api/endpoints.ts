@@ -934,3 +934,29 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<{ succes
     unwrap: false,
   });
 }
+
+// ============================================================
+// Notifications
+// ============================================================
+
+export type BackendNotification = {
+  _id: string;
+  title: string;
+  body: string;
+  type: "prediction" | "pool" | "payment" | "system";
+  read: boolean;
+  createdAt: string;
+};
+
+export async function getNotifications(): Promise<BackendNotification[]> {
+  const res = await apiFetch<{ docs?: BackendNotification[] } | BackendNotification[]>("/v1/notifications");
+  return Array.isArray(res) ? res : (res?.docs ?? []);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await apiFetch("/v1/notifications/read-all", { method: "PATCH" });
+}
+
+export async function clearNotifications(): Promise<void> {
+  await apiFetch("/v1/notifications", { method: "DELETE" });
+}
