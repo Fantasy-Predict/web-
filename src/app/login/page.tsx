@@ -9,10 +9,7 @@ import { toast } from "sonner";
 import { ApiError } from "@/app/lib/api/client";
 import { adminLogin, login, updateProfile } from "@/app/lib/api/endpoints";
 
-import {
-  clearSession,
-  setStoredUserType,
-} from "@/app/lib/api/session";
+import { setStoredUserType } from "@/app/lib/api/session";
 import { AuthLayout } from "@/components/layout/auth-layout";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -41,7 +38,6 @@ export default function LoginPage() {
     }
     setErrors({});
     setLoading(true);
-    clearSession();
 
     // Single sign-in page: try the user endpoint first, then fall back to the
     // admin endpoint so admin accounts can use the same form.
@@ -74,7 +70,6 @@ export default function LoginPage() {
   ) {
     const userType: "admin" | "user" = response.userType === "admin" ? "admin" : isAdmin ? "admin" : "user";
 
-    clearSession();
     setStoredUserType(userType);
 
     const pendingTeam = localStorage.getItem("fp_pending_favourite_team");
