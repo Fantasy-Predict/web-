@@ -91,7 +91,7 @@ export default function LoginPage() {
     } else if (response.verificationStatus !== true) {
       destination = `/verify-account?email=${encodeURIComponent(loginId ?? "")}`;
     }
-    router.push(destination);
+    window.location.href = destination;
   }
 
   return (
