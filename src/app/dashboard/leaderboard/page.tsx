@@ -92,10 +92,10 @@ export default function LeaderboardPage() {
 
       {personalRank && (
         <Card className="mb-6 gap-0 border-primary/30 bg-primary/5 p-5 shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between sm:block">
               <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">Your Rank</p>
-              <p className="mt-2 font-display text-3xl font-bold text-primary">#{personalRank.rank}</p>
+              <p className="font-display text-3xl font-bold text-primary sm:mt-2">#{personalRank.rank}</p>
             </div>
             <div className="flex gap-6 text-center">
               <div>
