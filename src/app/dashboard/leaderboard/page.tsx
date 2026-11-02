@@ -183,8 +183,8 @@ export default function LeaderboardPage() {
             })}
           </div>
 
-          <Card className="mt-8 gap-0 overflow-hidden p-0 shadow-[var(--shadow-card)]">
-            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3rem_4.5rem] gap-2 border-b border-border px-5 py-3 text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+          <Card className="mt-8 gap-0 overflow-x-auto p-0 shadow-[var(--shadow-card)]">
+            <div className="min-w-[340px] grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3rem_4.5rem] gap-2 border-b border-border px-5 py-3 text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
               <span>#</span>
               <span>Player</span>
               <span className="text-center">Exc</span>
@@ -197,7 +197,7 @@ export default function LeaderboardPage() {
               return (
                 <div
                   key={entry.userId}
-                  className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3rem_4.5rem] items-center gap-2 border-b border-border px-5 py-3.5 text-sm last:border-0"
+                  className="min-w-[340px] grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3rem_4.5rem] items-center gap-2 border-b border-border px-5 py-3.5 text-sm last:border-0"
                 >
                   <span className="num font-semibold text-muted-foreground">{index + 4}</span>
                   <div className="flex min-w-0 items-center gap-3">
