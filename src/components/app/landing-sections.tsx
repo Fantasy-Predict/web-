@@ -545,7 +545,7 @@ export function AppsComingSoon() {
         </div>
 
         <div className="justify-self-center" data-aos="zoom-in" data-aos-delay="150">
-          <div className="w-auto rounded-[2.2rem] border-8 border-foreground/10 bg-card p-4 shadow-[var(--shadow-card)]">
+          <div className="w-[90%] mx-auto lg:w-88 rounded-[2.2rem] border-8 border-foreground/10 bg-card p-4 shadow-[var(--shadow-card)]">
             {/* Placeholder brand mark — swap for real in-app screens once the designer sends them */}
             <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-navy p-6">
               <div className="flex flex-col items-center">
