@@ -29,6 +29,25 @@ import { clearSession } from "../../app/lib/api/session";
 import { useNotifications } from "../../app/lib/notifications";
 import { cn } from "../../app/lib/utils";
 
+function formatNotifTime(ts: number): string {
+  const d = new Date(ts);
+  const now = new Date();
+  const isToday =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+    d.getDate() === yesterday.getDate() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getFullYear() === yesterday.getFullYear();
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+  if (isToday) return time;
+  if (isYesterday) return `Yesterday ${time}`;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " " + time;
+}
+
 type NavIcon =
   | { kind: "huge"; icon: IconSvgObject }
   | { kind: "lucide"; Icon: typeof TrendingUpDown };
@@ -299,7 +318,7 @@ export function AppShell({
                               <div className="flex items-center justify-between">
                                 <p className="text-sm font-semibold">{n.title}</p>
                                 <span className="text-[10px] tabular-nums text-muted-foreground">
-                                  {new Date(n.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })}
+                                  {formatNotifTime(n.timestamp)}
                                 </span>
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
