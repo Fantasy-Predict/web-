@@ -146,6 +146,40 @@ export function HeroPredictionWidget() {
 /** Premier League 2026/27 opening match: Newcastle vs Liverpool, Sun 23 Aug 2026, 16:30 BST */
 export const SEASON_KICKOFF = new Date("2026-08-24T19:00:00Z");
 
+function formatMatchContext(match: FeaturedMatch): string {
+  const d = new Date(match.date);
+  const weekday = d.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
+  const isNight = d.getUTCHours() >= 18;
+  const suffix = isNight ? " Night" : "";
+  return `${match.competitionName} · ${weekday}${suffix}, ${time}`;
+}
+
+function generateMatchBlurb(match: FeaturedMatch): string {
+  const home = match.homeTeam.shortName || match.homeTeam.name;
+  const away = match.awayTeam.shortName || match.awayTeam.name;
+  const stage = match.stage ?? "";
+  const knockoutStages = ["ROUND_OF_16", "QUARTER_FINALS", "SEMI_FINALS", "FINAL"];
+
+  if (match.competitionCode === "CL") {
+    if (knockoutStages.includes(stage)) {
+      const stageLabel =
+        stage === "FINAL" ? "the final" :
+        stage === "SEMI_FINALS" ? "the semi-finals" :
+        stage === "QUARTER_FINALS" ? "the quarter-finals" : "the round of 16";
+      return `The stakes couldn't be higher — ${home} face ${away} in ${stageLabel} of the Champions League. Predict the result, join a pool and see if you can call the biggest night in European football.`;
+    }
+    return `European nights are back — ${home} take on ${away} in Champions League action. Get your predictions in and your pool locked before kickoff.`;
+  }
+  if (match.competitionCode === "EL") {
+    return `Europa League football is here — ${home} host ${away} in a crucial fixture. Predict the outcome and compete with your friends before the whistle.`;
+  }
+  if (match.competitionCode === "ECL") {
+    return `Conference League action continues as ${home} face ${away}. Make your prediction, join a pool and show you know your football.`;
+  }
+  return `${match.competitionName} action continues as ${home} take on ${away}. Get your predictions in and your pool locked before kickoff.`;
+}
+
 function diff(target: Date) {
   const ms = Math.max(0, target.getTime() - Date.now());
   return {
@@ -191,22 +225,6 @@ export function SeasonCountdown() {
     ["Seconds", time?.seconds],
   ];
 
-  const matchLabel = match
-    ? new Date(match.date).toLocaleDateString("en-GB", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-    : null;
-
-  const stageLabel =
-    match?.stage && match.stage !== "REGULAR_SEASON"
-      ? ` · ${match.stage.replace(/_/g, " ")}`
-      : "";
-
   return (
     <section className="border-y border-border bg-card/40">
       <div className="mx-auto grid gap-10 lg:px-36 px-5 py-16 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-8">
@@ -225,12 +243,13 @@ export function SeasonCountdown() {
               <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
                 {match.homeTeam.shortName || match.homeTeam.name} vs{" "}
                 {match.awayTeam.shortName || match.awayTeam.name}
+                <br />
+                <span className="text-xl font-semibold text-primary/80 sm:text-2xl">
+                  {formatMatchContext(match)}
+                </span>
               </h2>
-              <p className="mt-2 text-xs font-semibold tracking-wide text-primary uppercase">
-                {match.competitionName}{stageLabel}
-              </p>
               <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-                {matchLabel}
+                {generateMatchBlurb(match)}
               </p>
             </>
           )}
