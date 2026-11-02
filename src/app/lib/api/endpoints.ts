@@ -1,6 +1,6 @@
 import { apiFetch } from "./client";
 import { API_BASE_URL } from "./config";
-import { getToken, setToken, setRefreshToken, addJoinedPoolId } from "./session";
+import { getToken, setToken, setRefreshToken } from "./session";
 import {
   type LeaderboardRow,
   type Pool,
@@ -787,7 +787,6 @@ export async function joinPoolByCode(code: string): Promise<{ success?: boolean;
   const pool = await getPoolByCode(code);
   if (!pool.id) throw new Error("Invalid invite code");
   await joinPool({ poolId: pool.id, code });
-  addJoinedPoolId(pool.id);
   return { success: true, poolId: pool.id };
 }
 
@@ -851,6 +850,14 @@ export async function getPoolLeaderboard(): Promise<LeaderboardEntry[]> {
 // ============================================================
 // Transaction PIN
 // ============================================================
+
+export async function getPin(): Promise<{ hasPin: boolean }> {
+  return apiFetch("/v1/pins", {
+    method: "GET",
+    unwrap: false,
+    token: getToken(),
+  });
+}
 
 export async function setPin(payload: { pin: string }): Promise<{ success?: boolean; status?: boolean; message?: string }> {
   return apiFetch("/v1/pins", {

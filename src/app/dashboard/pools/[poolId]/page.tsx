@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
 import { StatCard } from "../../../../components/app/card";
 import { formatNaira, type Pool } from "../../../lib/mock-data";
 import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, type PoolMember, type CompLeaderboardEntry } from "../../../lib/api/endpoints";
-import { addJoinedPoolId } from "../../../lib/api/session";
 import { applySeasonProgress } from "../../../lib/season-progress";
 import { notifyPool } from "../../../lib/notifications";
 import { InviteButton } from "./invite-button";
@@ -97,7 +96,6 @@ export default function PoolDetailPage() {
     try {
       await joinPool({ poolId: pool.id });
       setJoined(true);
-      addJoinedPoolId(pool.id);
       toast.success(`Joined ${pool.name}`);
       notifyPool("Pool joined", `You joined "${pool.name}". Start making predictions to earn points!`);
     } catch (error) {

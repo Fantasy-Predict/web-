@@ -24,13 +24,13 @@ import {
   verifyBankAccount,
   getProfile,
   sendNotification,
+  getPin,
   setPin,
   updateProfile,
   type UserProfile,
   type Bank,
   type BankAccount,
 } from "../../lib/api/endpoints";
-import { setHasPin } from "../../lib/api/session";
 import { Skeleton } from "../../../components/ui/skeleton";
 
 const THEMES: { value: ThemeChoice; label: string; hint: string }[] = [
@@ -71,10 +71,7 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const [hasPin, setHasPinState] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("fp_has_pin") === "true";
-  });
+  const [hasPin, setHasPinState] = useState(false);
   const [pinValue, setPinValue] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
   const [savingPin, setSavingPin] = useState(false);
@@ -98,8 +95,9 @@ export default function SettingsPage() {
       getProfile(),
       getBanks().catch(() => []),
       getBankAccount().catch(() => null),
+      getPin().catch(() => null),
     ])
-      .then(([profileData, bankList, account]) => {
+      .then(([profileData, bankList, account, pinData]) => {
         if (!active) return;
         setProfile(profileData ?? null);
         setProfileForm({
@@ -115,6 +113,7 @@ export default function SettingsPage() {
         }
         setBanks(bankList);
         setLinkedAccount(account);
+        if (pinData?.hasPin) setHasPinState(true);
       })
       .catch((error) => {
         toast.error(error instanceof Error ? error.message : "Unable to load your profile");
@@ -217,7 +216,6 @@ export default function SettingsPage() {
     setSavingPin(true);
     try {
       await setPin({ pin: pinValue });
-      setHasPin(true);
       setHasPinState(true);
       setPinValue("");
       toast.success("Transaction PIN set");

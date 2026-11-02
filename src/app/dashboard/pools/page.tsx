@@ -10,7 +10,6 @@ import { Button } from "../../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { EmptyState, PoolCard } from "../../../components/app/card";
 import { getMyPools, getPools, joinPool } from "../../lib/api/endpoints";
-import { addJoinedPoolId } from "../../lib/api/session";
 import { applySeasonProgress } from "../../lib/season-progress";
 import type { Pool } from "../../lib/mock-data";
 
@@ -114,7 +113,6 @@ export default function PoolsPage() {
       try {
         await joinPool({ poolId: pool.id, code });
         toast.success(`Joined ${pool.name}`);
-        addJoinedPoolId(pool.id);
         setDiscoverPools((prev) => prev.filter((p) => p.id !== pool.id));
         setMyPools((prev) => [pool, ...prev]);
       } catch (error) {
@@ -127,7 +125,6 @@ export default function PoolsPage() {
       try {
         await joinPool({ poolId: pool.id });
         toast.success(`Joined ${pool.name}`);
-        addJoinedPoolId(pool.id);
         setDiscoverPools((prev) => prev.filter((p) => p.id !== pool.id));
         setMyPools((prev) => [pool, ...prev]);
       } catch (error) {
