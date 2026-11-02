@@ -960,3 +960,25 @@ export async function markAllNotificationsRead(): Promise<void> {
 export async function clearNotifications(): Promise<void> {
   await apiFetch("/v1/notifications", { method: "DELETE" });
 }
+
+export type FeaturedMatch = {
+  _id: string;
+  homeTeam: { name: string; shortName: string; crest: string };
+  awayTeam: { name: string; shortName: string; crest: string };
+  date: string;
+  stage: string;
+  matchday: string;
+  competitionName: string;
+  competitionCode: string;
+};
+
+export async function getFeaturedMatch(): Promise<FeaturedMatch | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/v1/matches/featured`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.data ?? null;
+  } catch {
+    return null;
+  }
+}

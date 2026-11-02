@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Match, LeaderboardRow } from "../../app/lib/mock-data";
+import { getFeaturedMatch, type FeaturedMatch } from "../../app/lib/api/endpoints";
 
 const DEMO_MATCH: Match = {
   id: "m1",
@@ -165,7 +166,23 @@ function useSeasonCountdown() {
 }
 
 export function SeasonCountdown() {
-  const time = useSeasonCountdown();
+  const [match, setMatch] = useState<FeaturedMatch | null | undefined>(undefined);
+  const [time, setTime] = useState<ReturnType<typeof diff> | null>(null);
+
+  useEffect(() => {
+    getFeaturedMatch()
+      .then((m) => setMatch(m))
+      .catch(() => setMatch(null));
+  }, []);
+
+  useEffect(() => {
+    if (!match) { setTime(null); return; }
+    const target = new Date(match.date);
+    function tick() { setTime(diff(target)); }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [match]);
 
   const units: [string, number | undefined][] = [
     ["Days", time?.days],
@@ -174,22 +191,55 @@ export function SeasonCountdown() {
     ["Seconds", time?.seconds],
   ];
 
+  const matchLabel = match
+    ? new Date(match.date).toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : null;
+
+  const stageLabel =
+    match?.stage && match.stage !== "REGULAR_SEASON"
+      ? ` · ${match.stage.replace(/_/g, " ")}`
+      : "";
+
   return (
     <section className="border-y border-border bg-card/40">
       <div className="mx-auto grid gap-10 lg:px-36 px-5 py-16 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-8">
         <div data-aos="fade-up">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Up next</p>
-          <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Fulham vs Chelsea <br /> Monday Night Football, 8pm</h2>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-            West London bragging rights are on the line at Craven Cottage — Monday Night Football doesn't get much spicier
-            than a local derby. Get your predictions in and your pool locked before kickoff.
-          </p>
+          {match === undefined ? (
+            <div className="mt-4 space-y-3">
+              <div className="h-9 w-3/4 rounded-lg bg-muted animate-pulse" />
+              <div className="h-4 w-1/3 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+            </div>
+          ) : match === null ? (
+            <h2 className="mt-4 text-3xl font-bold sm:text-4xl">No featured match right now</h2>
+          ) : (
+            <>
+              <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
+                {match.homeTeam.shortName || match.homeTeam.name} vs{" "}
+                {match.awayTeam.shortName || match.awayTeam.name}
+              </h2>
+              <p className="mt-2 text-xs font-semibold tracking-wide text-primary uppercase">
+                {match.competitionName}{stageLabel}
+              </p>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+                {matchLabel}
+              </p>
+            </>
+          )}
         </div>
         <div className="grid grid-cols-4 gap-3 sm:gap-4" data-aos="zoom-in" data-aos-delay="150">
           {units.map(([label, value]) => (
             <div key={label} className="rounded-xl border border-border bg-background px-2 py-5 text-center">
               <p className="num font-display text-3xl font-bold text-primary sm:text-4xl">
-                {value === undefined ? "--" : String(value).padStart(2, "0")}
+                {value === undefined || match === undefined ? "--" : String(value).padStart(2, "0")}
               </p>
               <p className="mt-2 text-[11px] tracking-[0.14em] text-muted-foreground uppercase">{label}</p>
             </div>
