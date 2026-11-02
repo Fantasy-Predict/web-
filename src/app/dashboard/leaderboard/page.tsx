@@ -200,23 +200,23 @@ export default function LeaderboardPage() {
                   className="min-w-[480px] grid grid-cols-[2.5rem_minmax(8rem,1fr)_3rem_3rem_3rem_4.5rem] items-center gap-2 border-b border-border px-5 py-3.5 text-sm last:border-0"
                 >
                   <span className="num font-semibold text-muted-foreground">{index + 4}</span>
-                  <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarFallback className="bg-muted text-[10px] font-semibold">
-                        {`${entry.firstName?.[0] ?? ""}${entry.lastName?.[0] ?? ""}`.toUpperCase()}
+                        {`${name[0] ?? ""}${name[1] ?? ""}`.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="flex min-w-0 items-center gap-2 truncate font-medium">
+                    <span className="flex items-center gap-2 font-medium whitespace-nowrap">
                       {name}
                       {entry.userId === personalRank?.userId && (
                         <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">You</span>
                       )}
                     </span>
                   </div>
-                  <span className="num text-center text-xs font-semibold text-green-600 dark:text-green-400">{entry.exact}</span>
-                  <span className="num text-center text-xs font-semibold text-blue-600 dark:text-blue-400">{entry.close}</span>
-                  <span className="num text-center text-xs font-semibold text-gold">{entry.slam}</span>
-                  <span className="num text-right font-bold">{entry.total}</span>
+                  <span className="num flex justify-center text-xs font-semibold text-green-600 dark:text-green-400">{entry.exact}</span>
+                  <span className="num flex justify-center text-xs font-semibold text-blue-600 dark:text-blue-400">{entry.close}</span>
+                  <span className="num flex justify-center text-xs font-semibold text-gold">{entry.slam}</span>
+                  <span className="num flex justify-end font-bold">{entry.total}</span>
                 </div>
               );
             })}
