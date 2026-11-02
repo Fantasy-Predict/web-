@@ -25,6 +25,8 @@ import { formatNaira, type Transaction } from "../../lib/mock-data";
 
 export default function WalletPage() {
   const [balance, setBalance] = useState<number | null>(null);
+  const [totalDeposited, setTotalDeposited] = useState<number>(0);
+  const [totalWithdrawn, setTotalWithdrawn] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>("");
@@ -36,6 +38,8 @@ export default function WalletPage() {
         const [wallet, history, profile] = await Promise.all([getWallet(), getTransactions(), getProfile()]);
         if (!active) return;
         setBalance(wallet.balance);
+        setTotalDeposited(wallet.totalDeposited ?? 0);
+        setTotalWithdrawn(wallet.totalWithdrawn ?? 0);
         setTransactions(history);
         setUserEmail(profile?.email ?? "");
       } catch (error) {
@@ -71,8 +75,8 @@ export default function WalletPage() {
         ) : (
           <>
             <StatCard label="Available balance" value={formatNaira(balance ?? 0)} hint="Ready for entry fees" />
-            <StatCard label="Total deposited" value={formatNaira(0)} hint="Lifetime deposits" />
-            <StatCard label="Total withdrawn" value={formatNaira(0)} hint="Lifetime withdrawals" />
+            <StatCard label="Total deposited" value={formatNaira(totalDeposited)} hint="Lifetime deposits" />
+            <StatCard label="Total withdrawn" value={formatNaira(totalWithdrawn)} hint="Lifetime withdrawals" />
           </>
         )}
       </div>

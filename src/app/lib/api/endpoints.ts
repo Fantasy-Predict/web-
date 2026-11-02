@@ -63,6 +63,8 @@ export type WithdrawalPayload = {
 export type Wallet = {
   balance: number;
   currency: string;
+  totalDeposited?: number;
+  totalWithdrawn?: number;
 };
 
 export type LeaderboardEntry = LeaderboardRow;
@@ -512,14 +514,20 @@ function formatTxDate(iso: string): string {
 }
 
 export async function getWallet(): Promise<Wallet> {
-  const res = await apiFetch<{ wallet?: Wallet; balance?: number; currency?: string; data?: { wallet?: Wallet; balance?: number; currency?: string } }>("/v1/wallets", {
-
+  const res = await apiFetch<{ wallet?: Wallet; balance?: number; currency?: string; totalDeposited?: number; totalWithdrawn?: number; data?: { wallet?: Wallet; balance?: number; currency?: string; totalDeposited?: number; totalWithdrawn?: number } }>("/v1/wallets", {
     unwrap: false,
   });
   const d = res?.data ?? res;
-  if (d?.wallet) return d.wallet;
-  if (d?.balance !== undefined) return { balance: d.balance, currency: d.currency ?? "NGN" };
-  return { balance: 0, currency: "NGN" };
+  const base = d?.wallet
+    ? d.wallet
+    : d?.balance !== undefined
+      ? { balance: d.balance, currency: d.currency ?? "NGN" }
+      : { balance: 0, currency: "NGN" };
+  return {
+    ...base,
+    totalDeposited: d?.totalDeposited ?? (d?.wallet as any)?.totalDeposited ?? 0,
+    totalWithdrawn: d?.totalWithdrawn ?? (d?.wallet as any)?.totalWithdrawn ?? 0,
+  };
 }
 
 export function getPayUrl(email: string, amount: number): string {
