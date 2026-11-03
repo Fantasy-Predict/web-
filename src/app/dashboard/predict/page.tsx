@@ -230,8 +230,9 @@ function PredictContent() {
 
   async function handleSubmit() {
     setSubmitting(true);
+    const upcomingIds = new Set(upcoming.map((m) => m.id));
     const filledPicks = Object.entries(picks).filter(
-      ([, pick]) => pick.home && pick.away,
+      ([matchId, pick]) => upcomingIds.has(matchId) && pick.home && pick.away,
     );
 
     try {
