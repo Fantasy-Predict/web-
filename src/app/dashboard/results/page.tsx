@@ -63,7 +63,10 @@ export default function ResultsPage() {
         if (active) setCompetitions(prioritized);
 
         const allScoresData = await Promise.all(
-          prioritized.map((c) => getMatchScores(c._id).catch(() => [])),
+          prioritized.map(async (c) => {
+            const scores = await getMatchScores(c._id).catch(() => []);
+            return scores.map((m) => ({ ...m, competition: c._id }));
+          }),
         );
 
         if (!active) return;
@@ -133,7 +136,11 @@ export default function ResultsPage() {
   return (
     <AppShell
       title={currentGWLabel ? `Matchday ${currentGWLabel}` : "My Results"}
-      description="Your personal results across all leagues. Navigate past game weeks to review your predictions and points."
+      description={
+        selectedCompetition === "all"
+          ? "Your personal results across all leagues. Navigate matchdays to review your predictions and points."
+          : `${competitions.find((c) => c._id === selectedCompetition)?.name ?? "Competition"} results. Navigate matchdays to review your predictions and points.`
+      }
     >
       {/* Competition filter */}
       {competitions.length > 1 && (
