@@ -9,17 +9,70 @@ import "aos/dist/aos.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fantasy Predict — Football Prediction Leagues",
+  metadataBase: new URL("https://www.fantasy-predict.com"),
+  title: {
+    default: "Fantasy Predict — Football Prediction Leagues",
+    template: "%s | Fantasy Predict",
+  },
   description:
-    "Fantasy Predict is a premium football prediction platform. Create leagues, predict fixtures, earn points and climb the leaderboard.",
-  icons: { icon: "/favicon.ico" },
+    "Fantasy Predict is Nigeria's #1 football prediction platform. Predict match scores, join leagues, compete in pools and win real money. Now including FPL — Fantasy Premier League Nigeria.",
+  keywords: [
+    "football prediction Nigeria",
+    "fantasy football Nigeria",
+    "predict football matches Nigeria",
+    "FPL Nigeria",
+    "fantasy premier league Nigeria",
+    "football prediction app Nigeria",
+    "football prediction pool Nigeria",
+    "win money predicting football Nigeria",
+    "Fantasy Predict",
+    "match prediction platform Nigeria",
+    "football contest Nigeria",
+    "paid football prediction league Nigeria",
+    "predict match score",
+    "football fantasy game",
+    "fantasy predict",
+  ],
+  authors: [{ name: "Fantasy Predict", url: "https://www.fantasy-predict.com" }],
+  creator: "Fantasy Predict",
+  publisher: "Fantasy Predict",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/icon-logo.png",
+    apple: "/icon-logo.png",
+  },
   openGraph: {
-    title: "Fantasy Predict — Football Prediction Leagues",
-    description: "Predict football fixtures, compete in leagues and climb the leaderboard.",
     type: "website",
+    locale: "en_NG",
+    url: "https://www.fantasy-predict.com",
+    siteName: "Fantasy Predict",
+    title: "Fantasy Predict — Football Prediction Leagues",
+    description:
+      "Nigeria's #1 football prediction platform. Predict match scores, join leagues, compete in pools and win real money.",
+    images: [
+      {
+        url: "/logos.png",
+        width: 1200,
+        height: 630,
+        alt: "Fantasy Predict — Football Prediction Leagues",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
+    title: "Fantasy Predict — Football Prediction Leagues",
+    description:
+      "Nigeria's #1 football prediction platform. Predict match scores, join leagues, compete in pools and win real money.",
+    images: ["/logos.png"],
   },
 };
 
