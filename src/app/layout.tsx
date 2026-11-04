@@ -74,6 +74,9 @@ export const metadata: Metadata = {
       "Nigeria's #1 football prediction platform. Predict match scores, join leagues, compete in pools and win real money.",
     images: ["/logos.png"],
   },
+  verification: {
+    google: "nhvH5Us_vhu8FtqQmgeK2qf1jJu2ykjE9_UhkM8Ya7g",
+  },
 };
 
 export const viewport = {
