@@ -217,13 +217,19 @@ export default function PrivacyClient() {
                 <p>We use your information to:</p>
                 <ul className="list-disc pl-5 space-y-1.5">
                   <li>Create and manage user accounts</li>
-                   <li>Process pool participation and predictions</li>
+                  <li>Process pool participation and predictions</li>
                   <li>Display leaderboards and rankings</li>
                   <li>Improve platform performance and user experience</li>
-                  <li>Send important notifications and updates</li>
+                  <li>Send transactional emails — including account verification, password reset, and matchday prediction reminder emails before upcoming fixtures</li>
                   <li>Prevent fraud and ensure platform security</li>
                   <li>Respond to support requests and inquiries</li>
                 </ul>
+                <p>
+                  By registering an account, you consent to receiving prediction reminder emails
+                  from Fantasy Predict ahead of upcoming matchdays. These emails are part of the
+                  core platform experience and are sent to help you submit your picks before
+                  kickoff. You may contact support to opt out at any time.
+                </p>
               </div>
             </section>
 

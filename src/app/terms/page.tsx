@@ -205,6 +205,13 @@ export default function TermsClient() {
                 <p>
                   You are responsible for all activities that occur under your account.
                 </p>
+                <p>
+                  By creating an account, you agree to receive transactional and service-related
+                  emails from Fantasy Predict. This includes account verification, password reset,
+                  and matchday prediction reminder emails sent ahead of upcoming fixtures. These
+                  communications are an integral part of the platform service. You may contact our
+                  support team to opt out of reminder emails at any time.
+                </p>
               </div>
             </section>
 
