@@ -119,9 +119,18 @@ export default function FixturesPage() {
     return () => { active = false; };
   }, [selectedCompetition]);
 
-  const list = matches.filter((match) =>
-    statusFilter === "All" ? true : match.status === statusFilter.toLowerCase(),
-  );
+  const list = matches
+    .filter((match) =>
+      statusFilter === "All" ? true : match.status === statusFilter.toLowerCase(),
+    )
+    .sort((a, b) => {
+      const aTime = new Date(a.kickoff).getTime();
+      const bTime = new Date(b.kickoff).getTime();
+      if (statusFilter === "Finished") return bTime - aTime;
+      if (statusFilter === "Upcoming") return aTime - bTime;
+      if (a.status !== b.status) return a.status === "upcoming" ? -1 : 1;
+      return a.status === "finished" ? bTime - aTime : aTime - bTime;
+    });
 
   const visibleList = list.slice(0, visibleCount);
   const hasMore = visibleCount < list.length;
