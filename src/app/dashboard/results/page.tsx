@@ -117,7 +117,7 @@ export default function ResultsPage() {
       return na - nb;
     });
     return sorted;
-  }, [matchesWithPredictions]);
+  }, [filteredMatches]);
 
   const currentGW = gameWeeks[gameWeekIndex];
   const currentGWLabel = currentGW ? currentGW[0] : null;
