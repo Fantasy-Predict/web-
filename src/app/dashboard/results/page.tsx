@@ -8,6 +8,7 @@ import { Button } from "../../../components/ui/button";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { MatchCard, StatCard } from "../../../components/app/card";
 import type { Match } from "../../lib/mock-data";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { getMatchScores, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
 import type { ScoringResult } from "../../lib/scoring";
 
@@ -45,6 +46,8 @@ function prioritizeCompetitions(comps: UserCompetition[]): UserCompetition[] {
 
 export default function ResultsPage() {
   const [allMatches, setAllMatches] = useState<Match[]>([]);
+  const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
+  const [selectedCompetition, setSelectedCompetition] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [gameWeekIndex, setGameWeekIndex] = useState(0);
 
@@ -57,6 +60,7 @@ export default function ResultsPage() {
         const comps = await getUserCompetitions().catch(() => []);
         const prioritized = prioritizeCompetitions(comps ?? []);
         prioritized.forEach((c) => compNameMap.set(c._id, c.name));
+        if (active) setCompetitions(prioritized);
 
         const allScoresData = await Promise.all(
           prioritized.map((c) => getMatchScores(c._id).catch(() => [])),
@@ -83,14 +87,23 @@ export default function ResultsPage() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => { setGameWeekIndex(0); }, [selectedCompetition]);
+
   const matchesWithPredictions = useMemo(
     () => allMatches.filter((m) => m.prediction && m.prediction.length > 0 && m.prediction[0].outcome),
     [allMatches],
   );
 
+  const filteredMatches = useMemo(
+    () => selectedCompetition === "all"
+      ? matchesWithPredictions
+      : matchesWithPredictions.filter((m) => m.competition === selectedCompetition),
+    [matchesWithPredictions, selectedCompetition],
+  );
+
   const gameWeeks = useMemo(() => {
     const dayMap = new Map<string, Match[]>();
-    for (const m of matchesWithPredictions) {
+    for (const m of filteredMatches) {
       const key = m.matchday ?? "unknown";
       if (!dayMap.has(key)) dayMap.set(key, []);
       dayMap.get(key)!.push(m);
@@ -108,7 +121,7 @@ export default function ResultsPage() {
   const currentMatches = currentGW ? currentGW[1] : [];
 
   let totalPoints = 0;
-  for (const m of matchesWithPredictions) {
+  for (const m of filteredMatches) {
     totalPoints += m.prediction?.[0]?.point ?? 0;
   }
 
@@ -122,6 +135,25 @@ export default function ResultsPage() {
       title={currentGWLabel ? `Matchday ${currentGWLabel}` : "My Results"}
       description="Your personal results across all leagues. Navigate past game weeks to review your predictions and points."
     >
+      {/* Competition filter */}
+      {competitions.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All competitions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All competitions</SelectItem>
+              {competitions.map((c) => (
+                <SelectItem key={c._id} value={c._id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Stats summary */}
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {loading ? (
@@ -133,11 +165,11 @@ export default function ResultsPage() {
           ))
         ) : (
           <>
-            <StatCard label="Total points" value={String(totalPoints)} accent="primary" hint="All game weeks" />
+            <StatCard label="Total points" value={String(totalPoints)} accent="primary" hint={selectedCompetition === "all" ? "All leagues" : (competitions.find(c => c._id === selectedCompetition)?.name ?? "")} />
             <StatCard
               label="Predictions made"
-              value={String(matchesWithPredictions.length)}
-              hint="Across all leagues"
+              value={String(filteredMatches.length)}
+              hint={selectedCompetition === "all" ? "Across all leagues" : "This competition"}
             />
             <StatCard
               label="Game weeks played"
@@ -238,12 +270,12 @@ export default function ResultsPage() {
         ) : (
           <Card className="p-6 text-center shadow-[var(--shadow-card)]">
             <p className="text-sm font-semibold">
-              {matchesWithPredictions.length === 0
+              {filteredMatches.length === 0
                 ? "No predictions yet"
                 : "No predictions in this game week"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {matchesWithPredictions.length === 0
+              {filteredMatches.length === 0
                 ? "Start predicting to see your results here."
                 : "Try another game week or make predictions for upcoming matches."}
             </p>
