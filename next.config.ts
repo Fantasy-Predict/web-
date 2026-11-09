@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
       { source: "/dashboard/leagues", destination: "/dashboard/pools", permanent: true },
       { source: "/dashboard/leagues/:path*", destination: "/dashboard/pools/:path*", permanent: true },
       { source: "/admin/leagues", destination: "/admin/pools", permanent: true },
+      { source: "/terms-and-condition", destination: "/terms", permanent: true },
     ];
   },
 };
