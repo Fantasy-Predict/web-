@@ -1226,7 +1226,8 @@ export async function getFplLeagueStandings(leagueId: string): Promise<{ league:
     apiFetch<FplLeague | { data?: FplLeague }>(`/v1/fpl/leagues/${leagueId}`, { unwrap: false }),
     apiFetch<FplLeagueMember[] | { data?: FplLeagueMember[] }>(`/v1/fpl/leagues/${leagueId}/standings`, { unwrap: false }),
   ]);
-  const league = ((leagueRes as { data?: FplLeague })?.data ?? leagueRes) as FplLeague;
+  const raw = ((leagueRes as { data?: FplLeague })?.data ?? leagueRes) as FplLeague & { totalMembers?: number };
+  const league: FplLeague = { ...raw, memberCount: raw.memberCount ?? raw.totalMembers ?? 0 };
   const members = Array.isArray(membersRes)
     ? membersRes
     : ((membersRes as { data?: FplLeagueMember[] })?.data ?? []);
