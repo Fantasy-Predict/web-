@@ -1188,7 +1188,8 @@ export async function getFplFixtures(gwId: number): Promise<FplFixture[]> {
 export async function getFplPicks(gwId: number): Promise<FplPick | null> {
   try {
     const res = await apiFetch<FplPick | { data?: FplPick }>(`/v1/fpl/picks/${gwId}`, { unwrap: false });
-    return (res as { data?: FplPick })?.data ?? (res as FplPick) ?? null;
+    const picks = (res as { data?: FplPick })?.data;
+    return picks ?? null;
   } catch {
     return null;
   }
