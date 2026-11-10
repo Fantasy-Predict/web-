@@ -233,7 +233,7 @@ export default function FplPicksPage() {
   const starters = [...picks].filter(p => p.squadPosition <= 11).sort((a, b) => a.squadPosition - b.squadPosition);
   const bench = [...picks].filter(p => p.squadPosition > 11).sort((a, b) => a.squadPosition - b.squadPosition);
   const validationError = validateFormation(picks);
-  const isDeadlinePassed = gw.isCurrent && !gw.isNext;
+  const isDeadlinePassed = gw.deadline ? new Date() > new Date(gw.deadline) : false;
 
   return (
     <FplShell title={`${gw.name} Picks`} description={isDeadlinePassed ? "Deadline passed — picks locked" : "Tap a player to select, tap another to swap"}>
