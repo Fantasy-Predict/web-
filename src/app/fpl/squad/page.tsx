@@ -246,12 +246,12 @@ export default function FplSquadPage() {
               key={chip.key}
               className={cn(
                 "flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
-                team.chipUsed[chip.key]
+                team.chipUsed?.[chip.key]
                   ? "border-border bg-muted/40 text-muted-foreground line-through opacity-60"
                   : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
               )}
             >
-              {!team.chipUsed[chip.key] && <Star className="h-3 w-3" />}
+              {!team.chipUsed?.[chip.key] && <Star className="h-3 w-3" />}
               {chip.label}
             </span>
           ))}

@@ -62,8 +62,8 @@ export default function FplDashboardPage() {
 
     Promise.all([
       getFplTeam(),
-      getFplCurrentGameweek(),
-      getMyFplLeagues(),
+      getFplCurrentGameweek().catch(() => null),
+      getMyFplLeagues().catch(() => [] as typeof leagues),
     ]).then(([teamData, gwData, leagueData]) => {
       if (!active) return;
       if (!teamData) {
@@ -214,14 +214,14 @@ export default function FplDashboardPage() {
               key={chip.key}
               className={cn(
                 "rounded-xl border p-3 text-center",
-                team.chipUsed[chip.key]
+                team.chipUsed?.[chip.key]
                   ? "border-border bg-muted/40 opacity-60"
                   : "border-emerald-500/30 bg-emerald-500/5",
               )}
             >
-              <Star className={cn("mx-auto mb-1 h-4 w-4", team.chipUsed[chip.key] ? "text-muted-foreground" : "text-emerald-500")} />
+              <Star className={cn("mx-auto mb-1 h-4 w-4", team.chipUsed?.[chip.key] ? "text-muted-foreground" : "text-emerald-500")} />
               <p className="text-xs font-medium">{chip.label}</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">{team.chipUsed[chip.key] ? "Used" : "Available"}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">{team.chipUsed?.[chip.key] ? "Used" : "Available"}</p>
             </div>
           ))}
         </div>

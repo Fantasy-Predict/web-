@@ -1214,7 +1214,7 @@ export async function joinFplLeague(payload: { code: string }): Promise<{ succes
 }
 
 export async function getMyFplLeagues(): Promise<FplLeague[]> {
-  const res = await apiFetch<FplLeague[] | { data?: FplLeague[] }>("/v1/fpl/leagues/mine", { unwrap: false });
+  const res = await apiFetch<FplLeague[] | { data?: FplLeague[] }>("/v1/fpl/leagues", { unwrap: false });
   if (Array.isArray(res)) return res;
   return (res as { data?: FplLeague[] })?.data ?? [];
 }
