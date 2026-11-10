@@ -116,7 +116,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => setMode("fpl")}
-          className={`flex-1 rounded-lg py-2 transition-colors ${mode === "fpl" ? "bg-emerald-500/15 shadow-sm text-emerald-700 dark:text-emerald-400" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 rounded-lg py-2 transition-colors ${mode === "fpl" ? "bg-gold/15 shadow-sm text-gold" : "text-muted-foreground hover:text-foreground"}`}
         >
           Fantasy XI
         </button>
@@ -166,7 +166,7 @@ export default function LoginPage() {
           </div>
           {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
         </div>
-        <Button type="submit" size="lg" disabled={loading} className={mode === "fpl" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}>
+        <Button type="submit" size="lg" disabled={loading} className={mode === "fpl" ? "bg-gold hover:bg-gold/90 text-navy" : ""}>
           {loading ? "Logging in…" : mode === "fpl" ? "Log in to Fantasy XI" : "Log in"}
         </Button>
       </form>
