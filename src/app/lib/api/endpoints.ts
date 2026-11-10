@@ -1222,15 +1222,15 @@ export async function getMyFplLeagues(): Promise<FplLeague[]> {
 }
 
 export async function getFplLeagueStandings(leagueId: string): Promise<{ league: FplLeague; members: FplLeagueMember[] }> {
-  const res = await apiFetch<
-    { league?: FplLeague; members?: FplLeagueMember[] } |
-    { data?: { league?: FplLeague; members?: FplLeagueMember[] } }
-  >(`/v1/fpl/leagues/${leagueId}`, { unwrap: false });
-  const d = (res as { data?: { league?: FplLeague; members?: FplLeagueMember[] } })?.data ?? res;
-  return {
-    league: (d as { league?: FplLeague })?.league as FplLeague,
-    members: (d as { members?: FplLeagueMember[] })?.members ?? [],
-  };
+  const [leagueRes, membersRes] = await Promise.all([
+    apiFetch<FplLeague | { data?: FplLeague }>(`/v1/fpl/leagues/${leagueId}`, { unwrap: false }),
+    apiFetch<FplLeagueMember[] | { data?: FplLeagueMember[] }>(`/v1/fpl/leagues/${leagueId}/standings`, { unwrap: false }),
+  ]);
+  const league = ((leagueRes as { data?: FplLeague })?.data ?? leagueRes) as FplLeague;
+  const members = Array.isArray(membersRes)
+    ? membersRes
+    : ((membersRes as { data?: FplLeagueMember[] })?.data ?? []);
+  return { league, members };
 }
 
 export async function getFplH2HResults(leagueId: string, gwId?: number): Promise<FplH2HResult[]> {
