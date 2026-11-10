@@ -1117,7 +1117,8 @@ export type FplPlayersResponse = {
 export async function getFplTeam(): Promise<FplTeam | null> {
   try {
     const res = await apiFetch<FplTeam | { data?: FplTeam }>("/v1/fpl/team", { unwrap: false });
-    return (res as { data?: FplTeam })?.data ?? (res as FplTeam) ?? null;
+    const team = (res as { data?: FplTeam })?.data;
+    return team ?? null;
   } catch {
     return null;
   }
