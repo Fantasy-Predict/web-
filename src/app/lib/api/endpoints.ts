@@ -1207,7 +1207,7 @@ export async function makeFplTransfer(payload: { transfers: Array<{ playerInId: 
 
 // --- FPL Leagues ---
 
-export async function createFplLeague(payload: { name: string; type: "classic" | "h2h" }): Promise<{ _id: string; code: string }> {
+export async function createFplLeague(payload: { name: string; type: "classic" | "h2h" }): Promise<{ leagueId: string; code: string }> {
   return apiFetch("/v1/fpl/leagues", { method: "POST", body: payload });
 }
 

@@ -25,7 +25,7 @@ export default function FplCreateLeaguePage() {
     setLoading(true);
     try {
       const res = await createFplLeague({ name: name.trim(), type });
-      setCreated({ id: res._id, code: res.code, name: name.trim() });
+      setCreated({ id: res.leagueId, code: res.code, name: name.trim() });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create league");
     } finally {
