@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   getFplTeam,
   getFplCurrentGameweek,
+  getFplGameweeks,
   getFplPicks,
   saveFplPicks,
   type FplTeam,
@@ -98,9 +99,17 @@ export default function FplPicksPage() {
       if (!active) return;
       if (!teamData || !gwData) { setLoading(false); return; }
       setTeam(teamData);
-      setGw(gwData);
 
-      const existingPicks = await getFplPicks(gwData.fplId).catch(() => null);
+      // If current GW deadline has passed, switch to the next GW for picking
+      let activeGw = gwData;
+      if (gwData.deadline && new Date() > new Date(gwData.deadline)) {
+        const allGws = await getFplGameweeks().catch(() => [] as FplGameweek[]);
+        const nextGw = allGws.find(gw => gw.isNext);
+        if (nextGw) activeGw = nextGw;
+      }
+      setGw(activeGw);
+
+      const existingPicks = await getFplPicks(activeGw.fplId).catch(() => null);
       if (!active) return;
       if (existingPicks?.chip) setSelectedChip(existingPicks.chip);
       setPicks(buildInitialPicks(teamData.playerDetails ?? [], existingPicks));
