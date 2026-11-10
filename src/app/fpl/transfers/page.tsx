@@ -141,7 +141,7 @@ export default function FplTransfersPage() {
     if (!playerOut || !playerIn) return;
     setConfirming(true);
     try {
-      await makeFplTransfer({ transfers: [{ playerInId: playerIn.fplId, playerOutId: playerOut.fplId }] });
+      await makeFplTransfer({ playerInId: playerIn.fplId, playerOutId: playerOut.fplId });
       toast.success(`${playerIn.name} in · ${playerOut.name} out`);
       // Reload team to get updated budget/squad
       const updated = await getFplTeam();

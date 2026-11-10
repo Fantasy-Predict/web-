@@ -1201,7 +1201,7 @@ export async function saveFplPicks(payload: { gwId: number; players: FplPickPlay
 
 // --- FPL Transfers ---
 
-export async function makeFplTransfer(payload: { transfers: Array<{ playerInId: number; playerOutId: number }> }): Promise<{ success: boolean; cost: number }> {
+export async function makeFplTransfer(payload: { playerInId: number; playerOutId: number }): Promise<{ success: boolean; cost: number }> {
   return apiFetch("/v1/fpl/transfers", { method: "POST", body: payload });
 }
 
