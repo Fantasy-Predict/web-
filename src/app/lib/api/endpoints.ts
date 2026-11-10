@@ -990,3 +990,250 @@ export async function getFeaturedMatch(): Promise<FeaturedMatch | null> {
     return null;
   }
 }
+
+// ============================================================
+// FPL — Fantasy Premier League
+// ============================================================
+
+export type FplTeam = {
+  _id: string;
+  teamName: string;
+  budget: number;
+  squadValue: number;
+  totalPoints: number;
+  gwPoints: number;
+  overallRank: number | null;
+  season: string;
+  freeTransfers: number;
+  players: number[];
+  fplImportId?: number;
+  chipUsed: {
+    wildcard1: boolean;
+    wildcard2: boolean;
+    tripleCaptain: boolean;
+    benchBoost: boolean;
+    freeHit: boolean;
+  };
+  playerDetails: FplPlayer[];
+};
+
+export type FplPlayer = {
+  _id: string;
+  fplId: number;
+  name: string;
+  clubName: string;
+  clubShort: string;
+  position: number; // 1=GK 2=DEF 3=MID 4=FWD
+  price: number;    // tenths of millions (65 = £6.5m)
+  totalPoints: number;
+  currentGwPoints: number;
+  status: string;
+  form: string;
+  ownership: number;
+};
+
+export type FplGameweek = {
+  _id: string;
+  fplId: number;
+  name: string;
+  deadline: string;
+  isCurrent: boolean;
+  isNext: boolean;
+  isFinished: boolean;
+  averageScore: number;
+  highestScore: number;
+};
+
+export type FplPickPlayer = {
+  fplId: number;
+  squadPosition: number;
+  isCaptain: boolean;
+  isViceCaptain: boolean;
+  multiplier: number;
+};
+
+export type FplPick = {
+  _id: string;
+  gwId: number;
+  players: FplPickPlayer[];
+  chip: "wildcard" | "triple_captain" | "bench_boost" | "free_hit" | null;
+  gwPoints: number | null;
+  isConfirmed: boolean;
+};
+
+export type FplLeague = {
+  _id: string;
+  name: string;
+  code: string;
+  type: "classic" | "h2h";
+  status: "active" | "draft";
+  adminId: string;
+  memberCount: number;
+};
+
+export type FplLeagueMember = {
+  _id: string;
+  teamName: string;
+  totalPoints: number;
+  gwPoints: number;
+  currentRank: number;
+  previousRank: number | null;
+  h2hPoints?: number;
+};
+
+export type FplH2HResult = {
+  _id: string;
+  gwId: number;
+  teamName1: string;
+  points1: number;
+  teamName2: string;
+  points2: number;
+  winnerId: string | null;
+};
+
+export type FplFixture = {
+  id: number;
+  gwId: number;
+  homeTeam: string;
+  homeTeamShort: string;
+  awayTeam: string;
+  awayTeamShort: string;
+  kickoffTime: string;
+  started: boolean;
+  finished: boolean;
+  homeScore: number | null;
+  awayScore: number | null;
+};
+
+export type FplPlayersResponse = {
+  docs: FplPlayer[];
+  totalDocs: number;
+  totalPages: number;
+  page: number;
+};
+
+// --- FPL Team ---
+
+export async function getFplTeam(): Promise<FplTeam | null> {
+  try {
+    const res = await apiFetch<FplTeam | { data?: FplTeam }>("/v1/fpl/team", { unwrap: false });
+    return (res as { data?: FplTeam })?.data ?? (res as FplTeam) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function createFplTeam(payload: { teamName: string; players: number[] }): Promise<{ success: boolean }> {
+  return apiFetch("/v1/fpl/team", { method: "POST", body: payload });
+}
+
+export async function importFplTeam(payload: { teamName: string; fplImportId: number }): Promise<{ success: boolean }> {
+  return apiFetch("/v1/fpl/team/import", { method: "POST", body: payload });
+}
+
+export async function updateFplTeam(payload: { teamName?: string; chip?: string }): Promise<{ success: boolean }> {
+  return apiFetch("/v1/fpl/team", { method: "PUT", body: payload });
+}
+
+export async function getFplTeamHistory(): Promise<Array<{ gwId: number; points: number; totalPoints: number; rank: number }>> {
+  const res = await apiFetch<
+    Array<{ gwId: number; points: number; totalPoints: number; rank: number }> |
+    { data?: Array<{ gwId: number; points: number; totalPoints: number; rank: number }> }
+  >("/v1/fpl/team/history", { unwrap: false });
+  if (Array.isArray(res)) return res;
+  return (res as { data?: Array<{ gwId: number; points: number; totalPoints: number; rank: number }> })?.data ?? [];
+}
+
+// --- FPL Data ---
+
+export async function getFplGameweeks(): Promise<FplGameweek[]> {
+  const res = await apiFetch<FplGameweek[] | { data?: FplGameweek[] }>("/v1/fpl/gameweeks", { unwrap: false });
+  if (Array.isArray(res)) return res;
+  return (res as { data?: FplGameweek[] })?.data ?? [];
+}
+
+export async function getFplCurrentGameweek(): Promise<FplGameweek | null> {
+  try {
+    const res = await apiFetch<FplGameweek | { data?: FplGameweek }>("/v1/fpl/gameweeks/current", { unwrap: false });
+    return (res as { data?: FplGameweek })?.data ?? (res as FplGameweek) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getFplPlayers(params: { page?: number; position?: number; search?: string; sortBy?: string } = {}): Promise<FplPlayersResponse> {
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.position) qs.set("position", String(params.position));
+  if (params.search) qs.set("search", params.search);
+  if (params.sortBy) qs.set("sortBy", params.sortBy);
+  const query = qs.toString();
+  const res = await apiFetch<FplPlayersResponse | { data?: FplPlayersResponse }>(
+    `/v1/fpl/players${query ? "?" + query : ""}`,
+    { unwrap: false },
+  );
+  const d = (res as { data?: FplPlayersResponse })?.data ?? (res as FplPlayersResponse);
+  return { docs: d?.docs ?? [], totalDocs: d?.totalDocs ?? 0, totalPages: d?.totalPages ?? 1, page: d?.page ?? 1 };
+}
+
+export async function getFplFixtures(gwId: number): Promise<FplFixture[]> {
+  const res = await apiFetch<FplFixture[] | { data?: FplFixture[] }>(`/v1/fpl/fixtures/${gwId}`, { unwrap: false });
+  if (Array.isArray(res)) return res;
+  return (res as { data?: FplFixture[] })?.data ?? [];
+}
+
+// --- FPL Picks ---
+
+export async function getFplPicks(gwId: number): Promise<FplPick | null> {
+  try {
+    const res = await apiFetch<FplPick | { data?: FplPick }>(`/v1/fpl/picks/${gwId}`, { unwrap: false });
+    return (res as { data?: FplPick })?.data ?? (res as FplPick) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveFplPicks(payload: { gwId: number; players: FplPickPlayer[]; chip?: string | null }): Promise<{ success: boolean }> {
+  return apiFetch("/v1/fpl/picks", { method: "POST", body: payload });
+}
+
+// --- FPL Transfers ---
+
+export async function makeFplTransfer(payload: { transfers: Array<{ playerInId: number; playerOutId: number }> }): Promise<{ success: boolean; cost: number }> {
+  return apiFetch("/v1/fpl/transfers", { method: "POST", body: payload });
+}
+
+// --- FPL Leagues ---
+
+export async function createFplLeague(payload: { name: string; type: "classic" | "h2h" }): Promise<{ _id: string; code: string }> {
+  return apiFetch("/v1/fpl/leagues", { method: "POST", body: payload });
+}
+
+export async function joinFplLeague(payload: { code: string }): Promise<{ success: boolean }> {
+  return apiFetch("/v1/fpl/leagues/join", { method: "POST", body: payload });
+}
+
+export async function getMyFplLeagues(): Promise<FplLeague[]> {
+  const res = await apiFetch<FplLeague[] | { data?: FplLeague[] }>("/v1/fpl/leagues/mine", { unwrap: false });
+  if (Array.isArray(res)) return res;
+  return (res as { data?: FplLeague[] })?.data ?? [];
+}
+
+export async function getFplLeagueStandings(leagueId: string): Promise<{ league: FplLeague; members: FplLeagueMember[] }> {
+  const res = await apiFetch<
+    { league?: FplLeague; members?: FplLeagueMember[] } |
+    { data?: { league?: FplLeague; members?: FplLeagueMember[] } }
+  >(`/v1/fpl/leagues/${leagueId}`, { unwrap: false });
+  const d = (res as { data?: { league?: FplLeague; members?: FplLeagueMember[] } })?.data ?? res;
+  return {
+    league: (d as { league?: FplLeague })?.league as FplLeague,
+    members: (d as { members?: FplLeagueMember[] })?.members ?? [],
+  };
+}
+
+export async function getFplH2HResults(leagueId: string, gwId?: number): Promise<FplH2HResult[]> {
+  const qs = gwId ? `?gwId=${gwId}` : "";
+  const res = await apiFetch<FplH2HResult[] | { data?: FplH2HResult[] }>(`/v1/fpl/leagues/${leagueId}/h2h${qs}`, { unwrap: false });
+  if (Array.isArray(res)) return res;
+  return (res as { data?: FplH2HResult[] })?.data ?? [];
+}

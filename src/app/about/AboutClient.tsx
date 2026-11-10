@@ -32,9 +32,14 @@ const STORIES = [
     body: "Word spread. Pools formed organically. Friends invited friends. The competition became real.",
   },
   {
-    year: "2026 & Beyond",
+    year: "Late 2026",
+    title: "Fantasy XI Launches",
+    body: "We expanded beyond predictions — Fantasy XI lets users build real Premier League squads, earn points from live match events, and compete in mini-leagues with NGN prizes.",
+  },
+  {
+    year: "2027 & Beyond",
     title: "The Future",
-    body: "With a growing community, we're building mobile apps, real-time notifications, and deeper match experiences.",
+    body: "Mobile apps, real-time push notifications, deeper match experiences, and a growing Fantasy XI community with more competitions and prize pools.",
   },
 ];
 
@@ -61,20 +66,20 @@ const HOW_IT_WORKS = [
 
 const DIFFERENTIATORS = [
   {
+    title: "Two Products, One Account",
+    body: "Predict match outcomes in our league system AND manage a Fantasy XI squad — both under the same login, the same wallet.",
+  },
+  {
     title: "Competitive Experience",
-    body: "Compete against friends and football fans worldwide.",
+    body: "Compete against friends and football fans in prediction leagues and Fantasy XI mini-leagues.",
   },
   {
     title: "Transparent Scoring",
-    body: "Clear rules and visible rankings.",
+    body: "Every point is accounted for — in both the prediction system and Fantasy XI's live scoring engine.",
   },
   {
     title: "Real Football Data",
-    body: "Predictions powered by live football information.",
-  },
-  {
-    title: "Community Driven",
-    body: "Football is better when shared.",
+    body: "Predictions and Fantasy XI scoring are both driven by live Premier League data.",
   },
 ];
 
@@ -317,10 +322,11 @@ export default function AboutClient() {
               </p>
               <ul className="mt-6 grid gap-2 text-sm text-muted-foreground">
                 {[
+                  "Fantasy XI — build squads, earn points, win prizes (live now)",
                   "Native mobile apps for iOS and Android",
                   "Real-time push notifications for match updates",
+                  "Paid Fantasy XI leagues with NGN prize pools",
                   "Enhanced match experiences with live stats",
-                  "Offline prediction drafts that sync when you reconnect",
                 ].map((item) => (
                   <li key={item} className="flex gap-2">
                     <span className="text-gold">•</span>

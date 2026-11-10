@@ -275,6 +275,39 @@ const FAQS = [
     },
 ];
 
+const FXI_FEATURES = [
+    {
+        icon: "🏟️",
+        title: "Build Your 15-Player Squad",
+        body: "Pick real Premier League players within a £100m budget — 2 goalkeepers, 5 defenders, 5 midfielders, 3 forwards.",
+    },
+    {
+        icon: "⚡",
+        title: "Earn Points Every Gameweek",
+        body: "Your players earn points from real match events — goals, assists, clean sheets, bonus points and more.",
+    },
+    {
+        icon: "🏆",
+        title: "Compete in Leagues",
+        body: "Create or join Classic and Head-to-Head mini-leagues. Free leagues or paid leagues with real NGN prize pools.",
+    },
+    {
+        icon: "🔄",
+        title: "Make Transfers",
+        body: "1 free transfer each gameweek. Bring in in-form players, rotate your squad, and use chips at the right moment.",
+    },
+    {
+        icon: "👑",
+        title: "Captain Boost",
+        body: "Pick a captain to double their points. If they don't play, your vice-captain steps up automatically.",
+    },
+    {
+        icon: "📊",
+        title: "Track Your History",
+        body: "See your points, rank, and best gameweek across the entire season in a full GW-by-GW breakdown.",
+    },
+]
+
 const TRUST_SIGNALS = [
     {
         title: "Secure Payments",
@@ -421,6 +454,45 @@ export default function PageClient() {
                 </section>
 
                 <PoolTiers />
+
+                {/* FANTASY XI SECTION */}
+                <section className="border-y border-emerald-500/20 bg-emerald-950/5">
+                    <div className="mx-auto max-w-6xl px-5 py-20 lg:px-8">
+                        <div className="text-center" data-aos="fade-up">
+                            <p className="text-xs font-semibold tracking-[0.18em] text-emerald-500 uppercase">
+                                New on Fantasy Predict
+                            </p>
+                            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Introducing Fantasy XI</h2>
+                            <p className="mt-4 max-w-2xl mx-auto text-sm text-muted-foreground">
+                                Go beyond predictions. Build your own 15-player squad from real Premier League players,
+                                pick your starting 11 each gameweek, and earn points from real match events.
+                                Compete in private or public leagues — with real NGN prizes.
+                            </p>
+                        </div>
+                        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                            {FXI_FEATURES.map((item, i) => (
+                                <Card
+                                    key={item.title}
+                                    className="gap-0 border-emerald-500/20 p-7 shadow-[var(--shadow-card)]"
+                                    data-aos="fade-up"
+                                    data-aos-delay={i * 80}
+                                >
+                                    <span className="text-2xl leading-none">{item.icon}</span>
+                                    <h3 className="mt-3 text-base font-semibold">{item.title}</h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                                </Card>
+                            ))}
+                        </div>
+                        <div className="mt-10 flex flex-wrap justify-center gap-3" data-aos="fade-up">
+                            <Button asChild size="lg" className="bg-emerald-600 text-white hover:bg-emerald-700">
+                                <Link href="/register">Join Fantasy XI — Free</Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className="border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/10">
+                                <Link href="/login">Already have an account?</Link>
+                            </Button>
+                        </div>
+                    </div>
+                </section>
 
                 <section id="how-it-works" className="border-y border-border bg-card/40">
                     <div className="mx-auto max-w-6xl px-5 py-20 lg:px-8">

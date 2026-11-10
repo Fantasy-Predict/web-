@@ -279,6 +279,16 @@ export function AppShell({
                   <span className="text-muted-foreground">₦</span>
                   <span className="num">{walletBalance == null ? "—" : walletBalance.toLocaleString("en-NG")}</span>
                 </div>
+                {/* FP / FPL mode toggle */}
+                <div className="hidden sm:flex items-center rounded-xl border border-border bg-card text-xs font-semibold overflow-hidden">
+                  <span className="px-3 py-1.5 bg-primary/10 text-primary">FP</span>
+                  <Link
+                    href="/fpl"
+                    className="px-3 py-1.5 text-muted-foreground hover:bg-accent transition-colors"
+                  >
+                    Fantasy XI
+                  </Link>
+                </div>
                 <ThemeToggle />
                 <div className="relative" ref={notifRef}>
                   <button

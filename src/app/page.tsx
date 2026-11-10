@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Fantasy Predict — Nigeria's #1 Football Prediction & Fantasy League Platform",
     description:
-      "Predict football match scores, join paid prediction pools and win real money in Nigeria. FPL coming soon.",
+      "Predict football match scores, join paid prediction pools and win real money in Nigeria. Now with Fantasy XI — build your squad, earn points, win prizes.",
     url: "https://www.fantasy-predict.com",
   },
 };

@@ -22,6 +22,7 @@ const schema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"fp" | "fpl">("fp");
   const [values, setValues] = useState({ to: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [show, setShow] = useState(false);
@@ -80,7 +81,7 @@ export default function LoginPage() {
 
     toast.success(userType === "admin" ? "Welcome back, admin" : "Welcome back");
 
-    let destination = "/dashboard";
+    let destination = mode === "fpl" ? "/fpl" : "/dashboard";
     if (userType === "admin") {
       destination = "/admin";
     } else if (response.verificationStatus !== true) {
@@ -102,6 +103,24 @@ export default function LoginPage() {
         </p>
       }
     >
+
+      {/* Mode selector */}
+      <div className="mb-5 flex rounded-xl border border-border bg-muted/40 p-1 text-sm font-semibold">
+        <button
+          type="button"
+          onClick={() => setMode("fp")}
+          className={`flex-1 rounded-lg py-2 transition-colors ${mode === "fp" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Fantasy Predict
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("fpl")}
+          className={`flex-1 rounded-lg py-2 transition-colors ${mode === "fpl" ? "bg-emerald-500/15 shadow-sm text-emerald-700 dark:text-emerald-400" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Fantasy XI
+        </button>
+      </div>
 
       <form className="grid gap-5" onSubmit={submit} noValidate>
         <div className="grid gap-2">
@@ -147,8 +166,8 @@ export default function LoginPage() {
           </div>
           {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
         </div>
-        <Button type="submit" size="lg" disabled={loading}>
-          {loading ? "Logging in…" : "Log in"}
+        <Button type="submit" size="lg" disabled={loading} className={mode === "fpl" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}>
+          {loading ? "Logging in…" : mode === "fpl" ? "Log in to Fantasy XI" : "Log in"}
         </Button>
       </form>
     </AuthLayout>

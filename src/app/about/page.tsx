@@ -5,7 +5,7 @@ import AboutClient from "./AboutClient";
 export const metadata: Metadata = {
   title: "About Fantasy Predict — Nigeria's Football Prediction Platform",
   description:
-    "Learn about Fantasy Predict — the Nigerian football prediction platform where fans predict match scores, compete in leagues, and win real money. Built for Nigerian football lovers.",
+    "Learn about Fantasy Predict — Nigeria's football prediction and Fantasy XI platform. Predict match scores, build Premier League squads, compete in leagues, and win real money. Built for Nigerian football lovers.",
   alternates: { canonical: "https://www.fantasy-predict.com/about" },
   openGraph: {
     title: "About Fantasy Predict — Nigeria's Football Prediction Platform",
