@@ -31,7 +31,7 @@ function getStatusColor(status: string) {
   if (status === "injured") return "text-red-500";
   if (status === "suspended") return "text-orange-500";
   if (status === "doubt") return "text-yellow-500";
-  return "text-emerald-500";
+  return "text-gold";
 }
 
 const POSITION_TABS = [
@@ -131,12 +131,12 @@ export default function FplBuildPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5">
           <div className="flex items-center gap-3">
             <Logo />
-            <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-600 dark:text-emerald-400">
+            <span className="rounded-md bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-gold">
               FPL
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className={cn("text-sm font-semibold tabular-nums", budgetLeft < 50 ? "text-red-500" : "text-emerald-600 dark:text-emerald-400")}>
+            <span className={cn("text-sm font-semibold tabular-nums", budgetLeft < 50 ? "text-red-500" : "text-gold")}>
               {formatPrice(budgetLeft)} left
             </span>
             <span className="text-sm text-muted-foreground">{selected.length}/15</span>
@@ -159,7 +159,7 @@ export default function FplBuildPage() {
               <span key={pos} className={cn(
                 "rounded-md px-2 py-1 font-medium",
                 countByPosition(selected, pos) >= QUOTA[pos]
-                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  ? "bg-gold/15 text-gold"
                   : "bg-muted text-muted-foreground",
               )}>
                 {POSITION_LABEL[pos]} {countByPosition(selected, pos)}/{QUOTA[pos]}
@@ -252,7 +252,7 @@ export default function FplBuildPage() {
                     return (
                       <div
                         key={player.fplId}
-                        className={cn("grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 text-sm", isSelected && "bg-emerald-500/5")}
+                        className={cn("grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 text-sm", isSelected && "bg-gold/5")}
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -277,7 +277,7 @@ export default function FplBuildPage() {
                             isSelected
                               ? "border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20"
                               : ok
-                                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+                                ? "border-gold/50 bg-gold/10 text-gold hover:bg-gold/20"
                                 : "border-border text-muted-foreground opacity-40 cursor-not-allowed",
                           )}
                         >
@@ -357,7 +357,7 @@ export default function FplBuildPage() {
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Remaining</span>
-                  <span className={cn("font-semibold", budgetLeft < 50 ? "text-red-500" : "text-emerald-600 dark:text-emerald-400")}>
+                  <span className={cn("font-semibold", budgetLeft < 50 ? "text-red-500" : "text-gold")}>
                     {formatPrice(budgetLeft)}
                   </span>
                 </div>

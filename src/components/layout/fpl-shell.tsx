@@ -9,8 +9,6 @@ type IconSvgObject = any;
 import {
   Home09Icon,
   Notification03Icon,
-  Settings01Icon,
-  UserIcon,
 } from "@hugeicons/core-free-icons";
 import {
   ArrowLeftRight,
@@ -62,8 +60,6 @@ const FPL_NAV: NavItem[] = [
   { to: "/fpl/fixtures", label: "Fixtures", kind: "lucide", Icon: Calendar },
   { to: "/fpl/leagues", label: "Leagues", kind: "lucide", Icon: Trophy },
   { to: "/fpl/history", label: "History", kind: "lucide", Icon: BarChart2 },
-  { to: "/dashboard/profile", label: "Profile", kind: "huge", icon: UserIcon },
-  { to: "/dashboard/settings", label: "Settings", kind: "huge", icon: Settings01Icon },
 ];
 
 const FPL_BOTTOM: Array<
@@ -144,7 +140,7 @@ export function FplShell({
             <Link href="/" aria-label="Fantasy Predict home" onClick={() => setSheetOpen(false)}>
               <Logo className="justify-start" />
             </Link>
-            <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-600 dark:text-emerald-400">
+            <span className="rounded-md bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-gold">
               XI
             </span>
           </div>
@@ -195,7 +191,7 @@ export function FplShell({
             <Link href="/" aria-label="Fantasy Predict home">
               <Logo className="justify-start" />
             </Link>
-            <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-600 dark:text-emerald-400">
+            <span className="rounded-md bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-gold">
               XI
             </span>
           </div>
@@ -264,7 +260,7 @@ export function FplShell({
                   >
                     FP
                   </Link>
-                  <span className="px-3 py-1.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <span className="px-3 py-1.5 bg-gold/15 text-gold">
                     Fantasy XI
                   </span>
                 </div>
@@ -316,7 +312,7 @@ export function FplShell({
                 </div>
 
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-emerald-600 text-xs font-semibold text-white">
+                  <AvatarFallback className="bg-primary text-xs font-semibold text-white">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -346,7 +342,7 @@ export function FplShell({
                   href={item.to}
                   className={cn(
                     "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
-                    isActive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
+                    isActive ? "text-gold" : "text-muted-foreground",
                   )}
                 >
                   {item.kind === "huge" ? (
@@ -354,13 +350,13 @@ export function FplShell({
                       icon={item.icon}
                       size={20}
                       strokeWidth={isActive ? 2 : 1.5}
-                      className={cn("shrink-0", isActive && "text-emerald-600 dark:text-emerald-400")}
+                      className={cn("shrink-0", isActive && "text-gold")}
                     />
                   ) : (
                     <item.Icon
                       size={20}
                       strokeWidth={isActive ? 2 : 1.5}
-                      className={cn("shrink-0", isActive && "text-emerald-600 dark:text-emerald-400")}
+                      className={cn("shrink-0", isActive && "text-gold")}
                     />
                   )}
                   {item.label}

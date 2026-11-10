@@ -50,7 +50,7 @@ export default function FplLeaguesPage() {
             </Button>
           </Link>
           <Link href="/fpl/leagues/create">
-            <Button size="sm" className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700">
+            <Button size="sm" className="gap-1.5 bg-primary text-white hover:bg-primary/90">
               <Plus className="h-4 w-4" />
               Create
             </Button>
@@ -71,7 +71,7 @@ export default function FplLeaguesPage() {
                 <Button variant="outline" size="sm">Join a league</Button>
               </Link>
               <Link href="/fpl/leagues/create">
-                <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700">Create league</Button>
+                <Button size="sm" className="bg-primary text-white hover:bg-primary/90">Create league</Button>
               </Link>
             </div>
           </CardContent>
@@ -83,7 +83,7 @@ export default function FplLeaguesPage() {
               <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-all hover:bg-accent">
                 <div className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold",
-                  league.type === "h2h" ? "bg-purple-500/20 text-purple-700 dark:text-purple-400" : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+                  league.type === "h2h" ? "bg-primary/15 text-primary" : "bg-gold/20 text-gold",
                 )}>
                   {league.type === "h2h" ? "H2H" : "CL"}
                 </div>
@@ -96,7 +96,7 @@ export default function FplLeaguesPage() {
                 <div className="shrink-0 text-right">
                   <span className={cn(
                     "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
-                    league.status === "active" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-muted text-muted-foreground",
+                    league.status === "active" ? "bg-gold/15 text-gold" : "bg-muted text-muted-foreground",
                   )}>
                     {league.status}
                   </span>

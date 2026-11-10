@@ -24,7 +24,7 @@ const POS_LABEL: Record<number, string> = { 1: "GKP", 2: "DEF", 3: "MID", 4: "FW
 const POS_COLOR: Record<number, string> = {
   1: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
   2: "bg-blue-500/20 text-blue-700 dark:text-blue-400",
-  3: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+  3: "bg-gold/20 text-gold",
   4: "bg-red-500/20 text-red-700 dark:text-red-400",
 };
 
@@ -263,7 +263,7 @@ export default function FplPicksPage() {
                   className={cn(
                     "flex flex-col rounded-xl border px-4 py-2.5 text-left text-xs transition-all",
                     active
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      ? "border-gold bg-gold/10 text-gold"
                       : "border-border bg-card hover:bg-accent text-foreground",
                   )}
                 >
@@ -333,7 +333,7 @@ export default function FplPicksPage() {
                         onClick={(e) => { e.stopPropagation(); setCaptainPanel(prev => prev === pick.player.fplId ? null : pick.player.fplId); setSelectedPlayer(null); }}
                         className={cn(
                           "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold transition-all",
-                          isPanelOpen ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" :
+                          isPanelOpen ? "border-gold bg-gold/15 text-gold" :
                           pick.isCaptain || pick.isViceCaptain ? "border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:border-yellow-500" :
                           "border-border text-muted-foreground hover:border-yellow-500/50 hover:text-foreground",
                         )}
@@ -346,7 +346,7 @@ export default function FplPicksPage() {
 
                   {/* Official FPL-style captain panel */}
                   {isPanelOpen && (
-                    <div className="mt-1 flex gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+                    <div className="mt-1 flex gap-2 rounded-xl border border-gold/30 bg-gold/5 p-3">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-semibold text-muted-foreground">{pick.player.name}</p>
                         <p className="text-[10px] text-muted-foreground">{pick.player.clubShort}</p>
@@ -438,7 +438,7 @@ export default function FplPicksPage() {
               {validationError}
             </p>
           ) : (
-            <p className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+            <p className="flex items-center gap-2 text-sm text-gold">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               Formation valid — ready to save
             </p>
@@ -446,7 +446,7 @@ export default function FplPicksPage() {
           <Button
             onClick={handleSave}
             disabled={!!validationError || saving}
-            className="shrink-0 bg-emerald-600 text-white hover:bg-emerald-700"
+            className="shrink-0 bg-primary text-white hover:bg-primary/90"
           >
             {saving ? "Saving…" : "Save Picks"}
           </Button>

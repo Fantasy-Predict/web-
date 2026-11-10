@@ -456,10 +456,10 @@ export default function PageClient() {
                 <PoolTiers />
 
                 {/* FANTASY XI SECTION */}
-                <section className="border-y border-emerald-500/20 bg-emerald-950/5">
+                <section className="border-y border-gold/20 bg-gold/5">
                     <div className="mx-auto max-w-6xl px-5 py-20 lg:px-8">
                         <div className="text-center" data-aos="fade-up">
-                            <p className="text-xs font-semibold tracking-[0.18em] text-emerald-500 uppercase">
+                            <p className="text-xs font-semibold tracking-[0.18em] text-gold uppercase">
                                 New on Fantasy Predict
                             </p>
                             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Introducing Fantasy XI</h2>
@@ -473,21 +473,21 @@ export default function PageClient() {
                             {FXI_FEATURES.map((item, i) => (
                                 <Card
                                     key={item.title}
-                                    className="gap-0 border-emerald-500/20 p-7 shadow-[var(--shadow-card)]"
+                                    className="gap-0 border-gold/20 p-7 shadow-[var(--shadow-card)]"
                                     data-aos="fade-up"
                                     data-aos-delay={i * 80}
                                 >
-                                    <span className="text-2xl leading-none">{item.icon}</span>
+                                    <span className="text-[10px] font-bold tracking-widest text-gold uppercase">{String(i + 1).padStart(2, "0")}</span>
                                     <h3 className="mt-3 text-base font-semibold">{item.title}</h3>
                                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
                                 </Card>
                             ))}
                         </div>
                         <div className="mt-10 flex flex-wrap justify-center gap-3" data-aos="fade-up">
-                            <Button asChild size="lg" className="bg-emerald-600 text-white hover:bg-emerald-700">
+                            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
                                 <Link href="/register">Join Fantasy XI — Free</Link>
                             </Button>
-                            <Button asChild size="lg" variant="outline" className="border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/10">
+                            <Button asChild size="lg" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10">
                                 <Link href="/login">Already have an account?</Link>
                             </Button>
                         </div>

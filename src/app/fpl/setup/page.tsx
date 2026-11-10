@@ -39,7 +39,7 @@ export default function FplSetupPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             <Logo />
-            <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-600 dark:text-emerald-400">
+            <span className="rounded-md bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-gold">
               FPL
             </span>
           </div>
@@ -55,7 +55,7 @@ export default function FplSetupPage() {
       {/* Content */}
       <main className="flex flex-1 flex-col items-center justify-center px-5 py-16">
         <div className="w-full max-w-2xl text-center">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-4 py-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-gold/15 px-4 py-1.5 text-sm font-medium text-gold">
             Fantasy Premier League
           </div>
           <h1 className="mt-4 text-3xl font-bold sm:text-4xl">Set up your FPL team</h1>
@@ -67,10 +67,10 @@ export default function FplSetupPage() {
             {/* Import option */}
             <Link
               href="/fpl/setup/import"
-              className="group flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 text-left transition-all hover:border-emerald-500/50 hover:shadow-md"
+              className="group flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 text-left transition-all hover:border-gold/50 hover:shadow-md"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15">
-                <Download className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold/15">
+                <Download className="h-6 w-6 text-gold" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold">Import from FPL</h2>
@@ -78,7 +78,7 @@ export default function FplSetupPage() {
                   Already play on the official Fantasy Premier League site? Import your squad using your Team ID.
                 </p>
               </div>
-              <span className="mt-auto text-sm font-medium text-emerald-600 dark:text-emerald-400 group-hover:underline">
+              <span className="mt-auto text-sm font-medium text-gold group-hover:underline">
                 Import my squad →
               </span>
             </Link>

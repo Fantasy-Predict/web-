@@ -27,7 +27,7 @@ function FixtureCard({ fixture }: { fixture: FplFixture }) {
   return (
     <div className={cn(
       "flex items-center gap-3 rounded-xl border p-3",
-      inProgress ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-card",
+      inProgress ? "border-gold/40 bg-gold/5" : "border-border bg-card",
     )}>
       {/* Home */}
       <div className="flex flex-1 flex-col items-end gap-0.5 text-right">
@@ -39,11 +39,11 @@ function FixtureCard({ fixture }: { fixture: FplFixture }) {
       <div className="flex w-20 shrink-0 flex-col items-center gap-0.5">
         {hasScore ? (
           <>
-            <p className={cn("text-lg font-bold tabular-nums", inProgress && "text-emerald-600 dark:text-emerald-400")}>
+            <p className={cn("text-lg font-bold tabular-nums", inProgress && "text-gold")}>
               {fixture.homeScore} – {fixture.awayScore}
             </p>
             {inProgress && (
-              <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Live</span>
+              <span className="rounded-full bg-success px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Live</span>
             )}
             {fixture.finished && (
               <span className="text-[10px] text-muted-foreground">FT</span>
@@ -149,7 +149,7 @@ export default function FplFixturesPage() {
               className={cn(
                 "shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all",
                 selectedGw?._id === gw._id
-                  ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                  ? "border-gold bg-gold/15 text-gold"
                   : "border-border text-muted-foreground hover:bg-accent",
                 gw.isCurrent && selectedGw?._id !== gw._id && "border-primary/40",
               )}
@@ -171,9 +171,9 @@ export default function FplFixturesPage() {
 
       {/* Live badge */}
       {liveCount > 0 && (
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2.5">
+          <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+          <span className="text-sm font-semibold text-gold">
             {liveCount} match{liveCount !== 1 ? "es" : ""} in progress
           </span>
         </div>

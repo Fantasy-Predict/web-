@@ -22,7 +22,7 @@ const POS_LABEL: Record<number, string> = { 1: "GKP", 2: "DEF", 3: "MID", 4: "FW
 const POS_COLOR: Record<number, string> = {
   1: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
   2: "bg-blue-500/20 text-blue-700 dark:text-blue-400",
-  3: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+  3: "bg-gold/20 text-gold",
   4: "bg-red-500/20 text-red-700 dark:text-red-400",
 };
 
@@ -75,7 +75,7 @@ function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compa
       </div>
       <p className="line-clamp-1 w-full text-[11px] font-semibold leading-tight">{player.name.split(" ").pop()}</p>
       <p className="text-[10px] text-muted-foreground">{player.clubShort}</p>
-      <p className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">{player.currentGwPoints} pts</p>
+      <p className="text-[10px] font-medium text-gold">{player.currentGwPoints} pts</p>
     </div>
   );
 }
@@ -201,7 +201,7 @@ export default function FplSquadPage() {
 
       {/* Pitch */}
       <Card className="mt-5 overflow-hidden">
-        <div className="relative min-h-[420px] bg-gradient-to-b from-emerald-700 to-emerald-900 p-3 sm:p-6">
+        <div className="relative min-h-[420px] bg-gradient-to-b from-navy to-[#162032] p-3 sm:p-6">
           {/* Pitch lines */}
           <div className="pointer-events-none absolute inset-x-6 top-1/2 h-px bg-white/10" />
           <div className="pointer-events-none absolute left-1/2 top-6 h-32 w-32 -translate-x-1/2 rounded-full border border-white/10" />
@@ -248,7 +248,7 @@ export default function FplSquadPage() {
                 "flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
                 team.chipUsed?.[chip.key]
                   ? "border-border bg-muted/40 text-muted-foreground line-through opacity-60"
-                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                  : "border-gold/30 bg-gold/10 text-gold",
               )}
             >
               {!team.chipUsed?.[chip.key] && <Star className="h-3 w-3" />}

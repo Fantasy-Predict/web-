@@ -37,8 +37,8 @@ export default function FplJoinLeaguePage() {
       <Card className="mx-auto max-w-md">
         <CardContent className="py-8">
           <div className="mb-6 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20">
-              <Users className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/20">
+              <Users className="h-7 w-7 text-gold" />
             </div>
             <div>
               <p className="font-semibold">Enter an invite code</p>
@@ -65,7 +65,7 @@ export default function FplJoinLeaguePage() {
             <Button
               type="submit"
               disabled={loading || !code.trim()}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              className="bg-primary text-white hover:bg-primary/90"
             >
               {loading ? "Joining…" : "Join League"}
             </Button>

@@ -135,14 +135,14 @@ export default function FplHistoryPage() {
                     key={h.gwId}
                     className={cn(
                       "border-b border-border last:border-0 transition-colors hover:bg-accent/50",
-                      isBest && "bg-emerald-500/5",
+                      isBest && "bg-gold/5",
                     )}
                   >
                     <td className="px-4 py-3 font-medium">
                       <div className="flex items-center gap-2">
                         {gw?.name ?? `GW${h.gwId}`}
                         {isBest && (
-                          <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                          <span className="rounded-full bg-gold/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-gold">
                             Best
                           </span>
                         )}
@@ -155,7 +155,7 @@ export default function FplHistoryPage() {
                     </td>
                     <td className="px-4 py-3 text-right hidden sm:table-cell">
                       {rankDelta !== null && rankDelta !== 0 ? (
-                        <span className={cn("flex items-center justify-end gap-1 text-xs font-medium", rankDelta > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                        <span className={cn("flex items-center justify-end gap-1 text-xs font-medium", rankDelta > 0 ? "text-success" : "text-destructive")}>
                           {rankDelta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                           {Math.abs(rankDelta).toLocaleString()}
                         </span>

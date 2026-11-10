@@ -21,7 +21,7 @@ const POS_LABEL: Record<number, string> = { 1: "GKP", 2: "DEF", 3: "MID", 4: "FW
 const POS_COLOR: Record<number, string> = {
   1: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
   2: "bg-blue-500/20 text-blue-700 dark:text-blue-400",
-  3: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+  3: "bg-gold/20 text-gold",
   4: "bg-red-500/20 text-red-700 dark:text-red-400",
 };
 
@@ -30,7 +30,7 @@ function formatPrice(tenths: number) {
 }
 
 function StatusDot({ status }: { status: string }) {
-  const color = status === "a" ? "bg-emerald-500" : status === "d" ? "bg-yellow-500" : "bg-red-500";
+  const color = status === "a" ? "bg-success" : status === "d" ? "bg-yellow-500" : "bg-red-500";
   return <span className={cn("inline-block h-2 w-2 rounded-full", color)} />;
 }
 
@@ -56,7 +56,7 @@ function PlayerRow({
         "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all",
         selected ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-accent",
         disabled && "cursor-not-allowed opacity-40",
-        highlight && "border-emerald-500/40 bg-emerald-500/5",
+        highlight && "border-gold/40 bg-gold/5",
       )}
     >
       <div className={cn("flex h-8 w-10 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold", POS_COLOR[player.position])}>
@@ -196,14 +196,14 @@ export default function FplTransfersPage() {
       {playerOut && playerIn && (
         <div className={cn(
           "mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4",
-          isOverBudget ? "border-destructive bg-destructive/5" : "border-emerald-500/30 bg-emerald-500/5",
+          isOverBudget ? "border-destructive bg-destructive/5" : "border-gold/30 bg-gold/5",
         )}>
           <div className="flex items-center gap-3 text-sm font-semibold">
             <span className="text-muted-foreground line-through">{playerOut.name}</span>
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
             <span>{playerIn.name}</span>
             {priceDiff !== null && (
-              <span className={cn("text-xs font-medium", priceDiff > 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400")}>
+              <span className={cn("text-xs font-medium", priceDiff > 0 ? "text-destructive" : "text-success")}>
                 {priceDiff > 0 ? "+" : ""}{formatPrice(priceDiff)}
               </span>
             )}
@@ -213,7 +213,7 @@ export default function FplTransfersPage() {
             <Button variant="outline" size="sm" onClick={() => { setPlayerIn(null); }}>
               Change
             </Button>
-            <Button size="sm" disabled={isOverBudget || confirming} onClick={confirmTransfer} className="bg-emerald-600 text-white hover:bg-emerald-700">
+            <Button size="sm" disabled={isOverBudget || confirming} onClick={confirmTransfer} className="bg-primary text-white hover:bg-primary/90">
               {confirming ? "Confirming…" : "Confirm Transfer"}
             </Button>
           </div>

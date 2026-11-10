@@ -38,15 +38,15 @@ export default function FplCreateLeaguePage() {
       <FplShell title="League Created">
         <Card className="mx-auto max-w-md">
           <CardContent className="flex flex-col items-center gap-5 py-10 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/20">
-              <Trophy className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/20">
+              <Trophy className="h-8 w-8 text-gold" />
             </div>
             <div>
               <p className="text-lg font-bold">{created.name}</p>
               <p className="mt-1 text-sm text-muted-foreground">Your league is ready. Share the invite code with friends.</p>
             </div>
-            <div className="flex w-full items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
-              <p className="flex-1 text-center font-mono text-2xl font-bold tracking-widest text-emerald-700 dark:text-emerald-400">
+            <div className="flex w-full items-center gap-2 rounded-xl border border-gold/30 bg-gold/5 px-4 py-3">
+              <p className="flex-1 text-center font-mono text-2xl font-bold tracking-widest text-gold">
                 {created.code}
               </p>
               <button
@@ -58,7 +58,7 @@ export default function FplCreateLeaguePage() {
               </button>
             </div>
             <Button
-              className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
+              className="w-full bg-primary text-white hover:bg-primary/90"
               onClick={() => router.push(`/fpl/leagues/${created.id}`)}
             >
               View League
@@ -95,10 +95,10 @@ export default function FplCreateLeaguePage() {
                     onClick={() => setType(t)}
                     className={cn(
                       "flex flex-col rounded-xl border p-4 text-left transition-all",
-                      type === t ? "border-emerald-500 bg-emerald-500/10" : "border-border bg-card hover:bg-accent",
+                      type === t ? "border-gold bg-gold/10" : "border-border bg-card hover:bg-accent",
                     )}
                   >
-                    <span className={cn("text-sm font-semibold", type === t && "text-emerald-700 dark:text-emerald-400")}>
+                    <span className={cn("text-sm font-semibold", type === t && "text-gold")}>
                       {t === "classic" ? "Classic" : "Head-to-Head"}
                     </span>
                     <span className="mt-1 text-[11px] text-muted-foreground leading-snug">
@@ -114,7 +114,7 @@ export default function FplCreateLeaguePage() {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              className="bg-primary text-white hover:bg-primary/90"
             >
               {loading ? "Creating…" : "Create League"}
             </Button>

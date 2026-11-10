@@ -22,7 +22,7 @@ function RankDelta({ current, previous }: { current: number; previous: number | 
   if (previous === null || previous === current) return <span className="text-xs text-muted-foreground">—</span>;
   const delta = previous - current; // positive = moved up
   return (
-    <span className={cn("flex items-center gap-0.5 text-xs font-medium", delta > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+    <span className={cn("flex items-center gap-0.5 text-xs font-medium", delta > 0 ? "text-success" : "text-destructive")}>
       {delta > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
       {Math.abs(delta)}
     </span>
@@ -127,15 +127,15 @@ function H2HStandings({ members, results, gwId }: { members: FplLeagueMember[]; 
               const draw = r.points1 === r.points2;
               return (
                 <div key={r._id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-                  <div className={cn("flex-1 text-right", p1Wins && "font-bold text-emerald-600 dark:text-emerald-400")}>
+                  <div className={cn("flex-1 text-right", p1Wins && "font-bold text-success")}>
                     <p className="truncate text-sm">{r.teamName1}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className={cn("text-sm font-bold tabular-nums", p1Wins && "text-emerald-600 dark:text-emerald-400")}>{r.points1}</span>
+                    <span className={cn("text-sm font-bold tabular-nums", p1Wins && "text-success")}>{r.points1}</span>
                     <span className="text-xs text-muted-foreground">{draw ? "D" : "–"}</span>
-                    <span className={cn("text-sm font-bold tabular-nums", p2Wins && "text-emerald-600 dark:text-emerald-400")}>{r.points2}</span>
+                    <span className={cn("text-sm font-bold tabular-nums", p2Wins && "text-success")}>{r.points2}</span>
                   </div>
-                  <div className={cn("flex-1", p2Wins && "font-bold text-emerald-600 dark:text-emerald-400")}>
+                  <div className={cn("flex-1", p2Wins && "font-bold text-success")}>
                     <p className="truncate text-sm">{r.teamName2}</p>
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export default function FplLeagueDetailPage({ params }: { params: Promise<{ leag
           <div className="flex items-center gap-3">
             <div className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-bold",
-              league.type === "h2h" ? "bg-purple-500/20 text-purple-700 dark:text-purple-400" : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+              league.type === "h2h" ? "bg-primary/15 text-primary" : "bg-gold/20 text-gold",
             )}>
               {league.type === "h2h" ? "H2H" : "CL"}
             </div>

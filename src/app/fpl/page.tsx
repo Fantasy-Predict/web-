@@ -41,12 +41,12 @@ function formatDate(iso: string): string {
 }
 
 const QUICK_ACTIONS = [
-  { href: "/fpl/squad", label: "View Squad", icon: Users, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  { href: "/fpl/picks", label: "My Picks", icon: Layers, color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
-  { href: "/fpl/transfers", label: "Transfers", icon: ArrowLeftRight, color: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
-  { href: "/fpl/fixtures", label: "Fixtures", icon: Calendar, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-  { href: "/fpl/leagues", label: "Leagues", icon: Trophy, color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" },
-  { href: "/fpl/history", label: "History", icon: BarChart2, color: "bg-pink-500/10 text-pink-600 dark:text-pink-400" },
+  { href: "/fpl/squad", label: "View Squad", icon: Users, color: "bg-primary/10 text-primary" },
+  { href: "/fpl/picks", label: "My Picks", icon: Layers, color: "bg-primary/10 text-primary" },
+  { href: "/fpl/transfers", label: "Transfers", icon: ArrowLeftRight, color: "bg-primary/10 text-primary" },
+  { href: "/fpl/fixtures", label: "Fixtures", icon: Calendar, color: "bg-primary/10 text-primary" },
+  { href: "/fpl/leagues", label: "Leagues", icon: Trophy, color: "bg-primary/10 text-primary" },
+  { href: "/fpl/history", label: "History", icon: BarChart2, color: "bg-primary/10 text-primary" },
 ];
 
 export default function FplDashboardPage() {
@@ -153,11 +153,11 @@ export default function FplDashboardPage() {
 
       {/* Deadline countdown */}
       {hasDeadline && (
-        <Card className={cn("border-0 mt-5", nextGw ? "bg-emerald-500/10" : "bg-muted/50")}>
+        <Card className={cn("border-0 mt-5", nextGw ? "bg-gold/10" : "bg-muted/50")}>
           <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", nextGw ? "bg-emerald-500/20" : "bg-primary/10")}>
-                <Clock className={cn("h-5 w-5", nextGw ? "text-emerald-600 dark:text-emerald-400" : "text-primary")} />
+              <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", nextGw ? "bg-gold/20" : "bg-primary/10")}>
+                <Clock className={cn("h-5 w-5", nextGw ? "text-gold" : "text-primary")} />
               </div>
               <div>
                 <p className="text-sm font-semibold">
@@ -169,9 +169,9 @@ export default function FplDashboardPage() {
               </div>
             </div>
             {nextGw && (
-              <div className={cn("rounded-xl px-4 py-2 text-center", "bg-emerald-500/20")}>
+              <div className={cn("rounded-xl px-4 py-2 text-center", "bg-gold/20")}>
                 <p className="text-xs text-muted-foreground">Time remaining</p>
-                <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                <p className="text-xl font-bold tabular-nums text-gold">
                   {getCountdown(gw!.deadline)}
                 </p>
               </div>
@@ -216,10 +216,10 @@ export default function FplDashboardPage() {
                 "rounded-xl border p-3 text-center",
                 team.chipUsed?.[chip.key]
                   ? "border-border bg-muted/40 opacity-60"
-                  : "border-emerald-500/30 bg-emerald-500/5",
+                  : "border-gold/30 bg-gold/5",
               )}
             >
-              <Star className={cn("mx-auto mb-1 h-4 w-4", team.chipUsed?.[chip.key] ? "text-muted-foreground" : "text-emerald-500")} />
+              <Star className={cn("mx-auto mb-1 h-4 w-4", team.chipUsed?.[chip.key] ? "text-muted-foreground" : "text-gold")} />
               <p className="text-xs font-medium">{chip.label}</p>
               <p className="mt-0.5 text-[10px] text-muted-foreground">{team.chipUsed?.[chip.key] ? "Used" : "Available"}</p>
             </div>
