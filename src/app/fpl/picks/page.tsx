@@ -47,14 +47,24 @@ function buildInitialPicks(playerDetails: FplPlayer[], existingPicks: FplPick | 
     })).filter(p => p.player != null);
   }
 
-  // Default: sort by position, first 11 start
-  const sorted = [...playerDetails].sort((a, b) => a.position - b.position);
-  return sorted.map((p, i) => ({
-    player: p,
-    squadPosition: i + 1,
-    isCaptain: false,
-    isViceCaptain: false,
-  }));
+  // Default: 4-4-2 (1 GK, 4 DEF, 4 MID, 2 FWD starting; GK2 as bench slot 1)
+  const byPos: Record<number, FplPlayer[]> = { 1: [], 2: [], 3: [], 4: [] };
+  for (const p of playerDetails) (byPos[p.position] ??= []).push(p);
+  for (const pos of [1, 2, 3, 4]) byPos[pos].sort((a, b) => b.totalPoints - a.totalPoints);
+
+  const result: PickState[] = [];
+  let slot = 1;
+  const mk = (p: FplPlayer) => ({ player: p, squadPosition: slot++, isCaptain: false, isViceCaptain: false });
+
+  if (byPos[1][0]) result.push(mk(byPos[1][0]));         // 1 GK starts
+  byPos[2].slice(0, 4).forEach(p => result.push(mk(p)));  // 4 DEF start
+  byPos[3].slice(0, 4).forEach(p => result.push(mk(p)));  // 4 MID start
+  byPos[4].slice(0, 2).forEach(p => result.push(mk(p)));  // 2 FWD start
+  if (byPos[1][1]) result.push(mk(byPos[1][1]));          // GK2 = bench slot 1
+  [...byPos[2].slice(4), ...byPos[3].slice(4), ...byPos[4].slice(2)]
+    .slice(0, 3)
+    .forEach(p => result.push(mk(p)));                    // remaining bench
+  return result;
 }
 
 function validateFormation(picks: PickState[]): string | null {
@@ -151,14 +161,17 @@ export default function FplPicksPage() {
     const dstIsStarter = dstPos <= 11;
 
     if (srcIsStarter !== dstIsStarter) {
-      // Check GK rule: GKP can only swap with GKP
-      if (srcPick.player.position === 1 && dstPick.player.position !== 1) {
-        toast.error("Goalkeeper can only be swapped with another goalkeeper");
-        setSelectedPlayer(null);
-        return;
-      }
-      if (dstPick.player.position === 1 && srcPick.player.position !== 1) {
-        toast.error("Goalkeeper can only be swapped with another goalkeeper");
+      // Simulate the swap and verify exactly 1 GK would remain in starting 11
+      const startersAfterSwap = picks
+        .map(p => {
+          if (p.player.fplId === srcPick.player.fplId) return { ...p, squadPosition: dstPos };
+          if (p.player.fplId === dstPick.player.fplId) return { ...p, squadPosition: srcPos };
+          return p;
+        })
+        .filter(p => p.squadPosition <= 11);
+      const gkCount = startersAfterSwap.filter(p => p.player.position === 1).length;
+      if (gkCount !== 1) {
+        toast.error("Starting 11 must have exactly 1 goalkeeper");
         setSelectedPlayer(null);
         return;
       }
