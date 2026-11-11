@@ -28,7 +28,7 @@ import { WelcomeSplash } from "@/components/app/welcome-splash";
 const CLUB_LOGOS: Record<string, string> = {
     ARS: "https://resources.premierleague.com/premierleague/badges/50/t3.png",
     MCI: "https://resources.premierleague.com/premierleague/badges/50/t43.png",
-    LIV: "https://resources.premierleague.com/premierleague/badges/50/t9.png",
+    LIV: "https://crests.football-data.org/64.svg",
     CHE: "https://resources.premierleague.com/premierleague/badges/50/t8.png",
     MUN: "https://resources.premierleague.com/premierleague/badges/50/t1.png",
     TOT: "https://resources.premierleague.com/premierleague/badges/50/t6.png",
