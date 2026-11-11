@@ -13,6 +13,7 @@ import {
 import {
   ArrowLeftRight,
   BarChart2,
+  BookOpen,
   Calendar,
   CircleUser,
   Layers,
@@ -60,6 +61,7 @@ const FPL_NAV: NavItem[] = [
   { to: "/fpl/fixtures", label: "Fixtures", kind: "lucide", Icon: Calendar },
   { to: "/fpl/leagues", label: "Leagues", kind: "lucide", Icon: Trophy },
   { to: "/fpl/history", label: "History", kind: "lucide", Icon: BarChart2 },
+  { to: "/fpl/guide", label: "Guide", kind: "lucide", Icon: BookOpen },
 ];
 
 const FPL_BOTTOM: Array<

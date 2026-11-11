@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeftRight, ArrowUpRight, BarChart2, Calendar, Clock, Layers, Star, Trophy, TrendingUp, Users } from "lucide-react";
+import { ArrowLeftRight, ArrowUpRight, BarChart2, BookOpen, Calendar, Clock, Layers, Star, Trophy, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   getFplTeam,
@@ -47,6 +47,7 @@ const QUICK_ACTIONS = [
   { href: "/fpl/fixtures", label: "Fixtures", icon: Calendar, color: "bg-primary/10 text-primary" },
   { href: "/fpl/leagues", label: "Leagues", icon: Trophy, color: "bg-primary/10 text-primary" },
   { href: "/fpl/history", label: "History", icon: BarChart2, color: "bg-primary/10 text-primary" },
+  { href: "/fpl/guide", label: "Guide", icon: BookOpen, color: "bg-gold/15 text-gold" },
 ];
 
 export default function FplDashboardPage() {
