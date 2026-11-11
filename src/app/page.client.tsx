@@ -28,11 +28,12 @@ import { WelcomeSplash } from "@/components/app/welcome-splash";
 const CLUB_LOGOS: Record<string, string> = {
     ARS: "https://resources.premierleague.com/premierleague/badges/50/t3.png",
     MCI: "https://resources.premierleague.com/premierleague/badges/50/t43.png",
-    LIV: "https://resources.premierleague.com/premierleague/badges/50/t9.png",  // ✅ Fixed
+    LIV: "https://resources.premierleague.com/premierleague/badges/50/t9.png",
     CHE: "https://resources.premierleague.com/premierleague/badges/50/t8.png",
     MUN: "https://resources.premierleague.com/premierleague/badges/50/t1.png",
     TOT: "https://resources.premierleague.com/premierleague/badges/50/t6.png",
-    // Coventry not in Premier League badge set – use a placeholder
+    RMA: "https://crests.football-data.org/86.svg",
+    FCB: "https://crests.football-data.org/81.svg",
 };
 
 const TOP_SIX = [
@@ -83,20 +84,20 @@ export function TeamCrestOrbit() {
 }
 
 // ============================================================
-// HERO PREDICTION WIDGET – Arsenal vs Coventry (Opening Match)
+// HERO PREDICTION WIDGET – Real Madrid vs Barcelona (El Clásico)
 // ============================================================
 export function HeroPredictionWidget() {
     const [pick, setPick] = useState<"1" | "X" | "2">("1");
 
-    // Opening match: Arsenal vs Coventry City
     const match = {
-        home: "Arsenal",
-        away: "Coventry City",
+        home: "Real Madrid",
+        away: "Barcelona",
     };
 
-    const homeCode = "ARS";
+    const homeCode = "RMA";
+    const awayCode = "FCB";
     const homeLogo = CLUB_LOGOS[homeCode];
-    // Coventry: we don't have a CDN logo, so we'll use initials fallback
+    const awayLogo = CLUB_LOGOS[awayCode];
 
     return (
         <div className="relative w-full max-w-xs">
@@ -143,8 +144,25 @@ export function HeroPredictionWidget() {
 
                     <div className="flex flex-1 flex-col items-center gap-2">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background p-1.5">
-                            {/* Coventry – no logo, use initials */}
-                            <span className="text-xs font-bold text-foreground">COV</span>
+                            {awayLogo ? (
+                                <Image
+                                    src={awayLogo}
+                                    alt={match.away}
+                                    width={32}
+                                    height={32}
+                                    className="object-contain"
+                                    unoptimized
+                                    referrerPolicy="no-referrer"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                    }}
+                                />
+                            ) : (
+                                <span className="text-xs font-bold text-foreground">
+                                    {match.away.slice(0, 3).toUpperCase()}
+                                </span>
+                            )}
                         </div>
                         <p className="text-xs font-medium text-foreground">{match.away}</p>
                     </div>
