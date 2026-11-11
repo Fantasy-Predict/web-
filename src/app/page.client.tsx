@@ -490,6 +490,9 @@ export default function PageClient() {
                             <Button asChild size="lg" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10">
                                 <Link href="/login">Already have an account?</Link>
                             </Button>
+                            <Button asChild size="lg" variant="outline" className="border-gold/40 text-gold hover:bg-gold/10">
+                                <Link href="/fpl-guide">How Fantasy XI works →</Link>
+                            </Button>
                         </div>
                     </div>
                 </section>

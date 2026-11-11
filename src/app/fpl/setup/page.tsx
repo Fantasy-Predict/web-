@@ -108,7 +108,7 @@ export default function FplSetupPage() {
           </p>
 
           <Link
-            href="/fpl/guide"
+            href="/fpl-guide"
             className="mt-4 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
           >
             New to Fantasy XI? Read the full guide →

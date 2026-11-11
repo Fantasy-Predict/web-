@@ -47,7 +47,7 @@ const QUICK_ACTIONS = [
   { href: "/fpl/fixtures", label: "Fixtures", icon: Calendar, color: "bg-primary/10 text-primary" },
   { href: "/fpl/leagues", label: "Leagues", icon: Trophy, color: "bg-primary/10 text-primary" },
   { href: "/fpl/history", label: "History", icon: BarChart2, color: "bg-primary/10 text-primary" },
-  { href: "/fpl/guide", label: "Guide", icon: BookOpen, color: "bg-gold/15 text-gold" },
+  { href: "/fpl-guide", label: "Guide", icon: BookOpen, color: "bg-gold/15 text-gold" },
 ];
 
 export default function FplDashboardPage() {
