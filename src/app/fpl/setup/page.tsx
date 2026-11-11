@@ -106,6 +106,13 @@ export default function FplSetupPage() {
           <p className="mt-8 text-xs text-muted-foreground">
             Budget: £100.0m · 15 players (2 GK · 5 DEF · 5 MID · 3 FWD) · Max 3 from same club
           </p>
+
+          <Link
+            href="/fpl/guide"
+            className="mt-4 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            New to Fantasy XI? Read the full guide →
+          </Link>
         </div>
       </main>
     </div>
