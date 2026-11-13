@@ -194,13 +194,13 @@ export function AppShell({
 
       <div className="min-h-screen bg-background">
         {/* Desktop sidebar — hidden on mobile */}
-        <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-          <div className="px-5 py-5">
+        <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar lg:flex">
+          <div className="shrink-0 px-5 py-5">
             <Link href="/" aria-label="Fantasy Predict home">
               <Logo className="justify-start" />
             </Link>
           </div>
-          <nav className="flex-1 space-y-1 px-3">
+          <nav className="flex-1 space-y-1 overflow-y-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {NAV.map((item) => {
               const isActive = pathname === item.to;
               return (
@@ -220,7 +220,7 @@ export function AppShell({
               );
             })}
           </nav>
-          <div className="border-t border-sidebar-border p-4 space-y-2">
+          <div className="shrink-0 border-t border-sidebar-border p-4 space-y-2">
             <ThemeToggle className="w-full justify-between" />
             <button
               onClick={handleLogout}
