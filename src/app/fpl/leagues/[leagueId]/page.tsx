@@ -60,6 +60,7 @@ function ClassicStandings({
   }
 
   return (
+    <>
     <Card>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -148,6 +149,7 @@ function ClassicStandings({
         </div>
       </div>
     )}
+    </>
   );
 }
 
