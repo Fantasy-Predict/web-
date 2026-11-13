@@ -2,34 +2,114 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Users } from "lucide-react";
+import { Users, Wallet, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { joinFplLeague } from "@/app/lib/api/endpoints";
+import { previewFplLeague, joinFplLeague, type FplLeaguePreview } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type Step = "code" | "confirm";
+
 export default function FplJoinLeaguePage() {
   const router = useRouter();
+  const [step, setStep] = useState<Step>("code");
   const [code, setCode] = useState("");
+  const [preview, setPreview] = useState<FplLeaguePreview | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function submit(e: FormEvent) {
+  async function lookupLeague(e: FormEvent) {
     e.preventDefault();
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error("Enter an invite code"); return; }
     setLoading(true);
     try {
-      await joinFplLeague({ code: trimmed });
-      toast.success("Joined league!");
-      router.push("/fpl/leagues");
+      const data = await previewFplLeague(trimmed);
+      setPreview(data);
+      setStep("confirm");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Invalid or expired invite code");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function confirmJoin() {
+    if (!preview) return;
+    setLoading(true);
+    try {
+      await joinFplLeague({ code: code.trim().toUpperCase() });
+      toast.success("Joined league!");
+      router.push("/fpl/leagues");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to join league");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (step === "confirm" && preview) {
+    return (
+      <FplShell title="Join League">
+        <Card className="mx-auto max-w-md">
+          <CardContent className="py-8">
+            <div className="mb-6 flex flex-col items-center gap-3 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/20">
+                <Users className="h-7 w-7 text-gold" />
+              </div>
+              <div>
+                <p className="text-lg font-bold">{preview.name}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Classic league · {preview.memberCount} member{preview.memberCount !== 1 ? "s" : ""}
+                  {preview.maxMembers ? ` / ${preview.maxMembers} max` : ""}
+                </p>
+              </div>
+            </div>
+
+            {!preview.isFree ? (
+              <div className="mb-6 flex gap-3 rounded-xl border border-warning/30 bg-warning/5 p-4">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                <div className="text-sm">
+                  <p className="font-semibold text-warning">Paid League — Entry fee required</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Joining this league will deduct{" "}
+                    <span className="font-bold text-foreground">₦{preview.entryFee.toLocaleString()}</span>{" "}
+                    from your wallet. The winner takes 90% of the prize pool.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6 flex gap-3 rounded-xl border border-success/30 bg-success/5 p-4">
+                <Wallet className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+                <p className="text-sm text-muted-foreground">
+                  This is a free league — no entry fee required.
+                </p>
+              </div>
+            )}
+
+            <div className="grid gap-3">
+              <Button
+                onClick={confirmJoin}
+                disabled={loading}
+                className="bg-primary text-white hover:bg-primary/90"
+              >
+                {loading ? "Joining…" : preview.isFree ? "Join League" : `Join · Pay ₦${preview.entryFee.toLocaleString()}`}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep("code")}
+                disabled={loading}
+              >
+                Back
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </FplShell>
+    );
   }
 
   return (
@@ -48,7 +128,7 @@ export default function FplJoinLeaguePage() {
             </div>
           </div>
 
-          <form className="grid gap-5" onSubmit={submit}>
+          <form className="grid gap-5" onSubmit={lookupLeague}>
             <div className="grid gap-2">
               <Label htmlFor="code">Invite code</Label>
               <Input
@@ -67,7 +147,7 @@ export default function FplJoinLeaguePage() {
               disabled={loading || !code.trim()}
               className="bg-primary text-white hover:bg-primary/90"
             >
-              {loading ? "Joining…" : "Join League"}
+              {loading ? "Looking up…" : "Continue"}
             </Button>
           </form>
         </CardContent>

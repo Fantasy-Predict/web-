@@ -1066,13 +1066,49 @@ export type FplLeague = {
   name: string;
   code: string;
   type: "classic" | "h2h";
-  status: "active" | "draft";
+  status: "active" | "archived";
   adminId: string;
   memberCount: number;
+  isFree: boolean;
+  entryFee: number;
+  maxMembers: number | null;
+};
+
+export type FplLeaguePreview = {
+  _id: string;
+  name: string;
+  type: "classic" | "h2h";
+  isFree: boolean;
+  entryFee: number;
+  memberCount: number;
+  maxMembers: number | null;
+  status: string;
+};
+
+export type FplChallenge = {
+  _id: string;
+  challengerId: string;
+  challengerTeamName: string;
+  opponentId: string;
+  opponentTeamName: string | null;
+  gwId: number;
+  status: "pending" | "accepted" | "declined" | "resolved";
+  challengerPoints: number | null;
+  opponentPoints: number | null;
+  winnerId: string | null;
+  createdAt: string;
+};
+
+export type FplSyncStatus = {
+  linked: boolean;
+  enabled: boolean;
+  lastAt: string | null;
+  hasImportId: boolean;
 };
 
 export type FplLeagueMember = {
   _id: string;
+  userId?: string;
   teamName: string;
   totalPoints: number;
   gwPoints: number;
@@ -1207,8 +1243,19 @@ export async function makeFplTransfer(payload: { playerInId: number; playerOutId
 
 // --- FPL Leagues ---
 
-export async function createFplLeague(payload: { name: string; type: "classic" | "h2h" }): Promise<{ leagueId: string; code: string }> {
+export async function createFplLeague(payload: {
+  name: string;
+  type: "classic";
+  isPrivate?: boolean;
+  isFree: boolean;
+  entryFee: number;
+  maxMembers?: number | null;
+}): Promise<{ leagueId: string; code: string }> {
   return apiFetch("/v1/fpl/leagues", { method: "POST", body: payload });
+}
+
+export async function previewFplLeague(code: string): Promise<FplLeaguePreview> {
+  return apiFetch(`/v1/fpl/leagues/preview/${code.toUpperCase()}`);
 }
 
 export async function joinFplLeague(payload: { code: string }): Promise<{ success: boolean }> {
@@ -1239,4 +1286,34 @@ export async function getFplH2HResults(leagueId: string, gwId?: number): Promise
   const res = await apiFetch<FplH2HResult[] | { data?: FplH2HResult[] }>(`/v1/fpl/leagues/${leagueId}/h2h${qs}`, { unwrap: false });
   if (Array.isArray(res)) return res;
   return (res as { data?: FplH2HResult[] })?.data ?? [];
+}
+
+// --- FPL Challenges ---
+
+export async function sendFplChallenge(payload: { opponentId: string; gwId: number }): Promise<FplChallenge> {
+  return apiFetch("/v1/fpl/challenges", { method: "POST", body: payload });
+}
+
+export async function respondToFplChallenge(challengeId: string, action: "accepted" | "declined"): Promise<FplChallenge> {
+  return apiFetch(`/v1/fpl/challenges/${challengeId}/respond`, { method: "PATCH", body: { action } });
+}
+
+export async function getMyFplChallenges(): Promise<FplChallenge[]> {
+  const res = await apiFetch<FplChallenge[] | { data?: FplChallenge[] }>("/v1/fpl/challenges", { unwrap: false });
+  if (Array.isArray(res)) return res;
+  return (res as { data?: FplChallenge[] })?.data ?? [];
+}
+
+// --- Official FPL Sync ---
+
+export async function linkOfficialFpl(payload: { email: string; password: string }): Promise<{ linked: boolean }> {
+  return apiFetch("/v1/fpl/team/sync/link", { method: "POST", body: payload });
+}
+
+export async function unlinkOfficialFpl(): Promise<{ linked: boolean }> {
+  return apiFetch("/v1/fpl/team/sync/link", { method: "DELETE" });
+}
+
+export async function getFplSyncStatus(): Promise<FplSyncStatus> {
+  return apiFetch("/v1/fpl/team/sync/status");
 }

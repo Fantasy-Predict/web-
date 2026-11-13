@@ -18,6 +18,8 @@ import {
   CircleUser,
   Layers,
   LogOut,
+  Settings,
+  Swords,
   Trophy,
   Users,
 } from "lucide-react";
@@ -60,8 +62,10 @@ const FPL_NAV: NavItem[] = [
   { to: "/fpl/transfers", label: "Transfers", kind: "lucide", Icon: ArrowLeftRight },
   { to: "/fpl/fixtures", label: "Fixtures", kind: "lucide", Icon: Calendar },
   { to: "/fpl/leagues", label: "Leagues", kind: "lucide", Icon: Trophy },
+  { to: "/fpl/challenges", label: "Challenges", kind: "lucide", Icon: Swords },
   { to: "/fpl/history", label: "History", kind: "lucide", Icon: BarChart2 },
   { to: "/fpl-guide", label: "Guide", kind: "lucide", Icon: BookOpen },
+  { to: "/fpl/settings", label: "Settings", kind: "lucide", Icon: Settings },
 ];
 
 const FPL_BOTTOM: Array<

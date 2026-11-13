@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Trophy } from "lucide-react";
+import { Copy, Trophy, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { createFplLeague } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
@@ -15,16 +15,28 @@ import { cn } from "@/app/lib/utils";
 export default function FplCreateLeaguePage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [type, setType] = useState<"classic" | "h2h">("classic");
+  const [isFree, setIsFree] = useState(true);
+  const [entryFee, setEntryFee] = useState("");
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<{ id: string; code: string; name: string } | null>(null);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) { toast.error("Enter a league name"); return; }
+    const fee = isFree ? 0 : parseInt(entryFee, 10);
+    if (!isFree && (!fee || fee < 100)) {
+      toast.error("Entry fee must be at least ₦100");
+      return;
+    }
     setLoading(true);
     try {
-      const res = await createFplLeague({ name: name.trim(), type });
+      const res = await createFplLeague({
+        name: name.trim(),
+        type: "classic",
+        isFree,
+        entryFee: fee,
+        isPrivate: true,
+      });
       setCreated({ id: res.leagueId, code: res.code, name: name.trim() });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create league");
@@ -86,30 +98,52 @@ export default function FplCreateLeaguePage() {
             </div>
 
             <div className="grid gap-2">
-              <Label>League type</Label>
+              <Label>Entry fee</Label>
               <div className="grid grid-cols-2 gap-3">
-                {(["classic", "h2h"] as const).map(t => (
+                {([true, false] as const).map(free => (
                   <button
-                    key={t}
+                    key={String(free)}
                     type="button"
-                    onClick={() => setType(t)}
+                    onClick={() => setIsFree(free)}
                     className={cn(
                       "flex flex-col rounded-xl border p-4 text-left transition-all",
-                      type === t ? "border-gold bg-gold/10" : "border-border bg-card hover:bg-accent",
+                      isFree === free ? "border-gold bg-gold/10" : "border-border bg-card hover:bg-accent",
                     )}
                   >
-                    <span className={cn("text-sm font-semibold", type === t && "text-gold")}>
-                      {t === "classic" ? "Classic" : "Head-to-Head"}
+                    <span className={cn("text-sm font-semibold", isFree === free && "text-gold")}>
+                      {free ? "Free" : "Paid"}
                     </span>
                     <span className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                      {t === "classic"
-                        ? "Rank by total points accumulated over the season"
-                        : "Face one member each week — win, draw or lose"}
+                      {free
+                        ? "No entry fee — compete for bragging rights"
+                        : "Collect entry fees, winner takes 90%"}
                     </span>
                   </button>
                 ))}
               </div>
             </div>
+
+            {!isFree && (
+              <div className="grid gap-2">
+                <Label htmlFor="fee">Entry fee amount (₦)</Label>
+                <div className="relative">
+                  <Wallet className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="fee"
+                    type="number"
+                    min={100}
+                    step={100}
+                    placeholder="e.g. 500"
+                    value={entryFee}
+                    onChange={e => setEntryFee(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  90% goes to the winner · 10% platform fee. Entry fee is deducted from your wallet when you create the league.
+                </p>
+              </div>
+            )}
 
             <Button
               type="submit"

@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { use } from "react";
-import { Copy, Share2, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { Copy, Share2, Swords, TrendingDown, TrendingUp, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import {
   getFplLeagueStandings,
   getFplH2HResults,
   getFplCurrentGameweek,
+  sendFplChallenge,
   type FplLeague,
   type FplLeagueMember,
   type FplH2HResult,
@@ -29,7 +30,30 @@ function RankDelta({ current, previous }: { current: number; previous: number | 
   );
 }
 
-function ClassicStandings({ members }: { members: FplLeagueMember[] }) {
+function ClassicStandings({
+  members,
+  currentGwId,
+  myUserId,
+}: {
+  members: FplLeagueMember[];
+  currentGwId: number | null;
+  myUserId: string | null;
+}) {
+  const [challenging, setChallenging] = useState<string | null>(null);
+
+  async function challenge(member: FplLeagueMember) {
+    if (!member.userId || !currentGwId) return;
+    setChallenging(member._id);
+    try {
+      await sendFplChallenge({ opponentId: member.userId, gwId: currentGwId });
+      toast.success(`Challenge sent to ${member.teamName} for GW${currentGwId}!`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send challenge");
+    } finally {
+      setChallenging(null);
+    }
+  }
+
   return (
     <Card>
       <div className="overflow-x-auto">
@@ -41,6 +65,7 @@ function ClassicStandings({ members }: { members: FplLeagueMember[] }) {
               <th className="px-4 py-3 text-right">GW</th>
               <th className="px-4 py-3 text-right">Total</th>
               <th className="px-4 py-3 text-right hidden sm:table-cell">Move</th>
+              <th className="px-4 py-3 w-10" />
             </tr>
           </thead>
           <tbody>
@@ -65,6 +90,19 @@ function ClassicStandings({ members }: { members: FplLeagueMember[] }) {
                 <td className="px-4 py-3 text-right font-bold">{m.totalPoints}</td>
                 <td className="px-4 py-3 text-right hidden sm:table-cell">
                   <RankDelta current={m.currentRank} previous={m.previousRank} />
+                </td>
+                <td className="px-4 py-3">
+                  {m.userId && m.userId !== myUserId && currentGwId && (
+                    <button
+                      type="button"
+                      disabled={challenging === m._id}
+                      onClick={() => challenge(m)}
+                      title={`Challenge ${m.teamName} for GW${currentGwId}`}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-border hover:bg-accent disabled:opacity-50"
+                    >
+                      <Swords className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -148,6 +186,16 @@ function H2HStandings({ members, results, gwId }: { members: FplLeagueMember[]; 
   );
 }
 
+function getMyUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const token = sessionStorage.getItem("fp_token");
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload._id ?? payload.id ?? null;
+  } catch { return null; }
+}
+
 export default function FplLeagueDetailPage({ params }: { params: Promise<{ leagueId: string }> }) {
   const { leagueId } = use(params);
   const [league, setLeague] = useState<FplLeague | null>(null);
@@ -155,6 +203,7 @@ export default function FplLeagueDetailPage({ params }: { params: Promise<{ leag
   const [h2hResults, setH2hResults] = useState<FplH2HResult[]>([]);
   const [currentGw, setCurrentGw] = useState<FplGameweek | null>(null);
   const [loading, setLoading] = useState(true);
+  const [myUserId] = useState<string | null>(() => getMyUserId());
 
   useEffect(() => {
     if (!leagueId) return;
@@ -264,7 +313,7 @@ export default function FplLeagueDetailPage({ params }: { params: Promise<{ leag
           </CardContent>
         </Card>
       ) : league.type === "classic" ? (
-        <ClassicStandings members={members} />
+        <ClassicStandings members={members} currentGwId={currentGw?.fplId ?? null} myUserId={myUserId} />
       ) : (
         <H2HStandings members={members} results={h2hResults} gwId={currentGw?.fplId ?? null} />
       )}
