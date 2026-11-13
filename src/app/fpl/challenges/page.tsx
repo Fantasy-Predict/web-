@@ -7,6 +7,7 @@ import {
   getMyFplChallenges,
   respondToFplChallenge,
   getFplCurrentGameweek,
+  getMyProfile,
   type FplChallenge,
   type FplGameweek,
 } from "@/app/lib/api/endpoints";
@@ -124,18 +125,6 @@ function ChallengeCard({
   );
 }
 
-function getUserId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const token = sessionStorage.getItem("fp_token");
-    if (!token) return null;
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload._id ?? payload.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export default function FplChallengesPage() {
   const [challenges, setChallenges] = useState<FplChallenge[]>([]);
   const [currentGw, setCurrentGw] = useState<FplGameweek | null>(null);
@@ -144,10 +133,10 @@ export default function FplChallengesPage() {
   const [tab, setTab] = useState<"all" | "incoming" | "sent">("all");
 
   useEffect(() => {
-    setMyUserId(getUserId());
-    Promise.all([getMyFplChallenges(), getFplCurrentGameweek()]).then(([ch, gw]) => {
+    Promise.all([getMyFplChallenges(), getFplCurrentGameweek(), getMyProfile()]).then(([ch, gw, profile]) => {
       setChallenges(ch);
       setCurrentGw(gw);
+      setMyUserId(profile?._id ?? null);
     }).catch(err => {
       toast.error(err instanceof Error ? err.message : "Failed to load challenges");
     }).finally(() => setLoading(false));

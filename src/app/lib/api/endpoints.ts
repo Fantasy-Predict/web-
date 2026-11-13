@@ -115,6 +115,14 @@ export async function adminLogin(payload: { email: string; password: string }): 
   };
 }
 
+export async function getMyProfile(): Promise<{ _id: string } | null> {
+  try {
+    return await apiFetch<{ _id: string }>("/v1/users/profile");
+  } catch {
+    return null;
+  }
+}
+
 export async function register(payload: RegisterPayload): Promise<{ success: boolean }> {
   return apiFetch("/v1/users", {
     method: "POST",

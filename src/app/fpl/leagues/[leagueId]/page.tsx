@@ -9,6 +9,7 @@ import {
   getFplH2HResults,
   getFplCurrentGameweek,
   sendFplChallenge,
+  getMyProfile,
   type FplLeague,
   type FplLeagueMember,
   type FplH2HResult,
@@ -226,16 +227,6 @@ function H2HStandings({ members, results, gwId }: { members: FplLeagueMember[]; 
   );
 }
 
-function getMyUserId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const token = sessionStorage.getItem("fp_token");
-    if (!token) return null;
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload._id ?? payload.id ?? null;
-  } catch { return null; }
-}
-
 export default function FplLeagueDetailPage({ params }: { params: Promise<{ leagueId: string }> }) {
   const { leagueId } = use(params);
   const [league, setLeague] = useState<FplLeague | null>(null);
@@ -243,7 +234,7 @@ export default function FplLeagueDetailPage({ params }: { params: Promise<{ leag
   const [h2hResults, setH2hResults] = useState<FplH2HResult[]>([]);
   const [currentGw, setCurrentGw] = useState<FplGameweek | null>(null);
   const [loading, setLoading] = useState(true);
-  const [myUserId] = useState<string | null>(() => getMyUserId());
+  const [myUserId, setMyUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!leagueId) return;
@@ -252,11 +243,13 @@ export default function FplLeagueDetailPage({ params }: { params: Promise<{ leag
     Promise.all([
       getFplLeagueStandings(leagueId),
       getFplCurrentGameweek(),
-    ]).then(async ([standings, gw]) => {
+      getMyProfile(),
+    ]).then(async ([standings, gw, profile]) => {
       if (!active) return;
       setLeague(standings.league);
       setMembers(standings.members);
       setCurrentGw(gw);
+      setMyUserId(profile?._id ?? null);
 
       if (standings.league?.type === "h2h" && gw) {
         const results = await getFplH2HResults(leagueId, gw.fplId).catch(() => []);
