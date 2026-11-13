@@ -1061,28 +1061,38 @@ export type FplPick = {
   isConfirmed: boolean;
 };
 
+export type FplPrizeSlot = {
+  position: number;
+  percentage: number;
+};
+
 export type FplLeague = {
   _id: string;
   name: string;
   code: string;
   type: "classic" | "h2h";
+  subType: "season" | "weekly";
   status: "active" | "archived";
   adminId: string;
   memberCount: number;
   isFree: boolean;
   entryFee: number;
   maxMembers: number | null;
+  prizeDistribution: FplPrizeSlot[];
+  totalPrizePool: number;
 };
 
 export type FplLeaguePreview = {
   _id: string;
   name: string;
   type: "classic" | "h2h";
+  subType: "season" | "weekly";
   isFree: boolean;
   entryFee: number;
   memberCount: number;
   maxMembers: number | null;
   status: string;
+  prizeDistribution: FplPrizeSlot[];
 };
 
 export type FplChallenge = {
@@ -1091,7 +1101,8 @@ export type FplChallenge = {
   challengerTeamName: string;
   opponentId: string;
   opponentTeamName: string | null;
-  gwId: number;
+  startGwId: number;
+  endGwId: number;
   status: "pending" | "accepted" | "declined" | "resolved";
   challengerPoints: number | null;
   opponentPoints: number | null;
@@ -1246,10 +1257,12 @@ export async function makeFplTransfer(payload: { playerInId: number; playerOutId
 export async function createFplLeague(payload: {
   name: string;
   type: "classic";
+  subType?: "season" | "weekly";
   isPrivate?: boolean;
   isFree: boolean;
   entryFee: number;
   maxMembers?: number | null;
+  prizeDistribution?: FplPrizeSlot[];
 }): Promise<{ leagueId: string; code: string }> {
   return apiFetch("/v1/fpl/leagues", { method: "POST", body: payload });
 }
@@ -1290,7 +1303,7 @@ export async function getFplH2HResults(leagueId: string, gwId?: number): Promise
 
 // --- FPL Challenges ---
 
-export async function sendFplChallenge(payload: { opponentId: string; gwId: number }): Promise<FplChallenge> {
+export async function sendFplChallenge(payload: { opponentId: string; startGwId: number; gwCount?: number }): Promise<FplChallenge> {
   return apiFetch("/v1/fpl/challenges", { method: "POST", body: payload });
 }
 

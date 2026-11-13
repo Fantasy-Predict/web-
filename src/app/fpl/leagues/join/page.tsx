@@ -68,24 +68,53 @@ export default function FplJoinLeaguePage() {
               </div>
             </div>
 
+            {/* League subtype badge */}
+            {preview.subType && (
+              <div className="mb-3 flex justify-center">
+                <span className="rounded-full bg-gold/10 px-3 py-1 text-xs font-semibold text-gold capitalize">
+                  {preview.subType === "weekly" ? "Weekly" : "Season"} League
+                </span>
+              </div>
+            )}
+
             {!preview.isFree ? (
-              <div className="mb-6 flex gap-3 rounded-xl border border-warning/30 bg-warning/5 p-4">
+              <div className="mb-4 flex gap-3 rounded-xl border border-warning/30 bg-warning/5 p-4">
                 <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
                 <div className="text-sm">
                   <p className="font-semibold text-warning">Paid League — Entry fee required</p>
                   <p className="mt-1 text-muted-foreground">
                     Joining this league will deduct{" "}
                     <span className="font-bold text-foreground">₦{preview.entryFee.toLocaleString()}</span>{" "}
-                    from your wallet. The winner takes 90% of the prize pool.
+                    from your wallet.{" "}
+                    {preview.subType === "weekly"
+                      ? "90% of total entry fees is split across remaining gameweeks — highest scorer each GW wins that week's share."
+                      : "90% of total entry fees is paid out at season end based on final standings."}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="mb-6 flex gap-3 rounded-xl border border-success/30 bg-success/5 p-4">
+              <div className="mb-4 flex gap-3 rounded-xl border border-success/30 bg-success/5 p-4">
                 <Wallet className="mt-0.5 h-5 w-5 shrink-0 text-success" />
                 <p className="text-sm text-muted-foreground">
                   This is a free league — no entry fee required.
                 </p>
+              </div>
+            )}
+
+            {/* Prize distribution (season paid leagues) */}
+            {!preview.isFree && preview.subType === "season" && preview.prizeDistribution?.length > 0 && (
+              <div className="mb-4 rounded-xl border border-border bg-muted/30 p-4">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prize Distribution</p>
+                <div className="grid gap-1">
+                  {preview.prizeDistribution.map(slot => (
+                    <div key={slot.position} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {slot.position === 1 ? "1st place" : slot.position === 2 ? "2nd place" : slot.position === 3 ? "3rd place" : `${slot.position}th place`}
+                      </span>
+                      <span className="font-semibold text-gold">{slot.percentage}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

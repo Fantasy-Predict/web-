@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Trophy, Wallet } from "lucide-react";
+import { Copy, Trophy, Wallet, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { createFplLeague } from "@/app/lib/api/endpoints";
+import { createFplLeague, type FplPrizeSlot } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,26 +16,48 @@ export default function FplCreateLeaguePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [isFree, setIsFree] = useState(true);
+  const [subType, setSubType] = useState<"season" | "weekly">("season");
   const [entryFee, setEntryFee] = useState("");
+  const [prizeSlots, setPrizeSlots] = useState<FplPrizeSlot[]>([
+    { position: 1, percentage: 60 },
+    { position: 2, percentage: 30 },
+  ]);
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<{ id: string; code: string; name: string } | null>(null);
+
+  const totalPct = prizeSlots.reduce((s, p) => s + (Number(p.percentage) || 0), 0);
+
+  function addSlot() {
+    const nextPos = prizeSlots.length + 1;
+    setPrizeSlots(prev => [...prev, { position: nextPos, percentage: 0 }]);
+  }
+
+  function removeSlot(idx: number) {
+    setPrizeSlots(prev => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, position: i + 1 })));
+  }
+
+  function updateSlotPct(idx: number, val: string) {
+    setPrizeSlots(prev => prev.map((s, i) => i === idx ? { ...s, percentage: Number(val) || 0 } : s));
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) { toast.error("Enter a league name"); return; }
     const fee = isFree ? 0 : parseInt(entryFee, 10);
-    if (!isFree && (!fee || fee < 100)) {
-      toast.error("Entry fee must be at least ₦100");
-      return;
+    if (!isFree && (!fee || fee < 100)) { toast.error("Entry fee must be at least ₦100"); return; }
+    if (!isFree && subType === "season" && prizeSlots.length > 0 && totalPct > 90) {
+      toast.error("Prize distribution total must not exceed 90%"); return;
     }
     setLoading(true);
     try {
       const res = await createFplLeague({
         name: name.trim(),
         type: "classic",
+        subType,
         isFree,
         entryFee: fee,
         isPrivate: true,
+        prizeDistribution: (!isFree && subType === "season") ? prizeSlots.filter(s => s.percentage > 0) : [],
       });
       setCreated({ id: res.leagueId, code: res.code, name: name.trim() });
     } catch (err) {
@@ -86,6 +108,7 @@ export default function FplCreateLeaguePage() {
       <Card className="mx-auto max-w-md">
         <CardContent className="py-8">
           <form className="grid gap-6" onSubmit={submit}>
+            {/* League name */}
             <div className="grid gap-2">
               <Label htmlFor="name">League name</Label>
               <Input
@@ -97,6 +120,32 @@ export default function FplCreateLeaguePage() {
               />
             </div>
 
+            {/* League type (Season vs Weekly) */}
+            <div className="grid gap-2">
+              <Label>League type</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {(["season", "weekly"] as const).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setSubType(t)}
+                    className={cn(
+                      "flex flex-col rounded-xl border p-4 text-left transition-all",
+                      subType === t ? "border-gold bg-gold/10" : "border-border bg-card hover:bg-accent",
+                    )}
+                  >
+                    <span className={cn("text-sm font-semibold capitalize", subType === t && "text-gold")}>{t}</span>
+                    <span className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                      {t === "season"
+                        ? "Winner paid out at end of season based on final standings"
+                        : "Highest scorer each gameweek wins that week's share"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Entry fee */}
             <div className="grid gap-2">
               <Label>Entry fee</Label>
               <div className="grid grid-cols-2 gap-3">
@@ -114,9 +163,7 @@ export default function FplCreateLeaguePage() {
                       {free ? "Free" : "Paid"}
                     </span>
                     <span className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                      {free
-                        ? "No entry fee — compete for bragging rights"
-                        : "Collect entry fees, winner takes 90%"}
+                      {free ? "No entry fee — compete for bragging rights" : "Collect entry fees, 90% goes to prize pool"}
                     </span>
                   </button>
                 ))}
@@ -140,8 +187,55 @@ export default function FplCreateLeaguePage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  90% goes to the winner · 10% platform fee. Entry fee is deducted from your wallet when you create the league.
+                  {subType === "weekly"
+                    ? "90% of total entry fees split equally across all remaining gameweeks. Highest scorer each GW wins that week's share."
+                    : "90% of total entry fees paid out at season end · 10% platform fee. Deducted from wallet on create."}
                 </p>
+              </div>
+            )}
+
+            {/* Prize distribution — season paid leagues only */}
+            {!isFree && subType === "season" && (
+              <div className="grid gap-3">
+                <div className="flex items-center justify-between">
+                  <Label>Prize distribution (optional)</Label>
+                  <span className={cn("text-xs font-medium", totalPct > 90 ? "text-destructive" : "text-muted-foreground")}>
+                    {totalPct}% / 90% max
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Set the percentage each finishing position receives. Leave blank for winner-takes-all.
+                </p>
+                {prizeSlots.map((slot, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-16 shrink-0 text-sm text-muted-foreground">
+                      {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : `${idx + 1}th`}
+                    </span>
+                    <div className="relative flex-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={90}
+                        step={1}
+                        value={slot.percentage || ""}
+                        onChange={e => updateSlotPct(idx, e.target.value)}
+                        placeholder="0"
+                        className="pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                    </div>
+                    {prizeSlots.length > 1 && (
+                      <button type="button" onClick={() => removeSlot(idx)} className="rounded p-1 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {prizeSlots.length < 5 && (
+                  <button type="button" onClick={addSlot} className="flex items-center gap-1 text-xs text-gold hover:underline">
+                    <Plus className="h-3 w-3" /> Add position
+                  </button>
+                )}
               </div>
             )}
 

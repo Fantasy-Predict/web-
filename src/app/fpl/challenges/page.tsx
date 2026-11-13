@@ -57,7 +57,9 @@ function ChallengeCard({
             <StatusIcon className="h-3.5 w-3.5" />
             {cfg.label}
           </span>
-          <span className="text-xs text-muted-foreground">· GW{challenge.gwId}</span>
+          <span className="text-xs text-muted-foreground">
+            · GW{challenge.startGwId}{challenge.endGwId !== challenge.startGwId ? `–GW${challenge.endGwId}` : ""}
+          </span>
         </div>
         <span className="text-xs text-muted-foreground">
           {new Date(challenge.createdAt).toLocaleDateString()}
@@ -197,8 +199,8 @@ export default function FplChallengesPage() {
           <div className="text-sm">
             <p className="font-semibold">How GW Challenges work</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Challenge any FPL player on the platform to a GW duel. Whoever scores more points that gameweek wins.
-              To send a challenge, go to any league standings page and tap a member's name.
+              Challenge any FPL player to a head-to-head duel. Choose 1 GW, several consecutive GWs, or the rest of the season — points accumulate, and the winner is decided when the last GW ends.
+              To send a challenge, go to any league standings page and tap a member&apos;s name.
               {currentGw ? ` Current gameweek: GW${currentGw.fplId}.` : ""}
             </p>
           </div>

@@ -40,13 +40,18 @@ function ClassicStandings({
   myUserId: string | null;
 }) {
   const [challenging, setChallenging] = useState<string | null>(null);
+  const [challengeTarget, setChallengeTarget] = useState<FplLeagueMember | null>(null);
+  const [gwCount, setGwCount] = useState(1);
 
-  async function challenge(member: FplLeagueMember) {
-    if (!member.userId || !currentGwId) return;
-    setChallenging(member._id);
+  async function sendChallenge() {
+    if (!challengeTarget?.userId || !currentGwId) return;
+    setChallenging(challengeTarget._id);
     try {
-      await sendFplChallenge({ opponentId: member.userId, gwId: currentGwId });
-      toast.success(`Challenge sent to ${member.teamName} for GW${currentGwId}!`);
+      await sendFplChallenge({ opponentId: challengeTarget.userId, startGwId: currentGwId, gwCount });
+      const label = gwCount === 1 ? `GW${currentGwId}` : `GW${currentGwId}–GW${Math.min(currentGwId + gwCount - 1, 38)}`;
+      toast.success(`Challenge sent to ${challengeTarget.teamName} for ${label}!`);
+      setChallengeTarget(null);
+      setGwCount(1);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send challenge");
     } finally {
@@ -96,8 +101,8 @@ function ClassicStandings({
                     <button
                       type="button"
                       disabled={challenging === m._id}
-                      onClick={() => challenge(m)}
-                      title={`Challenge ${m.teamName} for GW${currentGwId}`}
+                      onClick={() => { setChallengeTarget(m); setGwCount(1); }}
+                      title={`Challenge ${m.teamName}`}
                       className="flex h-7 w-7 items-center justify-center rounded-lg border border-border hover:bg-accent disabled:opacity-50"
                     >
                       <Swords className="h-3.5 w-3.5 text-muted-foreground" />
@@ -110,6 +115,39 @@ function ClassicStandings({
         </table>
       </div>
     </Card>
+
+    {/* Challenge duration picker modal */}
+    {challengeTarget && currentGwId && (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={() => setChallengeTarget(null)}>
+        <div className="w-full max-w-sm rounded-2xl bg-background border border-border p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <h3 className="font-bold text-base mb-1">Challenge {challengeTarget.teamName}</h3>
+          <p className="text-xs text-muted-foreground mb-4">How many consecutive gameweeks should this duel last?</p>
+          <div className="grid grid-cols-2 gap-2 mb-5">
+            {[1, 3, 5, 38 - currentGwId + 1].filter((v, i, a) => a.indexOf(v) === i && v > 0).map(n => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setGwCount(n)}
+                className={`rounded-xl border py-3 text-sm font-semibold transition-all ${gwCount === n ? "border-gold bg-gold/10 text-gold" : "border-border bg-card hover:bg-accent"}`}
+              >
+                {n === 1 ? "Single GW" : n === 38 - currentGwId + 1 ? "Rest of season" : `${n} GWs`}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            GW{currentGwId} → GW{Math.min(currentGwId + gwCount - 1, 38)} · {gwCount === 1 ? "1 gameweek" : `${gwCount} gameweeks`}
+          </p>
+          <button
+            type="button"
+            disabled={!!challenging}
+            onClick={sendChallenge}
+            className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
+          >
+            {challenging ? "Sending…" : "Send Challenge"}
+          </button>
+        </div>
+      </div>
+    )}
   );
 }
 
