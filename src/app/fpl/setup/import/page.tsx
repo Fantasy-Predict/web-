@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+function extractFplId(input: string): string {
+  const urlMatch = input.match(/entry\/(\d+)/i);
+  if (urlMatch) return urlMatch[1];
+  return input.trim();
+}
+
 export default function FplImportPage() {
   const router = useRouter();
   const [teamName, setTeamName] = useState("");
@@ -21,13 +27,14 @@ export default function FplImportPage() {
     e.preventDefault();
     const errs: typeof errors = {};
     if (!teamName.trim()) errs.teamName = "Team name is required";
-    if (!fplId.trim()) errs.fplId = "FPL Team ID is required";
-    else if (isNaN(Number(fplId)) || Number(fplId) <= 0) errs.fplId = "Must be a valid numeric ID";
+    const resolvedId = extractFplId(fplId);
+    if (!resolvedId) errs.fplId = "FPL Team ID or profile URL is required";
+    else if (isNaN(Number(resolvedId)) || Number(resolvedId) <= 0) errs.fplId = "Could not find a valid Team ID — paste your full FPL profile URL or just the number";
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     setLoading(true);
     try {
-      await importFplTeam({ teamName: teamName.trim(), fplImportId: Number(fplId) });
+      await importFplTeam({ teamName: teamName.trim(), fplImportId: Number(extractFplId(fplId)) });
       toast.success("Squad imported! Welcome to FPL.");
       router.push("/fpl");
     } catch (err: unknown) {
@@ -58,8 +65,7 @@ export default function FplImportPage() {
         <div className="w-full max-w-md">
           <h1 className="text-2xl font-bold">Import from FPL</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Find your Team ID on the official FPL site under{" "}
-            <strong>Points → View gameweek history</strong> — it&apos;s the number in the URL.
+            Paste your FPL profile URL or just the Team ID number — we&apos;ll pull your squad automatically.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -76,18 +82,22 @@ export default function FplImportPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fplId">FPL Team ID</Label>
+              <Label htmlFor="fplId">FPL Team ID or profile URL</Label>
               <Input
                 id="fplId"
-                type="number"
-                placeholder="e.g. 12345678"
+                type="text"
+                placeholder="e.g. 12345678 or fantasy.premierleague.com/entry/12345678/…"
                 value={fplId}
-                onChange={(e) => { setFplId(e.target.value); setErrors((v) => ({ ...v, fplId: undefined })); }}
+                onChange={(e) => {
+                  const extracted = extractFplId(e.target.value);
+                  setFplId(extracted || e.target.value);
+                  setErrors((v) => ({ ...v, fplId: undefined }));
+                }}
                 className={errors.fplId ? "border-destructive" : ""}
               />
               {errors.fplId && <p className="text-xs text-destructive">{errors.fplId}</p>}
               <p className="text-xs text-muted-foreground">
-                fantasy.premierleague.com/entry/<strong>[YOUR ID]</strong>/history
+                Paste the full URL — we extract the ID automatically
               </p>
             </div>
 
