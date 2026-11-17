@@ -261,6 +261,11 @@ export function FplShell({
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
+                {/* FP/FPL mode switcher — desktop only */}
+                <div className="hidden lg:flex items-center rounded-xl border border-border bg-card text-xs font-semibold overflow-hidden">
+                  <Link href="/dashboard" className="px-3 py-1.5 text-muted-foreground hover:bg-accent transition-colors">FP</Link>
+                  <span className="px-3 py-1.5 bg-gold/15 text-gold">Fantasy XI</span>
+                </div>
                 <div className="hidden lg:block"><ThemeToggle /></div>
 
                 {/* Notifications */}
