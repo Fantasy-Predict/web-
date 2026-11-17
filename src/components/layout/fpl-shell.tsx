@@ -15,7 +15,6 @@ import {
   BarChart2,
   BookOpen,
   Calendar,
-  CircleUser,
   Layers,
   LogOut,
   Settings,
@@ -245,9 +244,13 @@ export function FplShell({
                 <button
                   aria-label="Open menu"
                   onClick={() => setSheetOpen(true)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border lg:hidden"
+                  className="lg:hidden"
                 >
-                  <CircleUser className="h-5 w-5" />
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-primary text-xs font-semibold text-white">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
                 </button>
                 <div>
                   <h1 className="text-base font-semibold truncate max-w-[180px] sm:max-w-xs">{title}</h1>
@@ -317,7 +320,7 @@ export function FplShell({
                   )}
                 </div>
 
-                <Avatar className="h-9 w-9">
+                <Avatar className="hidden lg:flex h-9 w-9">
                   <AvatarFallback className="bg-primary text-xs font-semibold text-white">
                     {initials}
                   </AvatarFallback>
