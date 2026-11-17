@@ -19,7 +19,7 @@ import {
   UserIcon,             // profile
   Settings01Icon,       // settings
 } from "@hugeicons/core-free-icons";
-import { CircleUser, LogOut, TrendingUpDown } from "lucide-react";
+import { ArrowLeftRight, CircleUser, LogOut, TrendingUpDown } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "../theme-toggle";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
@@ -177,6 +177,14 @@ export function AppShell({
             })}
           </nav>
           <div className="border-t border-sidebar-border p-4 space-y-2">
+            <Link
+              href="/fpl"
+              onClick={() => setSheetOpen(false)}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <ArrowLeftRight size={16} strokeWidth={1.5} />
+              Switch to Fantasy XI
+            </Link>
             <ThemeToggle className="w-full justify-between" />
             <button
               onClick={() => {
@@ -221,6 +229,13 @@ export function AppShell({
             })}
           </nav>
           <div className="shrink-0 border-t border-sidebar-border p-4 space-y-2">
+            <Link
+              href="/fpl"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <ArrowLeftRight size={16} strokeWidth={1.5} />
+              Switch to Fantasy XI
+            </Link>
             <ThemeToggle className="w-full justify-between" />
             <button
               onClick={handleLogout}
