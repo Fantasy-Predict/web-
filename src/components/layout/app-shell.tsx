@@ -298,7 +298,7 @@ export function AppShell({
                   <span className="text-muted-foreground">₦</span>
                   <span className="num">{walletBalance == null ? "—" : walletBalance.toLocaleString("en-NG")}</span>
                 </div>
-                <ThemeToggle />
+                <div className="hidden lg:block"><ThemeToggle /></div>
                 <div className="relative" ref={notifRef}>
                   <button
                     aria-label="Notifications"

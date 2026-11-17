@@ -261,7 +261,7 @@ export function FplShell({
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                <ThemeToggle />
+                <div className="hidden lg:block"><ThemeToggle /></div>
 
                 {/* Notifications */}
                 <div className="relative" ref={notifRef}>
