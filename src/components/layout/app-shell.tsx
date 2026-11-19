@@ -98,13 +98,19 @@ export function AppShell({
   const [walletSheetOpen, setWalletSheetOpen] = useState(false);
   const [walletTxns, setWalletTxns] = useState<Transaction[] | null>(null);
   const [walletTxnsLoading, setWalletTxnsLoading] = useState(false);
+  const [totalDeposited, setTotalDeposited] = useState<number | null>(null);
+  const [totalWithdrawn, setTotalWithdrawn] = useState<number | null>(null);
 
   function openWalletSheet() {
     setWalletSheetOpen(true);
     if (walletTxns === null && !walletTxnsLoading) {
       setWalletTxnsLoading(true);
-      getTransactions()
-        .then(setWalletTxns)
+      Promise.all([getTransactions(), getWallet()])
+        .then(([txns, wallet]) => {
+          setWalletTxns(txns);
+          setTotalDeposited(wallet?.totalDeposited ?? 0);
+          setTotalWithdrawn(wallet?.totalWithdrawn ?? 0);
+        })
         .catch(() => setWalletTxns([]))
         .finally(() => setWalletTxnsLoading(false));
     }
@@ -440,6 +446,20 @@ export function AppShell({
             <p className="mt-1 text-2xl font-bold num">
               ₦{walletBalance == null ? "—" : walletBalance.toLocaleString("en-NG")}
             </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-green-500/10 px-3 py-2">
+                <p className="text-[10px] font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">Total in</p>
+                <p className="mt-0.5 text-sm font-bold num text-green-600 dark:text-green-400">
+                  {totalDeposited == null ? "—" : `₦${totalDeposited.toLocaleString("en-NG")}`}
+                </p>
+              </div>
+              <div className="rounded-lg bg-destructive/10 px-3 py-2">
+                <p className="text-[10px] font-semibold text-destructive uppercase tracking-wide">Total out</p>
+                <p className="mt-0.5 text-sm font-bold num text-destructive">
+                  {totalWithdrawn == null ? "—" : `₦${totalWithdrawn.toLocaleString("en-NG")}`}
+                </p>
+              </div>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             <p className="px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">

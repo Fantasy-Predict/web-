@@ -12,14 +12,16 @@ export function StatCard({
   value,
   hint,
   accent,
+  href,
 }: {
   label: string;
   value: string;
   hint?: string;
   accent?: "gold" | "primary" | "success";
+  href?: string;
 }) {
-  return (
-    <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
+  const inner = (
+    <>
       <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
         {label}
       </p>
@@ -34,6 +36,22 @@ export function StatCard({
         {value}
       </p>
       {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href}>
+        <Card className="gap-0 p-5 shadow-[var(--shadow-card)] transition-colors hover:bg-accent cursor-pointer">
+          {inner}
+        </Card>
+      </Link>
+    );
+  }
+
+  return (
+    <Card className="gap-0 p-5 shadow-[var(--shadow-card)]">
+      {inner}
     </Card>
   );
 }

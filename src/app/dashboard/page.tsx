@@ -298,7 +298,7 @@ export default function DashboardPage() {
           ))
         ) : (
           <>
-            <StatCard label="Wallet balance" value={formatNaira(balance)} hint="Available for entry fees" />
+            <StatCard label="Wallet balance" value={formatNaira(balance)} hint="Tap to view history" href="/dashboard/wallet" />
             <StatCard
               label="Total points"
               value={ownPoints.toLocaleString()}
