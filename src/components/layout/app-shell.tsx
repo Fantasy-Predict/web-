@@ -25,7 +25,7 @@ import { ThemeToggle } from "../theme-toggle";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Sheet, SheetContent, SheetTitle } from "../../components/ui/sheet";
 import { getProfile, getWallet, getTransactions } from "../../app/lib/api/endpoints";
-import type { Transaction } from "../../app/lib/api/endpoints";
+import type { Transaction } from "../../app/lib/mock-data";
 import { clearSession } from "../../app/lib/api/session";
 import { useNotifications } from "../../app/lib/notifications";
 import { cn } from "../../app/lib/utils";
