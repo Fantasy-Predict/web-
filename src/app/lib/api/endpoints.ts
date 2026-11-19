@@ -645,6 +645,7 @@ export type PoolDoc = {
   isCreator?: boolean;
   isActive?: boolean;
   code?: string;
+  prizeDistribution?: { position: number; percentage: number }[];
 };
 
 export function normalizePool(pool: PoolDoc | Pool, opts?: { mine?: boolean }): Pool {
@@ -694,6 +695,7 @@ export function normalizePool(pool: PoolDoc | Pool, opts?: { mine?: boolean }): 
     createdBy: creatorId,
     isCreator: p.isCreator,
     inviteCode: p.config?.code,
+    prizeDistribution: (p as PoolDoc).prizeDistribution,
   };
 }
 
@@ -840,6 +842,57 @@ export async function updatePoolMemberStatus(
 
     unwrap: false,
   });
+}
+
+// ============================================================
+// Pool H2H Challenges
+// ============================================================
+
+export type PoolChallenge = {
+  _id: string;
+  challengerId: string;
+  opponentId: string;
+  poolId: string;
+  wager: number;
+  durationDays: 7 | 14 | 21 | 30;
+  startDate?: string | null;
+  endDate?: string | null;
+  status: "pending" | "accepted" | "declined" | "resolved";
+  challengerPoints?: number | null;
+  opponentPoints?: number | null;
+  winnerId?: string | null;
+  createdAt?: string;
+};
+
+export async function sendPoolChallenge(
+  poolId: string,
+  opponentId: string,
+  wager: number,
+  durationDays: 7 | 14 | 21 | 30
+): Promise<PoolChallenge> {
+  return apiFetch(`/v1/pool-challenges/pool/${poolId}`, {
+    method: "POST",
+    body: { opponentId, wager, durationDays },
+  });
+}
+
+export async function respondToPoolChallenge(
+  challengeId: string,
+  action: "accepted" | "declined"
+): Promise<PoolChallenge> {
+  return apiFetch(`/v1/pool-challenges/${challengeId}/respond`, {
+    method: "PATCH",
+    body: { action },
+  });
+}
+
+export async function getPoolChallenges(poolId: string): Promise<PoolChallenge[]> {
+  const res = await apiFetch<PoolChallenge[] | { data?: PoolChallenge[] }>(
+    `/v1/pool-challenges/pool/${poolId}/list`,
+    { unwrap: false }
+  );
+  if (Array.isArray(res)) return res;
+  return (res as any)?.data ?? [];
 }
 
 export async function getPoolLeaderboard(): Promise<LeaderboardEntry[]> {

@@ -118,6 +118,23 @@ export default function CreatePoolPage() {
     void submitPool(parsed.data);
   }
 
+  function buildPrizeDistribution(preset: string): { position: number; percentage: number }[] {
+    if (preset === "winner") return [{ position: 1, percentage: 100 }];
+    if (preset === "top3") return [
+      { position: 1, percentage: 60 },
+      { position: 2, percentage: 30 },
+      { position: 3, percentage: 10 },
+    ];
+    if (preset === "top5") return [
+      { position: 1, percentage: 40 },
+      { position: 2, percentage: 25 },
+      { position: 3, percentage: 15 },
+      { position: 4, percentage: 12 },
+      { position: 5, percentage: 8 },
+    ];
+    return [];
+  }
+
   async function submitPool(data: z.infer<typeof schema>) {
     try {
       const isMonetized = data.poolType === "monetized";
@@ -131,7 +148,8 @@ export default function CreatePoolPage() {
           amount: isMonetized ? data.entryFee ?? 0 : 0,
           paid: isMonetized,
         },
-      });
+        ...(isMonetized ? { prizeDistribution: buildPrizeDistribution(data.distribution) } : {}),
+      } as any);
       toast.success("Pool created");
       router.push("/dashboard/pools");
     } catch (error) {

@@ -24,7 +24,8 @@ import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "../theme-toggle";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Sheet, SheetContent, SheetTitle } from "../../components/ui/sheet";
-import { getProfile, getWallet } from "../../app/lib/api/endpoints";
+import { getProfile, getWallet, getTransactions } from "../../app/lib/api/endpoints";
+import type { Transaction } from "../../app/lib/api/endpoints";
 import { clearSession } from "../../app/lib/api/session";
 import { useNotifications } from "../../app/lib/notifications";
 import { cn } from "../../app/lib/utils";
@@ -94,6 +95,20 @@ export function AppShell({
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [walletSheetOpen, setWalletSheetOpen] = useState(false);
+  const [walletTxns, setWalletTxns] = useState<Transaction[] | null>(null);
+  const [walletTxnsLoading, setWalletTxnsLoading] = useState(false);
+
+  function openWalletSheet() {
+    setWalletSheetOpen(true);
+    if (walletTxns === null && !walletTxnsLoading) {
+      setWalletTxnsLoading(true);
+      getTransactions()
+        .then(setWalletTxns)
+        .catch(() => setWalletTxns([]))
+        .finally(() => setWalletTxnsLoading(false));
+    }
+  }
 
   function handleLogout() {
     clearSession();
@@ -294,10 +309,14 @@ export function AppShell({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-sm font-semibold">
+                <button
+                  onClick={openWalletSheet}
+                  className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent transition-colors"
+                  aria-label="Wallet balance and history"
+                >
                   <span className="text-muted-foreground">₦</span>
                   <span className="num">{walletBalance == null ? "—" : walletBalance.toLocaleString("en-NG")}</span>
-                </div>
+                </button>
                 {/* FP / FPL mode toggle — desktop only */}
                 <div className="hidden lg:flex items-center rounded-xl border border-border bg-card text-xs font-semibold overflow-hidden">
                   <span className="px-3 py-1.5 bg-primary/10 text-primary">FP</span>
@@ -411,6 +430,60 @@ export function AppShell({
           </nav>
         </div>
       </div>
+
+      {/* Wallet history sheet */}
+      <Sheet open={walletSheetOpen} onOpenChange={setWalletSheetOpen}>
+        <SheetContent side="right" className="w-80 p-0 flex flex-col">
+          <SheetTitle className="sr-only">Wallet</SheetTitle>
+          <div className="border-b border-border px-5 py-5">
+            <p className="text-xs text-muted-foreground">Available Balance</p>
+            <p className="mt-1 text-2xl font-bold num">
+              ₦{walletBalance == null ? "—" : walletBalance.toLocaleString("en-NG")}
+            </p>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <p className="px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Transaction History
+            </p>
+            {walletTxnsLoading ? (
+              <div className="space-y-3 px-5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="space-y-1.5">
+                      <div className="h-3.5 w-24 rounded bg-muted animate-pulse" />
+                      <div className="h-3 w-16 rounded bg-muted animate-pulse" />
+                    </div>
+                    <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : walletTxns && walletTxns.length > 0 ? (
+              <ul className="divide-y divide-border">
+                {walletTxns.map((tx) => (
+                  <li key={tx.id} className="flex items-center justify-between px-5 py-3">
+                    <div>
+                      <p className="text-sm font-medium">{tx.type}</p>
+                      <p className="text-xs text-muted-foreground">{tx.date}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={cn("text-sm font-semibold num", tx.type === "Deposit" ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                        {tx.type === "Deposit" ? "+" : "-"}₦{tx.amount.toLocaleString("en-NG")}
+                      </p>
+                      <p className={cn("text-[10px] font-medium", tx.status === "successful" ? "text-green-600 dark:text-green-400" : tx.status === "pending" ? "text-yellow-600 dark:text-yellow-400" : "text-destructive")}>
+                        {tx.status}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-5 py-6 text-center text-sm text-muted-foreground">
+                No transactions yet
+              </p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

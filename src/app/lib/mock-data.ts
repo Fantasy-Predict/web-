@@ -35,6 +35,7 @@ export type Pool = {
   createdBy?: string;
   isCreator?: boolean;
   inviteCode?: string;
+  prizeDistribution?: { position: number; percentage: number }[];
 };
 
 export type LeaderboardRow = {

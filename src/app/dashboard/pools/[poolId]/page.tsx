@@ -10,8 +10,9 @@ import { Button } from "../../../../components/ui/button";
 import { Badge } from "../../../../components/ui/badge";
 import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
 import { StatCard } from "../../../../components/app/card";
+import { Sheet, SheetContent, SheetTitle } from "../../../../components/ui/sheet";
 import { formatNaira, type Pool } from "../../../lib/mock-data";
-import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, type PoolMember, type CompLeaderboardEntry } from "../../../lib/api/endpoints";
+import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, getPoolChallenges, sendPoolChallenge, respondToPoolChallenge, type PoolMember, type CompLeaderboardEntry, type PoolChallenge } from "../../../lib/api/endpoints";
 import { applySeasonProgress } from "../../../lib/season-progress";
 import { notifyPool } from "../../../lib/notifications";
 import { InviteButton } from "./invite-button";
@@ -39,6 +40,15 @@ export default function PoolDetailPage() {
   const [joined, setJoined] = useState(false);
   const [actingMemberId, setActingMemberId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"members" | "h2h">("members");
+  const [challenges, setChallenges] = useState<PoolChallenge[] | null>(null);
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [challengeSheetOpen, setChallengeSheetOpen] = useState(false);
+  const [challengeTarget, setChallengeTarget] = useState<PoolMember | null>(null);
+  const [challengeWager, setChallengeWager] = useState("");
+  const [challengeDuration, setChallengeDuration] = useState<7 | 14 | 21 | 30>(7);
+  const [challengeSending, setChallengeSending] = useState(false);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
 
   const isPrivatePool = pool?.privacy === "private";
   const isPoolCreator = pool?.isCreator === true;
@@ -117,6 +127,60 @@ export default function PoolDetailPage() {
       toast.error(error instanceof Error ? error.message : "Failed to update member");
     } finally {
       setActingMemberId(null);
+    }
+  }
+
+  function openH2HTab() {
+    setActiveTab("h2h");
+    if (challenges === null && !challengesLoading) {
+      setChallengesLoading(true);
+      getPoolChallenges(poolId)
+        .then(setChallenges)
+        .catch(() => setChallenges([]))
+        .finally(() => setChallengesLoading(false));
+    }
+  }
+
+  function openChallengeSheet(member: PoolMember) {
+    setChallengeTarget(member);
+    setChallengeWager("");
+    setChallengeDuration(7);
+    setChallengeSheetOpen(true);
+  }
+
+  async function handleSendChallenge() {
+    if (!challengeTarget || !challengeWager) return;
+    const wagerNum = Number(challengeWager);
+    if (!wagerNum || wagerNum <= 0) {
+      toast.error("Enter a valid wager amount");
+      return;
+    }
+    setChallengeSending(true);
+    try {
+      await sendPoolChallenge(poolId, challengeTarget.userId ?? challengeTarget.user?._id ?? "", wagerNum, challengeDuration);
+      toast.success("Challenge sent!");
+      setChallengeSheetOpen(false);
+      // Refresh challenges list
+      const updated = await getPoolChallenges(poolId);
+      setChallenges(updated);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send challenge");
+    } finally {
+      setChallengeSending(false);
+    }
+  }
+
+  async function handleRespond(challengeId: string, action: "accepted" | "declined") {
+    setRespondingId(challengeId);
+    try {
+      await respondToPoolChallenge(challengeId, action);
+      toast.success(action === "accepted" ? "Challenge accepted!" : "Challenge declined");
+      const updated = await getPoolChallenges(poolId);
+      setChallenges(updated);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to respond");
+    } finally {
+      setRespondingId(null);
     }
   }
 
@@ -246,9 +310,25 @@ export default function PoolDetailPage() {
                   {formatNaira(prizePoolAfterFee)}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                The prize pool is distributed among winners based on the pool&apos;s prize distribution rules.
-              </p>
+              {pool.prizeDistribution && pool.prizeDistribution.length > 0 ? (
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Distribution:</p>
+                  {pool.prizeDistribution.map((d) => (
+                    <div key={d.position} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {["1st", "2nd", "3rd", "4th", "5th"][d.position - 1] ?? `#${d.position}`} place
+                      </span>
+                      <span className="font-medium">
+                        {d.percentage}% · {formatNaira(Math.round((prizePoolAfterFee * d.percentage) / 100))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  The prize pool is distributed among winners based on the pool&apos;s prize distribution rules.
+                </p>
+              )}
             </div>
           </Card>
         )}
@@ -271,7 +351,31 @@ export default function PoolDetailPage() {
       {/* Members + Rules Section */}
       <div className="mt-10 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <section>
-          <h2 className="text-lg font-semibold">Members</h2>
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 w-fit">
+            <button
+              onClick={() => setActiveTab("members")}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                activeTab === "members" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Members
+            </button>
+            {isJoined && (
+              <button
+                onClick={openH2HTab}
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                  activeTab === "h2h" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Challenges
+              </button>
+            )}
+          </div>
+
+          {/* Members Tab */}
+          {activeTab === "members" && (
           <Card className="mt-4 gap-0 overflow-hidden p-0 shadow-[var(--shadow-card)]">
             <div className="grid grid-cols-[2.8rem_minmax(0,1fr)_auto] gap-3 border-b border-border px-5 py-2.5 text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
               <span>Rank</span>
@@ -364,6 +468,16 @@ export default function PoolDetailPage() {
                         </Button>
                       </div>
                     )}
+                    {isJoined && member.userId !== currentUserId && member.user?._id !== currentUserId && member.status === "approved" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                        onClick={() => openChallengeSheet(member)}
+                      >
+                        Challenge
+                      </Button>
+                    )}
                   </div>
                 </div>
               )})
@@ -373,6 +487,85 @@ export default function PoolDetailPage() {
               </p>
             )}
           </Card>
+          )}
+
+          {/* H2H Challenges Tab */}
+          {activeTab === "h2h" && (
+          <Card className="mt-4 gap-0 overflow-hidden p-0 shadow-[var(--shadow-card)]">
+            {challengesLoading ? (
+              <div className="space-y-3 p-5">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-14 rounded-lg bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : challenges && challenges.length > 0 ? (
+              <ul className="divide-y divide-border">
+                {challenges.map((c) => {
+                  const isChallenger = c.challengerId === currentUserId;
+                  const isPending = c.status === "pending";
+                  const isIncoming = isPending && !isChallenger;
+                  const durationLabel = `${c.durationDays}d`;
+                  const statusColors: Record<string, string> = {
+                    pending: "text-amber-600 dark:text-amber-400",
+                    accepted: "text-blue-600 dark:text-blue-400",
+                    declined: "text-muted-foreground",
+                    resolved: c.winnerId === currentUserId ? "text-green-600 dark:text-green-400" : c.winnerId === "tie" ? "text-muted-foreground" : "text-destructive",
+                  };
+                  return (
+                    <li key={c._id} className="flex items-center justify-between gap-3 px-5 py-4">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {isChallenger ? "You challenged" : "Incoming challenge"} · ₦{c.wager.toLocaleString("en-NG")} wager · {durationLabel}
+                        </p>
+                        {c.status === "resolved" && (
+                          <p className="text-xs text-muted-foreground">
+                            {c.winnerId === "tie" ? "Tied — refunded" : c.winnerId === currentUserId ? "You won" : "Opponent won"}{" "}
+                            · You: {c.challengerPoints ?? c.opponentPoints ?? 0} pts
+                          </p>
+                        )}
+                        {(c.status === "accepted") && c.endDate && (
+                          <p className="text-xs text-muted-foreground">
+                            Ends {new Date(c.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                          </p>
+                        )}
+                        <p className={cn("text-xs font-semibold capitalize", statusColors[c.status])}>
+                          {c.status}
+                        </p>
+                      </div>
+                      {isIncoming && (
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs text-green-600 border-green-500/30 hover:bg-green-500/10"
+                            disabled={respondingId === c._id}
+                            onClick={() => handleRespond(c._id, "accepted")}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs text-red-600 border-red-500/30 hover:bg-red-500/10"
+                            disabled={respondingId === c._id}
+                            onClick={() => handleRespond(c._id, "declined")}
+                          >
+                            Decline
+                          </Button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="px-5 py-10 text-center">
+                <p className="text-sm text-muted-foreground">No challenges yet.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Go to the Members tab and hit "Challenge" on any player.</p>
+              </div>
+            )}
+          </Card>
+          )}
         </section>
 
         <section>
@@ -399,10 +592,15 @@ export default function PoolDetailPage() {
                 <span className="font-semibold text-foreground">Deadline:</span> predictions lock at
                 each match kickoff.
               </li>
-              {!isFree && hasPrize && (
+              {isMonetized && pool.prizeDistribution && pool.prizeDistribution.length > 0 && (
                 <li>
-                  <span className="font-semibold text-foreground">Prize split:</span> top three
-                  finishers share the pool 60 / 30 / 10.
+                  <span className="font-semibold text-foreground">Prize split:</span>{" "}
+                  {pool.prizeDistribution.map((d, i) => (
+                    <span key={d.position}>
+                      {i > 0 && " · "}
+                      {["1st", "2nd", "3rd", "4th", "5th"][d.position - 1] ?? `#${d.position}`} gets {d.percentage}%
+                    </span>
+                  ))}.
                 </li>
               )}
             </ul>
@@ -413,6 +611,115 @@ export default function PoolDetailPage() {
           </Card>
         </section>
       </div>
+
+      {/* Prize distribution display — only for monetized pools with distribution set */}
+      {isMonetized && pool.prizeDistribution && pool.prizeDistribution.length > 0 && (
+        <Card className="mt-6 gap-0 p-5 shadow-[var(--shadow-card)] border-gold/20">
+          <h3 className="text-sm font-semibold text-gold uppercase tracking-wider">Prize Distribution</h3>
+          <p className="mt-1 text-xs text-muted-foreground">How winnings are shared at the end of the season.</p>
+          <div className="mt-4 space-y-2">
+            {pool.prizeDistribution.map((d) => {
+              const payout = Math.round((prizePoolAfterFee * d.percentage) / 100);
+              return (
+                <div key={d.position} className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold shrink-0">
+                    {d.position}
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">
+                        {["1st place", "2nd place", "3rd place", "4th place", "5th place"][d.position - 1] ?? `Position ${d.position}`}
+                      </span>
+                      <span className="font-semibold text-gold">{formatNaira(payout)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-gold" style={{ width: `${d.percentage}%` }} />
+                    </div>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">{d.percentage}% of prize pool</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Challenge Sheet */}
+      <Sheet open={challengeSheetOpen} onOpenChange={setChallengeSheetOpen}>
+        <SheetContent side="right" className="w-80 p-0 flex flex-col">
+          <SheetTitle className="sr-only">Send H2H Challenge</SheetTitle>
+          <div className="border-b border-border px-5 py-5">
+            <p className="font-semibold">Challenge {challengeTarget?.username ?? challengeTarget?.firstName ?? "this player"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Whoever scores more prediction points from matches during the challenge period wins. 90% goes to the winner, 10% platform fee.
+            </p>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
+                Wager Amount (₦)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={challengeWager}
+                onChange={(e) => setChallengeWager(e.target.value)}
+                placeholder="e.g. 500"
+                className="w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <p className="mt-1 text-[10px] text-muted-foreground">This amount will be debited from your wallet immediately.</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
+                Duration
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {([7, 14, 21, 30] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setChallengeDuration(d)}
+                    className={cn(
+                      "rounded-xl border py-2.5 text-sm font-medium transition-colors",
+                      challengeDuration === d
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:bg-accent"
+                    )}
+                  >
+                    {d === 7 ? "1 Week" : d === 14 ? "2 Weeks" : d === 21 ? "3 Weeks" : "1 Month"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {challengeWager && Number(challengeWager) > 0 && (
+              <div className="rounded-xl border border-border bg-card p-4 text-sm space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Your wager</span>
+                  <span className="font-semibold">₦{Number(challengeWager).toLocaleString("en-NG")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">If you win, you get</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">
+                    ₦{Math.round(Number(challengeWager) * 2 * 0.9).toLocaleString("en-NG")}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Platform fee (10%)</span>
+                  <span>₦{Math.round(Number(challengeWager) * 2 * 0.1).toLocaleString("en-NG")}</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="border-t border-border p-5">
+            <Button
+              className="w-full"
+              disabled={challengeSending || !challengeWager || Number(challengeWager) <= 0}
+              onClick={handleSendChallenge}
+            >
+              {challengeSending ? "Sending…" : "Send Challenge"}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </AppShell>
   );
 }
