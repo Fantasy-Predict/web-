@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
 import { StatCard } from "../../../../components/app/card";
 import { Sheet, SheetContent, SheetTitle } from "../../../../components/ui/sheet";
 import { formatNaira, type Pool } from "../../../lib/mock-data";
-import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, getPoolChallenges, sendPoolChallenge, respondToPoolChallenge, leavePool, removePoolMember, type PoolMember, type CompLeaderboardEntry, type PoolChallenge } from "../../../lib/api/endpoints";
+import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, getPoolChallenges, sendPoolChallenge, respondToPoolChallenge, leavePool, removePoolMember, closePool, type PoolMember, type CompLeaderboardEntry, type PoolChallenge } from "../../../lib/api/endpoints";
 import { applySeasonProgress } from "../../../lib/season-progress";
 import { notifyPool } from "../../../lib/notifications";
 import { InviteButton } from "./invite-button";
@@ -53,6 +53,8 @@ export default function PoolDetailPage() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
 
   const isPrivatePool = pool?.privacy === "private";
   const isPoolCreator = pool?.isCreator === true;
@@ -202,6 +204,25 @@ export default function PoolDetailPage() {
     }
   }
 
+  async function handleClosePool() {
+    if (!pool) return;
+    setClosing(true);
+    try {
+      await closePool(poolId);
+      toast.success(
+        pool.type === "monetized"
+          ? "Pool closed — entry fees refunded to members"
+          : "Pool closed"
+      );
+      router.push("/dashboard/pools");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to close pool");
+    } finally {
+      setClosing(false);
+      setConfirmClose(false);
+    }
+  }
+
   async function handleRemoveMember(memberId: string) {
     setRemovingMemberId(memberId);
     try {
@@ -310,6 +331,40 @@ export default function PoolDetailPage() {
                 onClick={() => setConfirmLeave(true)}
               >
                 Leave pool
+              </Button>
+            )
+          )}
+          {isPoolCreator && !pool.settled && (
+            confirmClose ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">
+                  {isMonetized ? "Close & refund?" : "Close pool?"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-8 px-3 text-xs"
+                  disabled={closing}
+                  onClick={handleClosePool}
+                >
+                  {closing ? "Closing…" : "Yes, close"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => setConfirmClose(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setConfirmClose(true)}
+              >
+                Close pool
               </Button>
             )
           )}

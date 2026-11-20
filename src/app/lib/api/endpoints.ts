@@ -646,6 +646,7 @@ export type PoolDoc = {
   isActive?: boolean;
   code?: string;
   prizeDistribution?: { position: number; percentage: number }[];
+  settled?: boolean;
 };
 
 export function normalizePool(pool: PoolDoc | Pool, opts?: { mine?: boolean }): Pool {
@@ -696,6 +697,7 @@ export function normalizePool(pool: PoolDoc | Pool, opts?: { mine?: boolean }): 
     isCreator: p.isCreator,
     inviteCode: p.config?.code,
     prizeDistribution: (p as PoolDoc).prizeDistribution,
+    settled: (p as PoolDoc).settled,
   };
 }
 
@@ -854,6 +856,13 @@ export async function leavePool(poolId: string): Promise<{ success?: boolean }> 
 export async function removePoolMember(poolId: string, memberId: string): Promise<{ success?: boolean }> {
   return apiFetch(`/v1/pools/${encodeURIComponent(poolId)}/members/${encodeURIComponent(memberId)}`, {
     method: "DELETE",
+    unwrap: false,
+  });
+}
+
+export async function closePool(poolId: string): Promise<{ success?: boolean; refundedMembers?: number; refundAmountEach?: number }> {
+  return apiFetch(`/v1/pools/${encodeURIComponent(poolId)}/close`, {
+    method: "POST",
     unwrap: false,
   });
 }
