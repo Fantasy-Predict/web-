@@ -844,6 +844,20 @@ export async function updatePoolMemberStatus(
   });
 }
 
+export async function leavePool(poolId: string): Promise<{ success?: boolean }> {
+  return apiFetch(`/v1/pools/${encodeURIComponent(poolId)}/leave`, {
+    method: "POST",
+    unwrap: false,
+  });
+}
+
+export async function removePoolMember(poolId: string, memberId: string): Promise<{ success?: boolean }> {
+  return apiFetch(`/v1/pools/${encodeURIComponent(poolId)}/members/${encodeURIComponent(memberId)}`, {
+    method: "DELETE",
+    unwrap: false,
+  });
+}
+
 // ============================================================
 // Pool H2H Challenges
 // ============================================================

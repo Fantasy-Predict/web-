@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
 import { StatCard } from "../../../../components/app/card";
 import { Sheet, SheetContent, SheetTitle } from "../../../../components/ui/sheet";
 import { formatNaira, type Pool } from "../../../lib/mock-data";
-import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, getPoolChallenges, sendPoolChallenge, respondToPoolChallenge, type PoolMember, type CompLeaderboardEntry, type PoolChallenge } from "../../../lib/api/endpoints";
+import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, getPoolChallenges, sendPoolChallenge, respondToPoolChallenge, leavePool, removePoolMember, type PoolMember, type CompLeaderboardEntry, type PoolChallenge } from "../../../lib/api/endpoints";
 import { applySeasonProgress } from "../../../lib/season-progress";
 import { notifyPool } from "../../../lib/notifications";
 import { InviteButton } from "./invite-button";
@@ -49,6 +49,10 @@ export default function PoolDetailPage() {
   const [challengeDuration, setChallengeDuration] = useState<7 | 14 | 21 | 30>(7);
   const [challengeSending, setChallengeSending] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   const isPrivatePool = pool?.privacy === "private";
   const isPoolCreator = pool?.isCreator === true;
@@ -184,6 +188,35 @@ export default function PoolDetailPage() {
     }
   }
 
+  async function handleLeavePool() {
+    setLeaving(true);
+    try {
+      await leavePool(poolId);
+      toast.success("You have left the pool");
+      router.push("/dashboard/pools");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to leave pool");
+    } finally {
+      setLeaving(false);
+      setConfirmLeave(false);
+    }
+  }
+
+  async function handleRemoveMember(memberId: string) {
+    setRemovingMemberId(memberId);
+    try {
+      await removePoolMember(poolId, memberId);
+      toast.success("Member removed from pool");
+      const updated = await getPoolMembers(poolId);
+      setMembers(updated ?? []);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove member");
+    } finally {
+      setRemovingMemberId(null);
+      setConfirmRemoveId(null);
+    }
+  }
+
   if (loading) {
     return (
       <AppShell title="Loading…" description="Fetching pool details.">
@@ -248,6 +281,38 @@ export default function PoolDetailPage() {
             {isFree ? "Free" : "Monetized"}
           </Badge>
           <InviteButton poolId={pool.id} inviteCode={pool.inviteCode} />
+          {isJoined && !isPoolCreator && (
+            confirmLeave ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Leave pool?</span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-8 px-3 text-xs"
+                  disabled={leaving}
+                  onClick={handleLeavePool}
+                >
+                  {leaving ? "Leaving…" : "Yes, leave"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => setConfirmLeave(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setConfirmLeave(true)}
+              >
+                Leave pool
+              </Button>
+            )
+          )}
           {isJoined ? (
             <Button asChild>
               <Link href={`/dashboard/predict?pool=${pool.id}`}>Make predictions</Link>
@@ -477,6 +542,38 @@ export default function PoolDetailPage() {
                       >
                         Challenge
                       </Button>
+                    )}
+                    {isPoolCreator && member.userId !== currentUserId && member.user?._id !== currentUserId && member.status === "approved" && (
+                      confirmRemoveId === member._id ? (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 px-2 text-xs"
+                            disabled={removingMemberId === member._id}
+                            onClick={() => handleRemoveMember(member._id!)}
+                          >
+                            {removingMemberId === member._id ? "…" : "Confirm"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => setConfirmRemoveId(null)}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                          onClick={() => setConfirmRemoveId(member._id!)}
+                        >
+                          Remove
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
