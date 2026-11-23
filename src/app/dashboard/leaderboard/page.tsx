@@ -30,18 +30,17 @@ import { cn } from "../../lib/utils";
 
 type TabKey = "global" | "nigeria" | "pools";
 
+const PAGE_SIZE = 20;
+
 const EMPTY: PlatformBoardResponse = {
   board: [],
   personalRank: null,
-  meta: { page: 1, limit: 20, total: 0, matchdayLabel: null },
+  meta: { page: 1, limit: PAGE_SIZE, total: 0, matchdayLabel: null },
 };
 
 /** Green up / red down / em-dash. Shown to the right of the rank number. */
 function DeltaChip({ delta }: { delta: number | null }) {
-  if (delta === null) {
-    return <span className="inline-flex w-10 justify-center text-xs text-muted-foreground">—</span>;
-  }
-  if (delta === 0) {
+  if (delta === null || delta === 0) {
     return <span className="inline-flex w-10 justify-center text-xs text-muted-foreground">—</span>;
   }
   const up = delta > 0;
@@ -86,7 +85,9 @@ function LeaderboardSkeleton() {
   );
 }
 
-function PersonalRankCard({ row, label }: { row: PlatformBoardRow; label: string }) {
+/** "#3 of 79" — Mr. Simi asked for this on 2026-11-23 so players see where they
+ * stand against the whole field at a glance. */
+function PersonalRankCard({ row, label, total }: { row: PlatformBoardRow; label: string; total: number }) {
   return (
     <Card className="mb-6 gap-0 border-primary/30 bg-primary/5 p-5 shadow-[var(--shadow-card)]">
       <div className="flex items-center justify-between gap-4">
@@ -94,8 +95,11 @@ function PersonalRankCard({ row, label }: { row: PlatformBoardRow; label: string
           <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
             {label}
           </p>
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex items-baseline gap-2">
             <p className="font-display text-3xl font-bold text-primary">#{row.rank}</p>
+            {total > 0 && (
+              <p className="text-sm font-medium text-muted-foreground">of {total}</p>
+            )}
             <DeltaChip delta={row.delta} />
           </div>
         </div>
@@ -108,14 +112,54 @@ function PersonalRankCard({ row, label }: { row: PlatformBoardRow; label: string
   );
 }
 
+/** "Show more" / "Show less" pagination controls. First 20 by default; expands
+ * in 20-row batches. Reads `page.total` from the server to know when to stop. */
+function Pagination({
+  shown,
+  total,
+  busy,
+  onMore,
+  onLess,
+}: {
+  shown: number;
+  total: number;
+  busy: boolean;
+  onMore: () => void;
+  onLess: () => void;
+}) {
+  const hasMore = shown < total;
+  const canShowLess = shown > PAGE_SIZE;
+  if (!hasMore && !canShowLess) return null;
+
+  return (
+    <div className="mt-4 flex items-center justify-center gap-3">
+      <p className="text-xs text-muted-foreground">
+        Showing {shown} of {total}
+      </p>
+      {hasMore && (
+        <Button size="sm" variant="outline" disabled={busy} onClick={onMore}>
+          {busy ? "Loading…" : "Show more"}
+        </Button>
+      )}
+      {canShowLess && (
+        <Button size="sm" variant="ghost" disabled={busy} onClick={onLess}>
+          Show less
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function UserBoard({
   data,
   loading,
   currentUserId,
+  pagination,
 }: {
   data: PlatformBoardResponse;
   loading: boolean;
   currentUserId: string | null;
+  pagination: React.ReactNode;
 }) {
   if (loading) return <LeaderboardSkeleton />;
   if (data.board.length === 0) {
@@ -132,7 +176,7 @@ function UserBoard({
   return (
     <>
       {data.personalRank && (
-        <PersonalRankCard row={data.personalRank} label="Your Rank" />
+        <PersonalRankCard row={data.personalRank} label="Your Rank" total={data.meta.total} />
       )}
 
       <Card className="gap-0 overflow-hidden p-0 shadow-[var(--shadow-card)]">
@@ -172,11 +216,20 @@ function UserBoard({
           );
         })}
       </Card>
+      {pagination}
     </>
   );
 }
 
-function PoolsBoard({ data, loading }: { data: PlatformBoardResponse; loading: boolean }) {
+function PoolsBoard({
+  data,
+  loading,
+  pagination,
+}: {
+  data: PlatformBoardResponse;
+  loading: boolean;
+  pagination: React.ReactNode;
+}) {
   if (loading) return <LeaderboardSkeleton />;
   if (data.board.length === 0) {
     return (
@@ -189,15 +242,12 @@ function PoolsBoard({ data, loading }: { data: PlatformBoardResponse; loading: b
     );
   }
 
-  // When nothing has scored this week (e.g. international break, pre-season),
-  // every pool is tied at 0 and dense rank shows #1 across the board, which
-  // reads as broken. Hide the rank numbers in that state and show a banner.
   const nothingScoredThisWeek = data.board.every((r) => r.totalPoints === 0);
 
   return (
     <>
       {data.personalRank && !nothingScoredThisWeek && (
-        <PersonalRankCard row={data.personalRank} label="Your Top Pool" />
+        <PersonalRankCard row={data.personalRank} label="Your Top Pool" total={data.meta.total} />
       )}
       {nothingScoredThisWeek && (
         <Card className="mb-4 gap-0 border-muted bg-muted/30 p-4 shadow-[var(--shadow-card)]">
@@ -246,6 +296,7 @@ function PoolsBoard({ data, loading }: { data: PlatformBoardResponse; loading: b
           </Card>
         ))}
       </div>
+      {pagination}
     </>
   );
 }
@@ -253,6 +304,7 @@ function PoolsBoard({ data, loading }: { data: PlatformBoardResponse; loading: b
 export default function LeaderboardPage() {
   const [tab, setTab] = useState<TabKey>("global");
   const [loading, setLoading] = useState(false);
+  const [moreLoading, setMoreLoading] = useState(false);
 
   const [global, setGlobal] = useState<PlatformBoardResponse>(EMPTY);
   const [nigeria, setNigeria] = useState<PlatformBoardResponse>(EMPTY);
@@ -277,22 +329,22 @@ export default function LeaderboardPage() {
     return () => { active = false; };
   }, []);
 
-  // Load data for the active tab
+  // Fetch first page for all three tabs on mount / competition change so the
+  // tab labels can show totals immediately and switching tabs is instant.
   useEffect(() => {
     let active = true;
     (async () => {
       setLoading(true);
       try {
-        if (tab === "global") {
-          const data = await getGlobalLeaderboard(1, 50, selectedComp || undefined);
-          if (active) setGlobal(data);
-        } else if (tab === "nigeria") {
-          const data = await getNigeriaLeaderboard(1, 50, selectedComp || undefined);
-          if (active) setNigeria(data);
-        } else {
-          const data = await getPoolsLeaderboard(1, 50);
-          if (active) setPools(data);
-        }
+        const [g, n, p] = await Promise.all([
+          getGlobalLeaderboard(1, PAGE_SIZE, selectedComp || undefined),
+          getNigeriaLeaderboard(1, PAGE_SIZE, selectedComp || undefined),
+          getPoolsLeaderboard(1, PAGE_SIZE),
+        ]);
+        if (!active) return;
+        setGlobal(g);
+        setNigeria(n);
+        setPools(p);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load the leaderboard");
       } finally {
@@ -300,7 +352,73 @@ export default function LeaderboardPage() {
       }
     })();
     return () => { active = false; };
-  }, [tab, selectedComp]);
+  }, [selectedComp]);
+
+  const activeData = tab === "global" ? global : tab === "nigeria" ? nigeria : pools;
+
+  const loadMore = async () => {
+    setMoreLoading(true);
+    try {
+      const nextPage = activeData.meta.page + 1;
+      let fetched: PlatformBoardResponse;
+      if (tab === "global") {
+        fetched = await getGlobalLeaderboard(nextPage, PAGE_SIZE, selectedComp || undefined);
+        setGlobal({
+          board: [...global.board, ...fetched.board],
+          personalRank: global.personalRank,
+          meta: fetched.meta,
+        });
+      } else if (tab === "nigeria") {
+        fetched = await getNigeriaLeaderboard(nextPage, PAGE_SIZE, selectedComp || undefined);
+        setNigeria({
+          board: [...nigeria.board, ...fetched.board],
+          personalRank: nigeria.personalRank,
+          meta: fetched.meta,
+        });
+      } else {
+        fetched = await getPoolsLeaderboard(nextPage, PAGE_SIZE);
+        setPools({
+          board: [...pools.board, ...fetched.board],
+          personalRank: pools.personalRank,
+          meta: fetched.meta,
+        });
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't load more");
+    } finally {
+      setMoreLoading(false);
+    }
+  };
+
+  const showLess = async () => {
+    setMoreLoading(true);
+    try {
+      if (tab === "global") {
+        const data = await getGlobalLeaderboard(1, PAGE_SIZE, selectedComp || undefined);
+        setGlobal(data);
+      } else if (tab === "nigeria") {
+        const data = await getNigeriaLeaderboard(1, PAGE_SIZE, selectedComp || undefined);
+        setNigeria(data);
+      } else {
+        const data = await getPoolsLeaderboard(1, PAGE_SIZE);
+        setPools(data);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
+    } finally {
+      setMoreLoading(false);
+    }
+  };
+
+  const pagination = (
+    <Pagination
+      shown={activeData.board.length}
+      total={activeData.meta.total}
+      busy={moreLoading}
+      onMore={loadMore}
+      onLess={showLess}
+    />
+  );
 
   return (
     <AppShell
@@ -310,9 +428,15 @@ export default function LeaderboardPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <TabsList>
-            <TabsTrigger value="global">Global</TabsTrigger>
-            <TabsTrigger value="nigeria">Nigeria</TabsTrigger>
-            <TabsTrigger value="pools">Pools</TabsTrigger>
+            <TabsTrigger value="global">
+              Global{global.meta.total > 0 ? ` (${global.meta.total})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="nigeria">
+              Nigeria{nigeria.meta.total > 0 ? ` (${nigeria.meta.total})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="pools">
+              Pools{pools.meta.total > 0 ? ` (${pools.meta.total})` : ""}
+            </TabsTrigger>
           </TabsList>
 
           {tab !== "pools" && competitions.length > 0 && (
@@ -333,13 +457,13 @@ export default function LeaderboardPage() {
         </div>
 
         <TabsContent value="global" className="mt-0">
-          <UserBoard data={global} loading={loading} currentUserId={myUserId} />
+          <UserBoard data={global} loading={loading} currentUserId={myUserId} pagination={pagination} />
         </TabsContent>
         <TabsContent value="nigeria" className="mt-0">
-          <UserBoard data={nigeria} loading={loading} currentUserId={myUserId} />
+          <UserBoard data={nigeria} loading={loading} currentUserId={myUserId} pagination={pagination} />
         </TabsContent>
         <TabsContent value="pools" className="mt-0">
-          <PoolsBoard data={pools} loading={loading} />
+          <PoolsBoard data={pools} loading={loading} pagination={pagination} />
         </TabsContent>
       </Tabs>
     </AppShell>
