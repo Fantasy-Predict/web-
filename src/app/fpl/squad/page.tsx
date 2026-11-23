@@ -165,12 +165,26 @@ export default function FplSquadPage() {
   };
 
   const hasPicks = picks && picks.players.length > 0;
+  const missedDeadline = gw?.isCurrent && !gw.isFinished && !hasPicks;
 
   return (
     <FplShell
       title={team.teamName}
       description={gw ? `${gw.name}${hasPicks ? " · Picks saved" : " · No picks yet"}` : undefined}
     >
+      {missedDeadline && (
+        <div className="mb-5 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+          <p className="text-sm font-semibold text-destructive">
+            Deadline passed for {gw?.name}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            You didn&apos;t confirm a starting XI before kickoff, so you&apos;ll score 0 this gameweek.
+            Set your picks before the next deadline to start earning points — the system will carry
+            that lineup forward automatically for any gameweek you don&apos;t touch.
+          </p>
+        </div>
+      )}
+
       {/* Stats strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card>
