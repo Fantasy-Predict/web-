@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "../../../components/ui/card";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
-import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
@@ -284,13 +283,6 @@ export default function LeaderboardPage() {
     return () => { active = false; };
   }, [tab, selectedComp]);
 
-  const matchdayLabel =
-    tab === "global"
-      ? global.meta.matchdayLabel
-      : tab === "nigeria"
-        ? nigeria.meta.matchdayLabel
-        : pools.meta.matchdayLabel;
-
   return (
     <AppShell
       title="Leaderboards"
@@ -320,12 +312,6 @@ export default function LeaderboardPage() {
             </Select>
           )}
         </div>
-
-        {matchdayLabel && (
-          <p className="mb-3 text-[11px] text-muted-foreground">
-            Movement vs last snapshot: <Badge variant="secondary" className="font-mono text-[10px]">{matchdayLabel}</Badge>
-          </p>
-        )}
 
         <TabsContent value="global" className="mt-0">
           <UserBoard data={global} loading={loading} currentUserId={myUserId} />
