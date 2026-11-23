@@ -137,7 +137,7 @@ export default function FplDashboardPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Overall Rank</p>
-                <p className="mt-2 text-3xl font-bold tabular-nums">{formatRank(team.overallRank)}</p>
+                <p className="mt-2 text-3xl font-bold tabular-nums">{formatRank(team.liveOverallRank ?? team.overallRank)}</p>
               </div>
               <TrendingUp className="mt-1 h-5 w-5 text-muted-foreground" />
             </div>
