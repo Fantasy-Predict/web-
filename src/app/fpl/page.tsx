@@ -112,7 +112,7 @@ export default function FplDashboardPage() {
         <Card>
           <CardContent className="p-5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">GW Points</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums">{team.gwPoints ?? 0}</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums">{team.liveGwPoints || team.gwPoints || 0}</p>
             {gw && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Avg {gw.averageScore ?? "—"} · High {gw.highestScore ?? "—"}
