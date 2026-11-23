@@ -510,6 +510,55 @@ export async function getCompLeaderboard(competition: string): Promise<CompLeade
 }
 
 // ============================================================
+// Platform leaderboards (Phase 2 — Superbru-style Global/Nigeria/Pools)
+// ============================================================
+
+export type PlatformBoardRow = {
+  rank: number;
+  delta: number | null; // positive = climbed; negative = dropped; null = no previous snapshot
+  entityId: string;
+  totalPoints: number;
+  name: string;
+  avatar?: string;
+  country?: string;
+  memberCount?: number;
+  isFull?: boolean;
+  joinCode?: string;
+};
+
+export type PlatformBoardResponse = {
+  board: PlatformBoardRow[];
+  personalRank: PlatformBoardRow | null;
+  meta: { page: number; limit: number; total: number; matchdayLabel: string | null };
+};
+
+async function fetchBoard(path: string): Promise<PlatformBoardResponse> {
+  const data = await apiFetch<PlatformBoardResponse>(path);
+  return {
+    board: data?.board ?? [],
+    personalRank: data?.personalRank ?? null,
+    meta: data?.meta ?? { page: 1, limit: 20, total: 0, matchdayLabel: null },
+  };
+}
+
+export function getGlobalLeaderboard(page = 1, limit = 20, competition?: string): Promise<PlatformBoardResponse> {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (competition) qs.set("competition", competition);
+  return fetchBoard(`/v1/leaderboard/global?${qs.toString()}`);
+}
+
+export function getNigeriaLeaderboard(page = 1, limit = 20, competition?: string): Promise<PlatformBoardResponse> {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (competition) qs.set("competition", competition);
+  return fetchBoard(`/v1/leaderboard/nigeria?${qs.toString()}`);
+}
+
+export function getPoolsLeaderboard(page = 1, limit = 20): Promise<PlatformBoardResponse> {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return fetchBoard(`/v1/leaderboard/pools?${qs.toString()}`);
+}
+
+// ============================================================
 // Wallets / Payments / Withdrawals / Transactions
 // ============================================================
 

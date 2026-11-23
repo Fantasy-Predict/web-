@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "../../../components/ui/card";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
-import { Skeleton } from "../../../components/ui/skeleton";
 import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Skeleton } from "../../../components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -15,214 +18,325 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import {
-  getCompLeaderboard,
+  getGlobalLeaderboard,
+  getMyProfile,
+  getNigeriaLeaderboard,
+  getPoolsLeaderboard,
   getUserCompetitions,
-  type CompLeaderboardEntry,
+  type PlatformBoardResponse,
+  type PlatformBoardRow,
   type UserCompetition,
 } from "../../lib/api/endpoints";
 import { cn } from "../../lib/utils";
 
-export default function LeaderboardPage() {
-  const [board, setBoard] = useState<CompLeaderboardEntry[]>([]);
-  const [personalRank, setPersonalRank] = useState<CompLeaderboardEntry | null>(null);
-  const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
-  const [selectedCompetition, setSelectedCompetition] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+type TabKey = "global" | "nigeria" | "pools";
 
+const EMPTY: PlatformBoardResponse = {
+  board: [],
+  personalRank: null,
+  meta: { page: 1, limit: 20, total: 0, matchdayLabel: null },
+};
+
+/** Green up / red down / em-dash. Shown to the right of the rank number. */
+function DeltaChip({ delta }: { delta: number | null }) {
+  if (delta === null) {
+    return <span className="inline-flex w-10 justify-center text-xs text-muted-foreground">—</span>;
+  }
+  if (delta === 0) {
+    return <span className="inline-flex w-10 justify-center text-xs text-muted-foreground">—</span>;
+  }
+  const up = delta > 0;
+  return (
+    <span
+      className={cn(
+        "inline-flex w-10 items-center justify-center gap-0.5 text-xs font-semibold",
+        up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400",
+      )}
+    >
+      <span aria-hidden="true">{up ? "▲" : "▼"}</span>
+      {Math.abs(delta)}
+    </span>
+  );
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const a = parts[0]?.[0] ?? "";
+  const b = parts[1]?.[0] ?? parts[0]?.[1] ?? "";
+  return `${a}${b}`.toUpperCase();
+}
+
+function LeaderboardSkeleton() {
+  return (
+    <Card className="gap-0 p-0 shadow-[var(--shadow-card)]">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="grid grid-cols-[2rem_2.5rem_1fr_3.5rem] items-center gap-3 border-b border-border px-4 py-3 last:border-0"
+        >
+          <Skeleton className="h-4 w-6" />
+          <Skeleton className="h-3 w-7" />
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <Skeleton className="h-4 w-10 justify-self-end" />
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+function PersonalRankCard({ row, label }: { row: PlatformBoardRow; label: string }) {
+  return (
+    <Card className="mb-6 gap-0 border-primary/30 bg-primary/5 p-5 shadow-[var(--shadow-card)]">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+            {label}
+          </p>
+          <div className="mt-2 flex items-center gap-3">
+            <p className="font-display text-3xl font-bold text-primary">#{row.rank}</p>
+            <DeltaChip delta={row.delta} />
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground uppercase">Total</p>
+          <p className="num font-display text-2xl font-bold">{row.totalPoints}</p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function UserBoard({
+  data,
+  loading,
+  currentUserId,
+}: {
+  data: PlatformBoardResponse;
+  loading: boolean;
+  currentUserId: string | null;
+}) {
+  if (loading) return <LeaderboardSkeleton />;
+  if (data.board.length === 0) {
+    return (
+      <Card className="p-8 text-center shadow-[var(--shadow-card)]">
+        <p className="text-sm font-semibold">No rankings yet</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Rankings appear once matches are scored.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      {data.personalRank && (
+        <PersonalRankCard row={data.personalRank} label="Your Rank" />
+      )}
+
+      <Card className="gap-0 overflow-hidden p-0 shadow-[var(--shadow-card)]">
+        <div className="grid grid-cols-[2rem_2.5rem_1fr_3.5rem] items-center gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+          <span>#</span>
+          <span></span>
+          <span>Player</span>
+          <span className="text-right">Tot</span>
+        </div>
+        {data.board.map((row) => {
+          const me = currentUserId && row.entityId === currentUserId;
+          return (
+            <div
+              key={row.entityId}
+              className={cn(
+                "grid grid-cols-[2rem_2.5rem_1fr_3.5rem] items-center gap-3 border-b border-border px-4 py-3 text-sm last:border-0",
+                me && "bg-primary/5",
+              )}
+            >
+              <span className="num font-semibold text-muted-foreground">{row.rank}</span>
+              <DeltaChip delta={row.delta} />
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarFallback className="bg-muted text-[10px] font-semibold">
+                    {initials(row.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="flex min-w-0 items-center gap-2 font-medium">
+                  <span className="truncate">{row.name}</span>
+                  {me && (
+                    <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">You</span>
+                  )}
+                </span>
+              </div>
+              <span className="num justify-self-end font-bold">{row.totalPoints}</span>
+            </div>
+          );
+        })}
+      </Card>
+    </>
+  );
+}
+
+function PoolsBoard({ data, loading }: { data: PlatformBoardResponse; loading: boolean }) {
+  if (loading) return <LeaderboardSkeleton />;
+  if (data.board.length === 0) {
+    return (
+      <Card className="p-8 text-center shadow-[var(--shadow-card)]">
+        <p className="text-sm font-semibold">No pools yet</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Public pools appear here once they have members and scored matches.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      {data.personalRank && (
+        <PersonalRankCard row={data.personalRank} label="Your Top Pool" />
+      )}
+      <div className="grid gap-3">
+        {data.board.map((row) => (
+          <Card
+            key={row.entityId}
+            className="gap-0 p-4 shadow-[var(--shadow-card)]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex w-10 flex-col items-center">
+                <span className="num text-sm font-bold text-muted-foreground">#{row.rank}</span>
+                <DeltaChip delta={row.delta} />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <p className="truncate font-semibold">{row.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {row.memberCount ?? 0} member{(row.memberCount ?? 0) === 1 ? "" : "s"}
+                  {row.isFull && <span className="ml-2 text-amber-600 dark:text-amber-400">· Full</span>}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="num font-display text-lg font-bold">{row.totalPoints}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">This week</p>
+              </div>
+            </div>
+            {row.joinCode && !row.isFull && (
+              <div className="mt-3 flex justify-end">
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/pools/join?code=${encodeURIComponent(row.joinCode)}`}>Join pool</Link>
+                </Button>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export default function LeaderboardPage() {
+  const [tab, setTab] = useState<TabKey>("global");
+  const [loading, setLoading] = useState(false);
+
+  const [global, setGlobal] = useState<PlatformBoardResponse>(EMPTY);
+  const [nigeria, setNigeria] = useState<PlatformBoardResponse>(EMPTY);
+  const [pools, setPools] = useState<PlatformBoardResponse>(EMPTY);
+
+  const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
+  const [selectedComp, setSelectedComp] = useState<string>("");
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+
+  // Load competitions + profile once
   useEffect(() => {
     let active = true;
-    async function load() {
-      try {
-        const comps = await getUserCompetitions().catch(() => []);
-        if (!active) return;
-        setCompetitions(comps);
-        if (comps.length > 0) {
-          const defaultComp = comps.find((c) => c.name === "Premier League" || c.code === "PL") ?? comps.find((c) => c.default) ?? comps[0];
-          setSelectedCompetition(defaultComp._id);
-        }
-      } catch {
-        // continue
-      }
-    }
-    load();
+    (async () => {
+      const [comps, me] = await Promise.all([
+        getUserCompetitions().catch(() => [] as UserCompetition[]),
+        getMyProfile().catch(() => null),
+      ]);
+      if (!active) return;
+      setCompetitions(comps);
+      if (me?._id) setMyUserId(String(me._id));
+    })();
     return () => { active = false; };
   }, []);
 
+  // Load data for the active tab
   useEffect(() => {
     let active = true;
-    async function load() {
-      if (!selectedCompetition) return;
+    (async () => {
       setLoading(true);
       try {
-        const data = await getCompLeaderboard(selectedCompetition);
-        if (!active) return;
-        setBoard([...(data.board ?? [])].sort((a, b) => a.rank - b.rank));
-        setPersonalRank(data.personalRank?.[0] ?? null);
+        if (tab === "global") {
+          const data = await getGlobalLeaderboard(1, 50, selectedComp || undefined);
+          if (active) setGlobal(data);
+        } else if (tab === "nigeria") {
+          const data = await getNigeriaLeaderboard(1, 50, selectedComp || undefined);
+          if (active) setNigeria(data);
+        } else {
+          const data = await getPoolsLeaderboard(1, 50);
+          if (active) setPools(data);
+        }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load the leaderboard");
       } finally {
         if (active) setLoading(false);
       }
-    }
-    load();
+    })();
     return () => { active = false; };
-  }, [selectedCompetition]);
+  }, [tab, selectedComp]);
 
-  const [first, second, third, ...rest] = board;
-  const podium = [second, first, third];
+  const matchdayLabel =
+    tab === "global"
+      ? global.meta.matchdayLabel
+      : tab === "nigeria"
+        ? nigeria.meta.matchdayLabel
+        : pools.meta.matchdayLabel;
 
   return (
-    <AppShell title="Leaderboard" description="Standings ranked by prediction accuracy.">
-      {competitions.length > 0 && (
-        <div className="mb-6">
-          <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All competitions" />
-            </SelectTrigger>
-            <SelectContent>
-              {competitions.map((c) => (
-                <SelectItem key={c._id} value={c._id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+    <AppShell
+      title="Leaderboards"
+      description="See who's on top — global, Nigeria, and the hottest pools."
+    >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger value="global">Global</TabsTrigger>
+            <TabsTrigger value="nigeria">Nigeria</TabsTrigger>
+            <TabsTrigger value="pools">Pools</TabsTrigger>
+          </TabsList>
 
-      {personalRank && (
-        <Card className="mb-6 gap-0 border-primary/30 bg-primary/5 p-5 shadow-[var(--shadow-card)]">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center justify-between sm:block">
-              <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">Your Rank</p>
-              <p className="font-display text-3xl font-bold text-primary sm:mt-2">#{personalRank.rank}</p>
-            </div>
-            <div className="flex gap-6 text-center">
-              <div>
-                <p className="num font-display text-xl font-bold text-green-600 dark:text-green-400">{personalRank.exact}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">Exact</p>
-              </div>
-              <div>
-                <p className="num font-display text-xl font-bold text-blue-600 dark:text-blue-400">{personalRank.close}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">Close</p>
-              </div>
-              <div>
-                <p className="num font-display text-xl font-bold text-gold">{personalRank.slam}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">Outcome</p>
-              </div>
-              <div>
-                <p className="num font-display text-xl font-bold">{personalRank.total}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">Total</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {loading ? (
-        <div className="grid gap-4 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Card key={index} className="items-center gap-0 p-6 text-center shadow-[var(--shadow-card)]">
-              <Skeleton className="h-3 w-10" />
-              <Skeleton className="mx-auto mt-4 h-14 w-14 rounded-full" />
-              <Skeleton className="mx-auto mt-4 h-4 w-24" />
-              <Skeleton className="mx-auto mt-4 h-6 w-16" />
-            </Card>
-          ))}
+          {tab !== "pools" && competitions.length > 0 && (
+            <Select value={selectedComp || "__all__"} onValueChange={(v) => setSelectedComp(v === "__all__" ? "" : v)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="All competitions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All competitions</SelectItem>
+                {competitions.map((c) => (
+                  <SelectItem key={c._id} value={c._id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-      ) : board.length === 0 ? (
-        <Card className="p-8 text-center shadow-[var(--shadow-card)]">
-          <p className="text-sm font-semibold">No rankings yet</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Rankings appear once matches are scored.
+
+        {matchdayLabel && (
+          <p className="mb-3 text-[11px] text-muted-foreground">
+            Movement vs last snapshot: <Badge variant="secondary" className="font-mono text-[10px]">{matchdayLabel}</Badge>
           </p>
-        </Card>
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {podium.map((entry, index) => {
-              if (!entry) return null;
-              const place = index === 1 ? 1 : index === 0 ? 2 : 3;
-              const name = entry.username || `${entry.firstName} ${entry.lastName}`.trim();
-              return (
-                <Card
-                  key={entry.userId}
-                  className={cn(
-                    "items-center gap-0 p-6 text-center shadow-[var(--shadow-card)]",
-                    place === 1 && "border-gold/50 bg-gold/5 sm:-mt-4",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "num font-display text-sm font-bold",
-                      place === 1 ? "text-gold" : "text-muted-foreground",
-                    )}
-                  >
-                    #{place}
-                  </span>
-                  <Avatar className="mx-auto mt-4 h-14 w-14">
-                    <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
-                      {`${entry.firstName?.[0] ?? ""}${entry.lastName?.[0] ?? ""}`.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <p className="mt-4 text-sm font-semibold">
-                    {name}
-                    {entry.userId === personalRank?.userId && (
-                      <span className="ml-2 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">You</span>
-                    )}
-                  </p>
-                  <p className="num mt-4 font-display text-2xl font-bold">{entry.total}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">points</p>
-                  <div className="mt-3 flex gap-3 text-[10px] text-muted-foreground">
-                    <span>{entry.exact} exact</span>
-                    <span>{entry.close} close</span>
-                    <span>{entry.slam} outcome</span>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+        )}
 
-          <Card className="mt-8 gap-0 overflow-x-auto p-0 shadow-[var(--shadow-card)]">
-            <div className="min-w-[480px] grid grid-cols-[2.5rem_minmax(8rem,1fr)_3rem_3rem_3rem_4.5rem] gap-2 border-b border-border px-5 py-3 text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-              <span>#</span>
-              <span>Player</span>
-              <span className="text-center">Exc</span>
-              <span className="text-center">Cls</span>
-              <span className="text-center">Slm</span>
-              <span className="text-right">Total</span>
-            </div>
-            {rest.map((entry, index) => {
-              const name = entry.username || `${entry.firstName} ${entry.lastName}`.trim();
-              return (
-                <div
-                  key={entry.userId}
-                  className="min-w-[480px] grid grid-cols-[2.5rem_minmax(8rem,1fr)_3rem_3rem_3rem_4.5rem] items-center gap-2 border-b border-border px-5 py-3.5 text-sm last:border-0"
-                >
-                  <span className="num font-semibold text-muted-foreground">{index + 4}</span>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarFallback className="bg-muted text-[10px] font-semibold">
-                        {`${name[0] ?? ""}${name[1] ?? ""}`.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="flex items-center gap-2 font-medium whitespace-nowrap">
-                      {name}
-                      {entry.userId === personalRank?.userId && (
-                        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">You</span>
-                      )}
-                    </span>
-                  </div>
-                  <span className="num flex justify-center text-xs font-semibold text-green-600 dark:text-green-400">{entry.exact}</span>
-                  <span className="num flex justify-center text-xs font-semibold text-blue-600 dark:text-blue-400">{entry.close}</span>
-                  <span className="num flex justify-center text-xs font-semibold text-gold">{entry.slam}</span>
-                  <span className="num flex justify-end font-bold">{entry.total}</span>
-                </div>
-              );
-            })}
-          </Card>
-        </>
-      )}
+        <TabsContent value="global" className="mt-0">
+          <UserBoard data={global} loading={loading} currentUserId={myUserId} />
+        </TabsContent>
+        <TabsContent value="nigeria" className="mt-0">
+          <UserBoard data={nigeria} loading={loading} currentUserId={myUserId} />
+        </TabsContent>
+        <TabsContent value="pools" className="mt-0">
+          <PoolsBoard data={pools} loading={loading} />
+        </TabsContent>
+      </Tabs>
     </AppShell>
   );
 }
