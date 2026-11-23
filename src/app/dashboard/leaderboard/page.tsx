@@ -189,10 +189,23 @@ function PoolsBoard({ data, loading }: { data: PlatformBoardResponse; loading: b
     );
   }
 
+  // When nothing has scored this week (e.g. international break, pre-season),
+  // every pool is tied at 0 and dense rank shows #1 across the board, which
+  // reads as broken. Hide the rank numbers in that state and show a banner.
+  const nothingScoredThisWeek = data.board.every((r) => r.totalPoints === 0);
+
   return (
     <>
-      {data.personalRank && (
+      {data.personalRank && !nothingScoredThisWeek && (
         <PersonalRankCard row={data.personalRank} label="Your Top Pool" />
+      )}
+      {nothingScoredThisWeek && (
+        <Card className="mb-4 gap-0 border-muted bg-muted/30 p-4 shadow-[var(--shadow-card)]">
+          <p className="text-sm font-semibold">No scores yet this week</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Rankings move once the next round of matches finishes.
+          </p>
+        </Card>
       )}
       <div className="grid gap-3">
         {data.board.map((row) => (
@@ -202,8 +215,14 @@ function PoolsBoard({ data, loading }: { data: PlatformBoardResponse; loading: b
           >
             <div className="flex items-center gap-3">
               <div className="flex w-10 flex-col items-center">
-                <span className="num text-sm font-bold text-muted-foreground">#{row.rank}</span>
-                <DeltaChip delta={row.delta} />
+                {row.totalPoints > 0 ? (
+                  <>
+                    <span className="num text-sm font-bold text-muted-foreground">#{row.rank}</span>
+                    <DeltaChip delta={row.delta} />
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">—</span>
+                )}
               </div>
               <div className="flex min-w-0 flex-1 flex-col">
                 <p className="truncate font-semibold">{row.name}</p>
