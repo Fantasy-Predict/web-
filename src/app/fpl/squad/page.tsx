@@ -209,6 +209,9 @@ export default function FplSquadPage() {
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">GW points</p>
             <p className="mt-1 text-xl font-bold">{team.liveGwPoints || team.gwPoints || 0}</p>
+            {(team.gwHits ?? 0) > 0 && (
+              <p className="mt-0.5 text-[11px] font-medium text-destructive">Hits: −{team.gwHits}</p>
+            )}
           </CardContent>
         </Card>
       </div>

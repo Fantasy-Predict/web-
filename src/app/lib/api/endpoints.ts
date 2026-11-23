@@ -1136,6 +1136,7 @@ export type FplTeam = {
   totalPoints: number;
   gwPoints: number;
   liveGwPoints?: number;
+  gwHits?: number;
   overallRank: number | null;
   season: string;
   freeTransfers: number;
