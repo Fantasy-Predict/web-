@@ -42,10 +42,16 @@ export default function FplHistoryPage() {
 
   const gwMap = new Map(gameweeks.map(g => [g.fplId, g]));
 
-  const totalPoints = history.at(-1)?.totalPoints ?? 0;
-  const bestGw = history.length > 0 ? history.reduce((a, b) => a.points >= b.points ? a : b) : null;
-  const worstGw = history.length > 0 ? history.reduce((a, b) => a.points <= b.points ? a : b) : null;
-  const avgPoints = history.length > 0 ? Math.round(history.reduce((s, h) => s + h.points, 0) / history.length) : 0;
+  // A gameweek in progress has `points: null` on its history row until the
+  // finalize job writes the real score. We only roll those into the summary
+  // stats once they've been finalized — otherwise the Avg becomes NaN and
+  // "Best GW" wrongly picks the live row with an em-dash value.
+  const finalized = history.filter(h => typeof h.points === "number");
+  const latestFinalized = finalized.at(-1) ?? null;
+  const totalPoints = latestFinalized?.totalPoints ?? 0;
+  const bestGw = finalized.length > 0 ? finalized.reduce((a, b) => a.points >= b.points ? a : b) : null;
+  const worstGw = finalized.length > 0 ? finalized.reduce((a, b) => a.points <= b.points ? a : b) : null;
+  const avgPoints = finalized.length > 0 ? Math.round(finalized.reduce((s, h) => s + h.points, 0) / finalized.length) : 0;
 
   if (loading) {
     return (
@@ -148,8 +154,12 @@ export default function FplHistoryPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold">{h.points}</td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">{h.totalPoints}</td>
+                    <td className="px-4 py-3 text-right font-semibold">
+                      {typeof h.points === "number" ? h.points : <span className="text-xs font-medium text-muted-foreground">Live</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {typeof h.totalPoints === "number" ? h.totalPoints : "—"}
+                    </td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {h.rank > 0 ? h.rank.toLocaleString() : "—"}
                     </td>

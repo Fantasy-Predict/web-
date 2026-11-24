@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AppShell } from "@/components/layout/app-shell";
@@ -20,6 +21,8 @@ import {
 import { cn } from "../../../lib/utils";
 import { createPool, getUserCompetitions, type UserCompetition } from "../../../lib/api/endpoints";
 
+type PrizeSlot = { position: number; percentage: number };
+
 const schema = z.object({
   name: z.string().trim().min(3, "Pool name must be at least 3 characters").max(60),
   competition: z.string().min(1, "Select a competition"),
@@ -27,7 +30,6 @@ const schema = z.object({
   entryFee: z.coerce.number().optional(),
   maxPlayers: z.coerce.number().min(2, "At least 2 players").max(1000),
   privacy: z.string().min(1),
-  distribution: z.string().min(1),
   startDate: z.string().min(1, "Choose a season start date"),
   poolFor: z.string().min(1, "Select who the pool is for"),
   prizeType: z.string().min(1, "Select prize type"),
@@ -66,15 +68,36 @@ export default function CreatePoolPage() {
     entryFee: "",
     maxPlayers: "20",
     privacy: "private",
-    distribution: "top3",
     startDate: "",
     poolFor: "",
     prizeType: "fun",
     introduction: "",
   });
+  const [prizeSlots, setPrizeSlots] = useState<PrizeSlot[]>([
+    { position: 1, percentage: 60 },
+    { position: 2, percentage: 30 },
+  ]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [invite, setInvite] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const totalPct = prizeSlots.reduce((s, p) => s + (Number(p.percentage) || 0), 0);
+
+  function addSlot() {
+    setPrizeSlots(prev => [...prev, { position: prev.length + 1, percentage: 0 }]);
+  }
+
+  function removeSlot(idx: number) {
+    setPrizeSlots(prev =>
+      prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, position: i + 1 }))
+    );
+  }
+
+  function updateSlotPct(idx: number, val: string) {
+    setPrizeSlots(prev =>
+      prev.map((s, i) => (i === idx ? { ...s, percentage: Number(val) || 0 } : s))
+    );
+  }
 
   useEffect(() => {
     getUserCompetitions()
@@ -113,26 +136,21 @@ export default function CreatePoolPage() {
       setErrors(next);
       return;
     }
+    // Monetized pools: validate custom prize split
+    if (parsed.data.poolType === "monetized") {
+      const activeSlots = prizeSlots.filter(s => s.percentage > 0);
+      if (activeSlots.length === 0) {
+        toast.error("Set at least one prize position");
+        return;
+      }
+      if (totalPct > 90) {
+        toast.error("Prize distribution total must not exceed 90% (platform takes 10%)");
+        return;
+      }
+    }
     setErrors({});
     setLoading(true);
     void submitPool(parsed.data);
-  }
-
-  function buildPrizeDistribution(preset: string): { position: number; percentage: number }[] {
-    if (preset === "winner") return [{ position: 1, percentage: 100 }];
-    if (preset === "top3") return [
-      { position: 1, percentage: 60 },
-      { position: 2, percentage: 30 },
-      { position: 3, percentage: 10 },
-    ];
-    if (preset === "top5") return [
-      { position: 1, percentage: 40 },
-      { position: 2, percentage: 25 },
-      { position: 3, percentage: 15 },
-      { position: 4, percentage: 12 },
-      { position: 5, percentage: 8 },
-    ];
-    return [];
   }
 
   async function submitPool(data: z.infer<typeof schema>) {
@@ -148,7 +166,9 @@ export default function CreatePoolPage() {
           amount: isMonetized ? data.entryFee ?? 0 : 0,
           paid: isMonetized,
         },
-        ...(isMonetized ? { prizeDistribution: buildPrizeDistribution(data.distribution) } : {}),
+        ...(isMonetized
+          ? { prizeDistribution: prizeSlots.filter(s => s.percentage > 0) }
+          : {}),
       } as any);
       toast.success("Pool created");
       router.push("/dashboard/pools");
@@ -336,38 +356,73 @@ export default function CreatePoolPage() {
               </div>
             )}
 
-            {/* Privacy & Prize Distribution */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-              <Field label="Privacy" error={errors.privacy}>
-                <Select value={values.privacy} onValueChange={(v) => set("privacy", v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="private">Private — invite only</SelectItem>
-                    <SelectItem value="public">Public — anyone can join</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              {isMonetized ? (
-                <Field label="Prize distribution" error={errors.distribution}>
-                  <Select value={values.distribution} onValueChange={(v) => set("distribution", v)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="winner">Winner takes all</SelectItem>
-                      <SelectItem value="top3">Top 3 — 60 / 30 / 10</SelectItem>
-                      <SelectItem value="top5">Top 5 — 40 / 25 / 15 / 12 / 8</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              ) : (
-                <Field label="Prize distribution" error={undefined}>
-                  <Input value="No prizes (Free pool)" disabled className="w-full text-muted-foreground" />
-                </Field>
-              )}
-            </div>
+            {/* Privacy */}
+            <Field label="Privacy" error={errors.privacy}>
+              <Select value={values.privacy} onValueChange={(v) => set("privacy", v)}>
+                <SelectTrigger className="w-full sm:w-1/2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="private">Private — invite only</SelectItem>
+                  <SelectItem value="public">Public — anyone can join</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            {/* Prize distribution — monetized pools set custom per-position splits,
+                capped at 90% total since the platform takes 10%. */}
+            {isMonetized && (
+              <div className="grid gap-3 rounded-xl border border-gold/20 bg-gold/5 p-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Prize distribution</Label>
+                  <span className={cn("text-xs font-medium", totalPct > 90 ? "text-destructive" : "text-muted-foreground")}>
+                    {totalPct}% / 90% max
+                  </span>
+                </div>
+                <p className="-mt-1 text-xs text-muted-foreground">
+                  Set the percentage each finishing position gets. You decide how to split the 90% winners' pool between your members.
+                </p>
+                {prizeSlots.map((slot, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-16 shrink-0 text-sm text-muted-foreground">
+                      {idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : `${idx + 1}th`}
+                    </span>
+                    <div className="relative flex-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={90}
+                        step={1}
+                        value={slot.percentage || ""}
+                        onChange={(e) => updateSlotPct(idx, e.target.value)}
+                        placeholder="0"
+                        className="pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                    </div>
+                    {prizeSlots.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSlot(idx)}
+                        className="rounded p-1 text-muted-foreground hover:text-destructive"
+                        aria-label="Remove position"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {prizeSlots.length < 10 && (
+                  <button
+                    type="button"
+                    onClick={addSlot}
+                    className="flex items-center gap-1 text-xs text-gold hover:underline"
+                  >
+                    <Plus className="h-3 w-3" /> Add position
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Season start date */}
             <Field label="Season start date" error={errors.startDate}>
