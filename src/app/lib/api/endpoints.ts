@@ -1170,6 +1170,21 @@ export type FplPlayer = {
   chanceOfPlayingNextRound?: number | null;
   form: string;
   ownership: number;
+  costChangeEvent?: number;    // today's change, tenths of £m
+  costChangeStart?: number;    // season-to-date, tenths of £m
+  goalsScored?: number;
+  assists?: number;
+  cleanSheets?: number;
+  goalsConceded?: number;
+  bonus?: number;
+  bps?: number;
+  minutes?: number;
+  yellowCards?: number;
+  redCards?: number;
+  saves?: number;
+  ictIndex?: string;
+  expectedGoals?: string;
+  expectedAssists?: string;
 };
 
 export type FplGameweek = {
@@ -1368,6 +1383,33 @@ export async function getFplFixtures(gwId: number): Promise<FplFixture[]> {
   const res = await apiFetch<FplFixture[] | { data?: FplFixture[] }>(`/v1/fpl/fixtures/${gwId}`, { unwrap: false });
   if (Array.isArray(res)) return res;
   return (res as { data?: FplFixture[] })?.data ?? [];
+}
+
+export type FplPriceChangesResponse = { risers: FplPlayer[]; fallers: FplPlayer[] };
+
+export async function getFplPriceChanges(limit = 30): Promise<FplPriceChangesResponse> {
+  const res = await apiFetch<FplPriceChangesResponse | { data?: FplPriceChangesResponse }>(
+    `/v1/fpl/price-changes?limit=${limit}`,
+    { unwrap: false },
+  );
+  const d = (res as { data?: FplPriceChangesResponse })?.data ?? (res as FplPriceChangesResponse);
+  return { risers: d?.risers ?? [], fallers: d?.fallers ?? [] };
+}
+
+export type FplStatsResponse = { metric: string; players: FplPlayer[] };
+
+export async function getFplPlayerStats(params: { metric?: string; limit?: number; position?: number } = {}): Promise<FplStatsResponse> {
+  const qs = new URLSearchParams();
+  if (params.metric) qs.set("metric", params.metric);
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.position) qs.set("position", String(params.position));
+  const query = qs.toString();
+  const res = await apiFetch<FplStatsResponse | { data?: FplStatsResponse }>(
+    `/v1/fpl/stats${query ? "?" + query : ""}`,
+    { unwrap: false },
+  );
+  const d = (res as { data?: FplStatsResponse })?.data ?? (res as FplStatsResponse);
+  return { metric: d?.metric ?? params.metric ?? "totalPoints", players: d?.players ?? [] };
 }
 
 // --- FPL Picks ---

@@ -19,6 +19,7 @@ import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Jersey } from "@/components/app/jersey";
 import { cn } from "@/app/lib/utils";
 
 // --- Types ---
@@ -220,7 +221,7 @@ function PitchCard({
   const shortName =
     parts.length > 1
       ? `${parts[0][0]}.${parts[parts.length - 1]}`
-      : pick.player.name.slice(0, 9);
+      : pick.player.name.slice(0, 12);
 
   return (
     <div className="relative">
@@ -229,22 +230,28 @@ function PitchCard({
         onClick={() => !disabled && onPlayerClick(pick.player.fplId)}
         disabled={disabled}
         className={cn(
-          "flex flex-col items-center rounded-xl border px-1.5 py-2 text-center transition-all",
+          "flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-center transition-all",
           isSelected
             ? "border-primary bg-primary/20 shadow-lg shadow-primary/30"
             : "border-white/15 bg-black/40 hover:bg-black/60",
           disabled && "cursor-default opacity-70",
         )}
-        style={{ minWidth: "58px", maxWidth: "72px" }}
+        style={{ minWidth: "76px", maxWidth: "100px" }}
       >
-        <span className="mb-0.5 text-[8px] font-bold uppercase tracking-wide text-white/50">
+        <span className="text-[9px] font-bold uppercase tracking-wide text-white/50">
           {subLabel}
         </span>
-        <span className="w-full truncate text-center text-[11px] font-bold leading-tight text-white">
+        <Jersey
+          teamCode={pick.player.teamCode}
+          position={pick.player.position}
+          clubShort={pick.player.clubShort}
+          size="md"
+        />
+        <span className="w-full truncate text-center text-xs sm:text-sm font-bold leading-tight text-white">
           {shortName}
         </span>
-        <span className="text-[8px] text-white/50">{pick.player.clubShort}</span>
-        <span className="mt-1 text-[9px] font-semibold text-white/70">
+        <span className="text-[10px] text-white/60">{pick.player.clubShort}</span>
+        <span className="text-[11px] font-semibold text-gold">
           {pick.player.currentGwPoints}pts
         </span>
       </button>
@@ -253,7 +260,7 @@ function PitchCard({
       {(pick.isCaptain || pick.isViceCaptain) && (
         <span
           className={cn(
-            "pointer-events-none absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold",
+            "pointer-events-none absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold shadow",
             pick.isCaptain ? "bg-yellow-400 text-black" : "bg-slate-400 text-black",
           )}
         >
@@ -270,7 +277,7 @@ function PitchCard({
             onCaptainToggle(pick.player.fplId);
           }}
           className={cn(
-            "absolute -bottom-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border text-[7px] font-bold transition-all",
+            "absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-bold transition-all",
             isPanelOpen
               ? "border-gold bg-gold text-navy"
               : "border-white/25 bg-black/50 text-white/50 hover:border-gold/50 hover:text-gold",
@@ -507,7 +514,7 @@ export default function FplPicksPage() {
 
   if (loading) {
     return (
-      <FplShell title="GW Picks">
+      <FplShell title="Pick Team">
         <div className="space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-14 w-full rounded-xl" />
@@ -519,7 +526,7 @@ export default function FplPicksPage() {
 
   if (!team || !gw) {
     return (
-      <FplShell title="GW Picks">
+      <FplShell title="Pick Team">
         <Card className="border-dashed">
           <CardContent className="py-16 text-center text-sm text-muted-foreground">
             Unable to load gameweek data. Please try again.
@@ -590,7 +597,7 @@ export default function FplPicksPage() {
 
   return (
     <FplShell
-      title={`${gw.name} Picks`}
+      title={`Pick Team · ${gw.name}`}
       description={
         isDeadlinePassed
           ? "Deadline passed — picks locked"

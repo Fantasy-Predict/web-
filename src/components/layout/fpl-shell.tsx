@@ -16,9 +16,11 @@ import {
   BookOpen,
   Calendar,
   Layers,
+  LineChart,
   LogOut,
   Settings,
   Swords,
+  TrendingUp,
   Trophy,
   Users,
 } from "lucide-react";
@@ -56,9 +58,11 @@ type NavItem =
 
 const FPL_NAV: NavItem[] = [
   { to: "/fpl", label: "Home", kind: "huge", icon: Home09Icon },
-  { to: "/fpl/squad", label: "My Squad", kind: "lucide", Icon: Users },
-  { to: "/fpl/picks", label: "Picks", kind: "lucide", Icon: Layers },
+  { to: "/fpl/squad", label: "Points", kind: "lucide", Icon: Users },
+  { to: "/fpl/picks", label: "Pick Team", kind: "lucide", Icon: Layers },
   { to: "/fpl/transfers", label: "Transfers", kind: "lucide", Icon: ArrowLeftRight },
+  { to: "/fpl/prices", label: "Prices", kind: "lucide", Icon: TrendingUp },
+  { to: "/fpl/stats", label: "Statistics", kind: "lucide", Icon: LineChart },
   { to: "/fpl/fixtures", label: "Fixtures", kind: "lucide", Icon: Calendar },
   { to: "/fpl/leagues", label: "Leagues", kind: "lucide", Icon: Trophy },
   { to: "/fpl/challenges", label: "Challenges", kind: "lucide", Icon: Swords },
@@ -72,10 +76,10 @@ const FPL_BOTTOM: Array<
   | { to: string; label: string; kind: "lucide"; Icon: typeof LogOut }
 > = [
   { to: "/fpl", label: "Home", kind: "huge", icon: Home09Icon },
-  { to: "/fpl/squad", label: "Squad", kind: "lucide", Icon: Users },
+  { to: "/fpl/squad", label: "Points", kind: "lucide", Icon: Users },
+  { to: "/fpl/picks", label: "Pick Team", kind: "lucide", Icon: Layers },
   { to: "/fpl/transfers", label: "Transfers", kind: "lucide", Icon: ArrowLeftRight },
   { to: "/fpl/leagues", label: "Leagues", kind: "lucide", Icon: Trophy },
-  { to: "/fpl/fixtures", label: "Fixtures", kind: "lucide", Icon: Calendar },
 ];
 
 function NavIcon({ item }: { item: NavItem }) {

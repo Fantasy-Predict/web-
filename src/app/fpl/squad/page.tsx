@@ -16,23 +16,8 @@ import {
 import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Jersey } from "@/components/app/jersey";
 import { cn } from "@/app/lib/utils";
-
-const POS_LABEL: Record<number, string> = { 1: "GKP", 2: "DEF", 3: "MID", 4: "FWD" };
-const POS_COLOR: Record<number, string> = {
-  1: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400",
-  2: "bg-blue-500/20 text-blue-700 dark:text-blue-400",
-  3: "bg-gold/20 text-gold",
-  4: "bg-red-500/20 text-red-700 dark:text-red-400",
-};
-
-// Official FPL jersey artwork — served from Premier League's own CDN.
-// Outfield shirt: shirt_{teamCode}-110.png; goalkeeper: shirt_{teamCode}_1-110.png.
-// teamCode is the FPL club code (e.g. Man City = 43), synced on the player via bootstrap.
-const jerseyUrl = (teamCode: number, position: number) => {
-  const gk = position === 1 ? "_1" : "";
-  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${gk}-110.png`;
-};
 
 // FPL player status codes: a=available, d=doubtful, i=injured, s=suspended,
 // u=unavailable, n=not in squad. Anything other than "a" shows a coloured dot
@@ -80,49 +65,41 @@ function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compa
   const statusTitle = player.status !== "a"
     ? (player.news && player.news.length > 0 ? player.news : "Unavailable")
     : "";
-  const hasJersey = (player.teamCode ?? 0) > 0;
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-1 rounded-xl border border-border bg-card p-1.5 sm:p-2 text-center transition-all",
-        compact ? "min-w-[52px] sm:min-w-[64px] max-w-[80px]" : "min-w-[56px] sm:min-w-[72px] max-w-[90px]",
+        "flex flex-col items-center gap-1 rounded-xl border border-border bg-card p-2 sm:p-2.5 text-center transition-all",
+        compact ? "min-w-[70px] sm:min-w-[84px] max-w-[100px]" : "min-w-[76px] sm:min-w-[96px] max-w-[112px]",
       )}
       title={statusTitle || undefined}
     >
-      {/* Jersey (or position fallback) + captain overlay + injury/suspension dot */}
+      {/* Jersey + captain overlay + injury/suspension dot */}
       <div className="relative">
-        {hasJersey ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={jerseyUrl(player.teamCode ?? 0, player.position)}
-            alt={`${player.clubShort} ${POS_LABEL[player.position]} jersey`}
-            className="h-9 w-9 sm:h-11 sm:w-11 object-contain select-none"
-            draggable={false}
-          />
-        ) : (
-          <div className={cn("flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[9px] sm:text-xs font-bold", POS_COLOR[player.position])}>
-            {POS_LABEL[player.position]}
-          </div>
-        )}
+        <Jersey
+          teamCode={player.teamCode}
+          position={player.position}
+          clubShort={player.clubShort}
+          size={compact ? "md" : "lg"}
+        />
         {player.isCaptain && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500 text-[9px] font-bold text-white">C</span>
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-yellow-500 text-[10px] font-bold text-white shadow">C</span>
         )}
         {player.isViceCaptain && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-500 text-[9px] font-bold text-white">V</span>
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-500 text-[10px] font-bold text-white shadow">V</span>
         )}
         {statusDotClass && (
           <span
             className={cn(
-              "absolute -bottom-0.5 -left-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-card",
+              "absolute -bottom-0.5 -left-0.5 h-3 w-3 rounded-full ring-2 ring-card",
               statusDotClass,
             )}
             aria-label={statusTitle}
           />
         )}
       </div>
-      <p className="line-clamp-1 w-full text-[11px] font-semibold leading-tight">{player.name.split(" ").pop()}</p>
-      <p className="text-[10px] text-muted-foreground">{player.clubShort}</p>
-      <p className="text-[10px] font-medium text-gold">{player.currentGwPoints} pts</p>
+      <p className="line-clamp-1 w-full text-xs sm:text-sm font-semibold leading-tight">{player.name.split(" ").pop()}</p>
+      <p className="text-[10px] sm:text-[11px] text-muted-foreground">{player.clubShort}</p>
+      <p className="text-[11px] sm:text-xs font-medium text-gold">{player.currentGwPoints} pts</p>
     </div>
   );
 }
@@ -174,7 +151,7 @@ export default function FplSquadPage() {
 
   if (loading) {
     return (
-      <FplShell title="My Squad">
+      <FplShell title="Points">
         <div className="space-y-4">
           <Skeleton className="h-8 w-48" />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -188,7 +165,7 @@ export default function FplSquadPage() {
 
   if (!team) {
     return (
-      <FplShell title="My Squad">
+      <FplShell title="Points">
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Shield className="h-12 w-12 text-muted-foreground" />
