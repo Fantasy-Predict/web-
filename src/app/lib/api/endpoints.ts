@@ -1163,7 +1163,10 @@ export type FplPlayer = {
   price: number;    // tenths of millions (65 = £6.5m)
   totalPoints: number;
   currentGwPoints: number;
-  status: string;
+  status: string;   // "a" available, "d" doubt, "i" injured, "s" suspended, "u" unavailable, "n" not in squad
+  news?: string;
+  chanceOfPlayingThisRound?: number | null;
+  chanceOfPlayingNextRound?: number | null;
   form: string;
   ownership: number;
 };

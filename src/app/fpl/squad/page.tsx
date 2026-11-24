@@ -26,6 +26,18 @@ const POS_COLOR: Record<number, string> = {
   4: "bg-red-500/20 text-red-700 dark:text-red-400",
 };
 
+// FPL player status codes: a=available, d=doubtful, i=injured, s=suspended,
+// u=unavailable, n=not in squad. Anything other than "a" shows a coloured dot
+// and exposes the news string (e.g. "Hamstring - 75% chance") on hover.
+const STATUS_DOT: Record<string, string> = {
+  a: "",
+  d: "bg-yellow-500",
+  i: "bg-red-500",
+  s: "bg-red-500",
+  u: "bg-red-600",
+  n: "bg-gray-400",
+};
+
 type EnrichedPlayer = FplPlayer & {
   squadPosition: number;
   isCaptain: boolean;
@@ -56,12 +68,19 @@ function buildSquad(playerDetails: FplPlayer[], picks: FplPick | null): { starte
 }
 
 function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compact?: boolean }) {
+  const statusDotClass = STATUS_DOT[player.status] ?? "";
+  const statusTitle = player.status !== "a"
+    ? (player.news && player.news.length > 0 ? player.news : "Unavailable")
+    : "";
   return (
-    <div className={cn(
-      "flex flex-col items-center gap-1 rounded-xl border border-border bg-card p-1.5 sm:p-2 text-center transition-all",
-      compact ? "min-w-[52px] sm:min-w-[64px] max-w-[80px]" : "min-w-[56px] sm:min-w-[72px] max-w-[90px]",
-    )}>
-      {/* Position badge + captain overlay */}
+    <div
+      className={cn(
+        "flex flex-col items-center gap-1 rounded-xl border border-border bg-card p-1.5 sm:p-2 text-center transition-all",
+        compact ? "min-w-[52px] sm:min-w-[64px] max-w-[80px]" : "min-w-[56px] sm:min-w-[72px] max-w-[90px]",
+      )}
+      title={statusTitle || undefined}
+    >
+      {/* Position badge + captain overlay + injury/suspension dot */}
       <div className="relative">
         <div className={cn("flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[9px] sm:text-xs font-bold", POS_COLOR[player.position])}>
           {POS_LABEL[player.position]}
@@ -71,6 +90,15 @@ function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compa
         )}
         {player.isViceCaptain && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-500 text-[9px] font-bold text-white">V</span>
+        )}
+        {statusDotClass && (
+          <span
+            className={cn(
+              "absolute -bottom-0.5 -left-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-card",
+              statusDotClass,
+            )}
+            aria-label={statusTitle}
+          />
         )}
       </div>
       <p className="line-clamp-1 w-full text-[11px] font-semibold leading-tight">{player.name.split(" ").pop()}</p>
