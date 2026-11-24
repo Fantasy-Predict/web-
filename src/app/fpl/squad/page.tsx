@@ -8,16 +8,31 @@ import {
   getFplTeam,
   getFplCurrentGameweek,
   getFplPicks,
+  getFplFixtures,
   type FplTeam,
   type FplPlayer,
   type FplPick,
   type FplGameweek,
+  type FplFixture,
 } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Jersey } from "@/components/app/jersey";
+import { Pitch } from "@/components/app/pitch";
 import { cn } from "@/app/lib/utils";
+
+// Build a quick lookup: "ARS" → "MCI (H)" — each player's club's next GW
+// opponent + home/away marker, same format FPL uses on their Pick Team view.
+// Players whose club has a double-gameweek will show the first fixture only.
+function buildFixtureLabels(fixtures: FplFixture[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const f of fixtures) {
+    if (!map.has(f.homeTeamShort)) map.set(f.homeTeamShort, `${f.awayTeamShort} (H)`);
+    if (!map.has(f.awayTeamShort)) map.set(f.awayTeamShort, `${f.homeTeamShort} (A)`);
+  }
+  return map;
+}
 
 // FPL player status codes: a=available, d=doubtful, i=injured, s=suspended,
 // u=unavailable, n=not in squad. Anything other than "a" shows a coloured dot
@@ -60,19 +75,21 @@ function buildSquad(playerDetails: FplPlayer[], picks: FplPick | null): { starte
   };
 }
 
-function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compact?: boolean }) {
+function PlayerCard({
+  player,
+  compact = false,
+  fixtureLabel,
+}: {
+  player: EnrichedPlayer;
+  compact?: boolean;
+  fixtureLabel?: string;
+}) {
   const statusDotClass = STATUS_DOT[player.status] ?? "";
   const statusTitle = player.status !== "a"
     ? (player.news && player.news.length > 0 ? player.news : "Unavailable")
     : "";
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-1 rounded-xl border border-border bg-card p-2 sm:p-2.5 text-center transition-all",
-        compact ? "min-w-[70px] sm:min-w-[84px] max-w-[100px]" : "min-w-[76px] sm:min-w-[96px] max-w-[112px]",
-      )}
-      title={statusTitle || undefined}
-    >
+    <div className="flex flex-col items-center" title={statusTitle || undefined}>
       {/* Jersey + captain overlay + injury/suspension dot */}
       <div className="relative">
         <Jersey
@@ -82,36 +99,50 @@ function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compa
           size={compact ? "md" : "lg"}
         />
         {player.isCaptain && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-yellow-500 text-[10px] font-bold text-white shadow">C</span>
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-yellow-400 text-[10px] font-bold text-black shadow-md">C</span>
         )}
         {player.isViceCaptain && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-500 text-[10px] font-bold text-white shadow">V</span>
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-300 text-[10px] font-bold text-black shadow-md">V</span>
         )}
         {statusDotClass && (
           <span
             className={cn(
-              "absolute -bottom-0.5 -left-0.5 h-3 w-3 rounded-full ring-2 ring-card",
+              "absolute -bottom-0.5 -left-0.5 h-3 w-3 rounded-full ring-2 ring-white",
               statusDotClass,
             )}
             aria-label={statusTitle}
           />
         )}
       </div>
-      <p className="line-clamp-1 w-full text-xs sm:text-sm font-semibold leading-tight">{player.name.split(" ").pop()}</p>
-      <p className="text-[10px] sm:text-[11px] text-muted-foreground">{player.clubShort}</p>
-      <p className="text-[11px] sm:text-xs font-medium text-gold">{player.currentGwPoints} pts</p>
+      {/* White info pill — matches the FPL Pick Team look */}
+      <div className="mt-1.5 min-w-[76px] max-w-[112px] rounded-md bg-white px-2 py-1 text-center shadow-md">
+        <p className="line-clamp-1 text-xs sm:text-sm font-bold leading-tight text-black">
+          {player.name.split(" ").pop()}
+        </p>
+        <p className="text-[10px] sm:text-[11px] font-medium leading-tight text-gray-700">
+          {fixtureLabel ?? player.clubShort}
+        </p>
+      </div>
+      <p className="mt-1 text-[11px] sm:text-xs font-bold text-white drop-shadow">
+        {player.currentGwPoints} pts
+      </p>
     </div>
   );
 }
 
-function PitchRow({ players, label }: { players: EnrichedPlayer[]; label: string }) {
+function PitchRow({
+  players,
+  fixtureLabels,
+}: {
+  players: EnrichedPlayer[];
+  fixtureLabels: Map<string, string>;
+}) {
   if (players.length === 0) return null;
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</span>
-      <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
-        {players.map(p => <PlayerCard key={p.fplId} player={p} />)}
-      </div>
+    <div className="flex flex-wrap items-start justify-center gap-3 sm:gap-6">
+      {players.map(p => (
+        <PlayerCard key={p.fplId} player={p} fixtureLabel={fixtureLabels.get(p.clubShort)} />
+      ))}
     </div>
   );
 }
@@ -120,6 +151,7 @@ export default function FplSquadPage() {
   const [team, setTeam] = useState<FplTeam | null>(null);
   const [gw, setGw] = useState<FplGameweek | null>(null);
   const [picks, setPicks] = useState<FplPick | null>(null);
+  const [fixtures, setFixtures] = useState<FplFixture[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -136,8 +168,14 @@ export default function FplSquadPage() {
       setGw(gwData);
 
       if (gwData) {
-        const picksData = await getFplPicks(gwData.fplId).catch(() => null);
-        if (active) setPicks(picksData);
+        const [picksData, fixturesData] = await Promise.all([
+          getFplPicks(gwData.fplId).catch(() => null),
+          getFplFixtures(gwData.fplId).catch(() => []),
+        ]);
+        if (active) {
+          setPicks(picksData);
+          setFixtures(fixturesData);
+        }
       }
       if (active) setLoading(false);
     }).catch((err) => {
@@ -180,6 +218,7 @@ export default function FplSquadPage() {
   }
 
   const { starters, bench } = buildSquad(team.playerDetails ?? [], picks);
+  const fixtureLabels = buildFixtureLabels(fixtures);
 
   const rows = {
     gk:  starters.filter(p => p.position === 1),
@@ -240,37 +279,31 @@ export default function FplSquadPage() {
         </Card>
       </div>
 
-      {/* Pitch */}
-      <Card className="mt-5 overflow-hidden">
-        <div className="relative min-h-[420px] bg-gradient-to-b from-navy to-[#162032] p-3 sm:p-6">
-          {/* Pitch lines */}
-          <div className="pointer-events-none absolute inset-x-6 top-1/2 h-px bg-white/10" />
-          <div className="pointer-events-none absolute left-1/2 top-6 h-32 w-32 -translate-x-1/2 rounded-full border border-white/10" />
+      {/* Pitch — matches the official FPL Pick Team view */}
+      <div className="mt-5">
+        <Pitch className="min-h-[520px] sm:min-h-[600px]">
+          <PitchRow players={rows.gk} fixtureLabels={fixtureLabels} />
+          <PitchRow players={rows.def} fixtureLabels={fixtureLabels} />
+          <PitchRow players={rows.mid} fixtureLabels={fixtureLabels} />
+          <PitchRow players={rows.fwd} fixtureLabels={fixtureLabels} />
+        </Pitch>
 
-          <div className="relative flex flex-col gap-6">
-            <PitchRow players={rows.gk} label="GKP" />
-            <PitchRow players={rows.def} label="DEF" />
-            <PitchRow players={rows.mid} label="MID" />
-            <PitchRow players={rows.fwd} label="FWD" />
-          </div>
-        </div>
-
-        {/* Bench */}
-        <div className="border-t border-border bg-muted/30 p-4">
+        {/* Bench — same jersey + white pill treatment, outside the pitch */}
+        <div className="mt-3 rounded-2xl border border-border bg-muted/30 p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Bench</p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-4">
             {bench.map((p, i) => (
               <div key={p.fplId} className="flex flex-col items-center gap-1">
-                <span className="text-[10px] text-muted-foreground">#{i + 1}</span>
-                <PlayerCard player={p} compact />
+                <span className="text-[10px] font-semibold text-muted-foreground">#{i + 1}</span>
+                <PlayerCard player={p} compact fixtureLabel={fixtureLabels.get(p.clubShort)} />
               </div>
             ))}
             {bench.length === 0 && (
-              <p className="text-sm text-muted-foreground">No bench set yet — go to Picks to arrange your squad.</p>
+              <p className="text-sm text-muted-foreground">No bench set yet — go to Pick Team to arrange your squad.</p>
             )}
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Chips status */}
       <div className="mt-5">

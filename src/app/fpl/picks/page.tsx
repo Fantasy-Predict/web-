@@ -8,18 +8,31 @@ import {
   getFplCurrentGameweek,
   getFplGameweeks,
   getFplPicks,
+  getFplFixtures,
   saveFplPicks,
   type FplTeam,
   type FplPlayer,
   type FplPick,
   type FplPickPlayer,
   type FplGameweek,
+  type FplFixture,
 } from "@/app/lib/api/endpoints";
+
+// Same opponent-label builder as the Points page: "ARS" → "MCI (H)"
+function buildFixtureLabels(fixtures: FplFixture[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const f of fixtures) {
+    if (!map.has(f.homeTeamShort)) map.set(f.homeTeamShort, `${f.awayTeamShort} (H)`);
+    if (!map.has(f.awayTeamShort)) map.set(f.awayTeamShort, `${f.homeTeamShort} (A)`);
+  }
+  return map;
+}
 import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Jersey } from "@/components/app/jersey";
+import { Pitch } from "@/components/app/pitch";
 import { cn } from "@/app/lib/utils";
 
 // --- Types ---
@@ -204,24 +217,22 @@ interface PitchCardProps {
   disabled: boolean;
   isSelected: boolean;
   isPanelOpen: boolean;
+  fixtureLabel?: string;
   onPlayerClick: (id: number) => void;
   onCaptainToggle: (id: number) => void;
 }
 
 function PitchCard({
   pick,
-  subLabel,
+  subLabel: _subLabel,
   disabled,
   isSelected,
   isPanelOpen,
+  fixtureLabel,
   onPlayerClick,
   onCaptainToggle,
 }: PitchCardProps) {
-  const parts = pick.player.name.split(" ");
-  const shortName =
-    parts.length > 1
-      ? `${parts[0][0]}.${parts[parts.length - 1]}`
-      : pick.player.name.slice(0, 12);
+  const shortName = pick.player.name.split(" ").pop() ?? pick.player.name;
 
   return (
     <div className="relative">
@@ -230,30 +241,26 @@ function PitchCard({
         onClick={() => !disabled && onPlayerClick(pick.player.fplId)}
         disabled={disabled}
         className={cn(
-          "flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-center transition-all",
-          isSelected
-            ? "border-primary bg-primary/20 shadow-lg shadow-primary/30"
-            : "border-white/15 bg-black/40 hover:bg-black/60",
+          "flex flex-col items-center gap-1 rounded-xl p-1 text-center transition-all",
+          isSelected && "ring-2 ring-gold shadow-lg shadow-gold/30",
           disabled && "cursor-default opacity-70",
         )}
-        style={{ minWidth: "76px", maxWidth: "100px" }}
       >
-        <span className="text-[9px] font-bold uppercase tracking-wide text-white/50">
-          {subLabel}
-        </span>
         <Jersey
           teamCode={pick.player.teamCode}
           position={pick.player.position}
           clubShort={pick.player.clubShort}
-          size="md"
+          size="lg"
         />
-        <span className="w-full truncate text-center text-xs sm:text-sm font-bold leading-tight text-white">
-          {shortName}
-        </span>
-        <span className="text-[10px] text-white/60">{pick.player.clubShort}</span>
-        <span className="text-[11px] font-semibold text-gold">
-          {pick.player.currentGwPoints}pts
-        </span>
+        {/* White info pill — name on top, next-GW opponent beneath */}
+        <div className="min-w-[80px] max-w-[112px] rounded-md bg-white px-2 py-1 shadow-md">
+          <p className="line-clamp-1 text-xs sm:text-sm font-bold leading-tight text-black">
+            {shortName}
+          </p>
+          <p className="text-[10px] sm:text-[11px] font-medium leading-tight text-gray-700">
+            {fixtureLabel ?? pick.player.clubShort}
+          </p>
+        </div>
       </button>
 
       {/* Captain / VC badge */}
@@ -280,7 +287,7 @@ function PitchCard({
             "absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-bold transition-all",
             isPanelOpen
               ? "border-gold bg-gold text-navy"
-              : "border-white/25 bg-black/50 text-white/50 hover:border-gold/50 hover:text-gold",
+              : "border-white/25 bg-black/50 text-white/80 hover:border-gold/50 hover:text-gold",
           )}
           title="Set captain / vice-captain"
         >
@@ -346,6 +353,7 @@ function RowCaptainPanel({
 export default function FplPicksPage() {
   const [team, setTeam] = useState<FplTeam | null>(null);
   const [gw, setGw] = useState<FplGameweek | null>(null);
+  const [fixtures, setFixtures] = useState<FplFixture[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -372,8 +380,12 @@ export default function FplPicksPage() {
       }
       setGw(activeGw);
 
-      const existingPicks = await getFplPicks(activeGw.fplId).catch(() => null);
+      const [existingPicks, fixturesData] = await Promise.all([
+        getFplPicks(activeGw.fplId).catch(() => null),
+        getFplFixtures(activeGw.fplId).catch(() => []),
+      ]);
       if (!active) return;
+      setFixtures(fixturesData);
       if (existingPicks?.chip) setSelectedChip(existingPicks.chip);
       const built = buildInitialPicks(teamData.playerDetails ?? [], existingPicks);
       setPicks(built);
@@ -553,6 +565,7 @@ export default function FplPicksPage() {
 
   const validationError = validateFormation(picks);
   const isDeadlinePassed = gw.deadline ? new Date() > new Date(gw.deadline) : false;
+  const fixtureLabels = buildFixtureLabels(fixtures);
 
   const captainToggle = (id: number) => {
     setCaptainPanel(prev => (prev === id ? null : id));
@@ -569,8 +582,8 @@ export default function FplPicksPage() {
   }) => {
     const openPick = row.find(p => captainPanel === p.player.fplId);
     return (
-      <div className="mb-5">
-        <div className="flex items-start justify-center gap-1.5">
+      <div>
+        <div className="flex flex-wrap items-start justify-center gap-3 sm:gap-6">
           {row.map((pick, i) => (
             <PitchCard
               key={pick.player.fplId}
@@ -579,6 +592,7 @@ export default function FplPicksPage() {
               disabled={isDeadlinePassed}
               isSelected={selectedPlayer === pick.player.fplId}
               isPanelOpen={captainPanel === pick.player.fplId}
+              fixtureLabel={fixtureLabels.get(pick.player.clubShort)}
               onPlayerClick={handlePlayerClick}
               onCaptainToggle={captainToggle}
             />
@@ -681,29 +695,14 @@ export default function FplPicksPage() {
         )}
       </div>
 
-      {/* Pitch */}
-      <div className="mb-5 overflow-hidden rounded-2xl bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 px-3 pb-4 pt-4">
-        {/* Centre line */}
-        <div className="mb-5 flex justify-center">
-          <div className="h-px w-2/3 bg-white/10" />
-        </div>
-
-        {/* GK */}
-        <PitchRow row={gkRow} labels={["GK"]} />
-
-        {/* DEF */}
-        <PitchRow row={defRow} labels={defLabels} />
-
-        {/* MID */}
-        <PitchRow row={midRow} labels={midLabels} />
-
-        {/* FWD */}
-        <PitchRow row={fwdRow} labels={fwdLabels} />
-
-        {/* Centre line bottom */}
-        <div className="flex justify-center">
-          <div className="h-px w-2/3 bg-white/10" />
-        </div>
+      {/* Pitch — official FPL Pick Team look */}
+      <div className="mb-5">
+        <Pitch className="min-h-[560px] sm:min-h-[640px]">
+          <PitchRow row={gkRow} labels={["GK"]} />
+          <PitchRow row={defRow} labels={defLabels} />
+          <PitchRow row={midRow} labels={midLabels} />
+          <PitchRow row={fwdRow} labels={fwdLabels} />
+        </Pitch>
       </div>
 
       {/* Bench */}
@@ -714,7 +713,7 @@ export default function FplPicksPage() {
             (priority order)
           </span>
         </h2>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {bench.map((pick, i) => {
             const isSelected = selectedPlayer === pick.player.fplId;
             return (
@@ -724,30 +723,32 @@ export default function FplPicksPage() {
                 onClick={() => handlePlayerClick(pick.player.fplId)}
                 disabled={isDeadlinePassed}
                 className={cn(
-                  "flex flex-col items-center rounded-xl border p-2 text-center transition-all",
+                  "flex flex-col items-center gap-1.5 rounded-xl border p-2 text-center transition-all",
                   isSelected
-                    ? "border-primary bg-primary/5"
+                    ? "border-gold bg-gold/10"
                     : "border-border bg-muted/40 hover:bg-accent",
                   isDeadlinePassed && "cursor-default opacity-70",
                 )}
               >
-                <span className="mb-1 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
                   {i + 1}
                 </span>
-                <div
-                  className={cn(
-                    "mb-1 flex h-5 w-full items-center justify-center rounded-md text-[9px] font-bold",
-                    POS_COLOR[pick.player.position],
-                  )}
-                >
-                  {POS_LABEL[pick.player.position]}
+                <Jersey
+                  teamCode={pick.player.teamCode}
+                  position={pick.player.position}
+                  clubShort={pick.player.clubShort}
+                  size="md"
+                />
+                <div className="min-w-[80px] max-w-[112px] rounded-md bg-white px-2 py-1 shadow-sm">
+                  <p className="line-clamp-1 text-xs sm:text-sm font-bold leading-tight text-black">
+                    {pick.player.name.split(" ").slice(-1)[0]}
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] font-medium leading-tight text-gray-700">
+                    {fixtureLabels.get(pick.player.clubShort) ?? pick.player.clubShort}
+                  </p>
                 </div>
-                <p className="w-full truncate text-center text-[11px] font-bold leading-tight">
-                  {pick.player.name.split(" ").slice(-1)[0]}
-                </p>
-                <p className="text-[8px] text-muted-foreground">{pick.player.clubShort}</p>
-                <p className="mt-0.5 text-[10px] font-medium">
-                  {pick.player.currentGwPoints}pts
+                <p className="text-[11px] font-semibold text-gold">
+                  {pick.player.currentGwPoints} pts
                 </p>
               </button>
             );

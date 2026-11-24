@@ -1296,8 +1296,10 @@ export type FplH2HResult = {
 export type FplFixture = {
   id: number;
   gwId: number;
+  homeTeamId?: number;
   homeTeam: string;
   homeTeamShort: string;
+  awayTeamId?: number;
   awayTeam: string;
   awayTeamShort: string;
   kickoffTime: string;
