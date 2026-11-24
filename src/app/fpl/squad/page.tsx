@@ -26,6 +26,14 @@ const POS_COLOR: Record<number, string> = {
   4: "bg-red-500/20 text-red-700 dark:text-red-400",
 };
 
+// Official FPL jersey artwork — served from Premier League's own CDN.
+// Outfield shirt: shirt_{teamCode}-110.png; goalkeeper: shirt_{teamCode}_1-110.png.
+// teamCode is the FPL club code (e.g. Man City = 43), synced on the player via bootstrap.
+const jerseyUrl = (teamCode: number, position: number) => {
+  const gk = position === 1 ? "_1" : "";
+  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${gk}-110.png`;
+};
+
 // FPL player status codes: a=available, d=doubtful, i=injured, s=suspended,
 // u=unavailable, n=not in squad. Anything other than "a" shows a coloured dot
 // and exposes the news string (e.g. "Hamstring - 75% chance") on hover.
@@ -72,6 +80,7 @@ function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compa
   const statusTitle = player.status !== "a"
     ? (player.news && player.news.length > 0 ? player.news : "Unavailable")
     : "";
+  const hasJersey = (player.teamCode ?? 0) > 0;
   return (
     <div
       className={cn(
@@ -80,11 +89,21 @@ function PlayerCard({ player, compact = false }: { player: EnrichedPlayer; compa
       )}
       title={statusTitle || undefined}
     >
-      {/* Position badge + captain overlay + injury/suspension dot */}
+      {/* Jersey (or position fallback) + captain overlay + injury/suspension dot */}
       <div className="relative">
-        <div className={cn("flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[9px] sm:text-xs font-bold", POS_COLOR[player.position])}>
-          {POS_LABEL[player.position]}
-        </div>
+        {hasJersey ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={jerseyUrl(player.teamCode ?? 0, player.position)}
+            alt={`${player.clubShort} ${POS_LABEL[player.position]} jersey`}
+            className="h-9 w-9 sm:h-11 sm:w-11 object-contain select-none"
+            draggable={false}
+          />
+        ) : (
+          <div className={cn("flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[9px] sm:text-xs font-bold", POS_COLOR[player.position])}>
+            {POS_LABEL[player.position]}
+          </div>
+        )}
         {player.isCaptain && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500 text-[9px] font-bold text-white">C</span>
         )}

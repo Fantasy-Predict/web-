@@ -1159,6 +1159,7 @@ export type FplPlayer = {
   name: string;
   clubName: string;
   clubShort: string;
+  teamCode?: number; // FPL club code, used to build the official jersey image URL
   position: number; // 1=GK 2=DEF 3=MID 4=FWD
   price: number;    // tenths of millions (65 = £6.5m)
   totalPoints: number;
