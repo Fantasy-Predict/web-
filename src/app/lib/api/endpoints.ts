@@ -1509,6 +1509,14 @@ export async function linkOfficialFpl(payload: { token: string }): Promise<{ lin
   return apiFetch("/v1/fpl/team/sync/link", { method: "POST", body: payload });
 }
 
+export type FplTokenTestResult =
+  | { valid: true; teamName: string | null }
+  | { valid: false; message: string };
+
+export async function testFplToken(payload: { token: string }): Promise<FplTokenTestResult> {
+  return apiFetch("/v1/fpl/team/sync/test-token", { method: "POST", body: payload });
+}
+
 export async function unlinkOfficialFpl(): Promise<{ linked: boolean }> {
   return apiFetch("/v1/fpl/team/sync/link", { method: "DELETE" });
 }
