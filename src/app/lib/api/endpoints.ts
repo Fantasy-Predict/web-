@@ -1505,7 +1505,7 @@ export async function getMyFplChallenges(): Promise<FplChallenge[]> {
 
 // --- Official FPL Sync ---
 
-export async function linkOfficialFpl(payload: { email: string; password: string }): Promise<{ linked: boolean }> {
+export async function linkOfficialFpl(payload: { token: string }): Promise<{ linked: boolean }> {
   return apiFetch("/v1/fpl/team/sync/link", { method: "POST", body: payload });
 }
 

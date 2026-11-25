@@ -2,26 +2,31 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Eye, EyeOff, Trash2 } from "lucide-react";
+import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { deleteMyFplTeam, getFplSyncStatus, linkOfficialFpl, unlinkOfficialFpl, type FplSyncStatus } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Bookmarklet: when the user clicks this while on fantasy.premierleague.com,
+// it finds the oidc.user:* key in Local Storage, pulls the refresh_token
+// out, copies it to the clipboard, and shows a confirmation. Then they
+// paste into our textarea. Minified; must stay on a single line (no new
+// lines allowed in a javascript: URL).
+const BOOKMARKLET = `javascript:(function(){try{var h=window.location.hostname;if(!h.includes('premierleague.com')){alert('Open fantasy.premierleague.com first, sign in, then click this bookmark.');return;}var k=null;for(var i=0;i<localStorage.length;i++){var n=localStorage.key(i);if(n&&n.indexOf('oidc.user:')===0){k=n;break;}}if(!k){alert('No FPL session found. Sign in to fantasy.premierleague.com first, then try again.');return;}var v=localStorage.getItem(k);var j=JSON.parse(v);var t=j&&j.refresh_token;if(!t){alert('Found an FPL session but no refresh token. Try signing out and back in, then try again.');return;}navigator.clipboard.writeText(t).then(function(){alert('✓ FPL token copied. Paste it on Fantasy Predict.');},function(){prompt('Copy this token manually:',t);});}catch(e){alert('Error reading FPL token: '+e.message);}})();`;
 
 export default function FplSettingsPage() {
   const router = useRouter();
   const [status, setStatus] = useState<FplSyncStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [token, setToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showHow, setShowHow] = useState(false);
 
   useEffect(() => {
     getFplSyncStatus().then(setStatus).catch(() => null).finally(() => setLoading(false));
@@ -29,13 +34,13 @@ export default function FplSettingsPage() {
 
   async function handleLink(e: FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) { toast.error("Enter your FPL email and password"); return; }
+    if (!token.trim()) { toast.error("Paste your FPL token first"); return; }
     setSubmitting(true);
     try {
-      await linkOfficialFpl({ email: email.trim(), password });
+      await linkOfficialFpl({ token: token.trim() });
       const updated = await getFplSyncStatus();
       setStatus(updated);
-      setEmail(""); setPassword("");
+      setToken("");
       toast.success("Official FPL account linked! Your picks will now sync automatically.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to link account");
@@ -92,7 +97,7 @@ export default function FplSettingsPage() {
           <div className="mb-5 flex gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span>
-              This only works if you imported your team from the official FPL site. Your credentials are stored with strong encryption and never shared.
+              This only works if you imported your team from the official FPL site. We never see your password — you paste a token from your own browser, encrypted end-to-end on our servers.
             </span>
           </div>
 
@@ -105,7 +110,7 @@ export default function FplSettingsPage() {
             </div>
           ) : status.linked ? (
             <div className="space-y-4">
-              {/* Success banner (never shown with an active error) */}
+              {/* Success banner */}
               {!status.lastError && (
                 <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/5 px-4 py-3">
                   <Link2 className="h-5 w-5 text-success" />
@@ -128,7 +133,7 @@ export default function FplSettingsPage() {
                 </div>
               )}
 
-              {/* Error banner — exposes exactly why sync isn't working */}
+              {/* Error banner */}
               {status.lastError && (
                 <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
                   <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
@@ -146,7 +151,7 @@ export default function FplSettingsPage() {
                       </p>
                     )}
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Try unlinking and re-linking below with your current FPL password.
+                      Unlink below and link again with a fresh token from your FPL browser.
                     </p>
                   </div>
                 </div>
@@ -164,41 +169,82 @@ export default function FplSettingsPage() {
             </div>
           ) : (
             <form className="grid gap-4" onSubmit={handleLink}>
-              <div className="grid gap-2">
-                <Label htmlFor="fpl-email">FPL Email</Label>
-                <Input
-                  id="fpl-email"
-                  type="email"
-                  placeholder="Your official FPL login email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
+              {/* Bookmarklet one-click option */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <p className="text-sm font-semibold text-primary">
+                  🚀 One-click method (recommended)
+                </p>
+                <ol className="mt-3 space-y-2 text-xs text-muted-foreground">
+                  <li>
+                    <strong className="text-foreground">1.</strong> Drag this button to your browser's bookmarks bar:{" "}
+                    <a
+                      href={BOOKMARKLET}
+                      onClick={(e) => e.preventDefault()}
+                      className="ml-1 inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-primary/90"
+                      draggable
+                      title="Drag me to your bookmarks bar"
+                    >
+                      <Link2 className="h-3 w-3" />
+                      Copy FPL Token
+                    </a>
+                  </li>
+                  <li>
+                    <strong className="text-foreground">2.</strong> Open{" "}
+                    <a
+                      href="https://fantasy.premierleague.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                    >
+                      fantasy.premierleague.com
+                      <ExternalLink className="h-3 w-3" />
+                    </a>{" "}
+                    and sign in
+                  </li>
+                  <li>
+                    <strong className="text-foreground">3.</strong> Click your new <em>Copy FPL Token</em> bookmark — your token lands on your clipboard
+                  </li>
+                  <li>
+                    <strong className="text-foreground">4.</strong> Come back here and paste below
+                  </li>
+                </ol>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="fpl-password">FPL Password</Label>
-                <div className="relative">
-                  <Input
-                    id="fpl-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Your official FPL password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="pr-10"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+
+              {/* Manual DevTools instructions (collapsible) */}
+              <button
+                type="button"
+                onClick={() => setShowHow(s => !s)}
+                className="text-left text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                {showHow ? "Hide" : "Can't use the bookmark? Show the manual (DevTools) method"}
+              </button>
+              {showHow && (
+                <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
+                  <ol className="space-y-2">
+                    <li><strong className="text-foreground">1.</strong> Sign in to fantasy.premierleague.com in Chrome, Edge or Firefox</li>
+                    <li><strong className="text-foreground">2.</strong> Press <kbd className="rounded bg-background px-1.5 py-0.5 font-mono">F12</kbd> to open DevTools</li>
+                    <li><strong className="text-foreground">3.</strong> Click the <strong>Application</strong> tab (Chrome/Edge) or <strong>Storage</strong> tab (Firefox)</li>
+                    <li><strong className="text-foreground">4.</strong> On the left: <strong>Local Storage</strong> → <strong>https://fantasy.premierleague.com</strong></li>
+                    <li><strong className="text-foreground">5.</strong> Find the key starting with <code className="rounded bg-background px-1 font-mono">oidc.user:</code></li>
+                    <li><strong className="text-foreground">6.</strong> Copy its entire value (the long JSON) and paste it below</li>
+                  </ol>
                 </div>
+              )}
+
+              <div className="grid gap-2">
+                <Label htmlFor="fpl-token">Your FPL token</Label>
+                <textarea
+                  id="fpl-token"
+                  className="min-h-[88px] w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Paste the token from your FPL browser's Local Storage here…"
+                  value={token}
+                  onChange={e => setToken(e.target.value)}
+                  spellCheck={false}
+                />
               </div>
               <Button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !token.trim()}
                 className="bg-primary text-white hover:bg-primary/90"
               >
                 <Link2 className="mr-2 h-4 w-4" />
@@ -209,7 +255,7 @@ export default function FplSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Danger zone — self-serve FPL team delete, so users no longer need to wait on admin */}
+      {/* Danger zone */}
       <Card className="border-destructive/30">
         <CardContent className="py-6">
           <div className="mb-4 flex items-start gap-3">
