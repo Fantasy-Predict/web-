@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getFplSyncStatus, linkOfficialFpl, unlinkOfficialFpl, type FplSyncStatus } from "@/app/lib/api/endpoints";
+import { deleteMyFplTeam, getFplSyncStatus, linkOfficialFpl, unlinkOfficialFpl, type FplSyncStatus } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function FplSettingsPage() {
+  const router = useRouter();
   const [status, setStatus] = useState<FplSyncStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     getFplSyncStatus().then(setStatus).catch(() => null).finally(() => setLoading(false));
@@ -50,6 +54,20 @@ export default function FplSettingsPage() {
       toast.error(err instanceof Error ? err.message : "Failed to unlink");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await deleteMyFplTeam();
+      toast.success("FPL team deleted. Set up a new one to start over.");
+      router.push("/fpl/setup");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete FPL team");
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -187,6 +205,61 @@ export default function FplSettingsPage() {
                 {submitting ? "Linking…" : "Link Official FPL Account"}
               </Button>
             </form>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Danger zone — self-serve FPL team delete, so users no longer need to wait on admin */}
+      <Card className="border-destructive/30">
+        <CardContent className="py-6">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10">
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold">Delete FPL team</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Permanently delete your Fantasy XI team for the current season. You can start fresh afterwards by importing or building a new squad. This does not affect your Fan Predictor account, wallet, or prediction pool history.
+              </p>
+            </div>
+          </div>
+
+          {confirmDelete ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  This will permanently remove your squad, your saved picks, your transfers and your private FPL league memberships for the current season. It cannot be undone.
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                >
+                  {deleting ? "Deleting…" : "Yes, delete my FPL team"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={deleting}
+                  onClick={() => setConfirmDelete(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete my FPL team
+            </Button>
           )}
         </CardContent>
       </Card>

@@ -1516,3 +1516,7 @@ export async function unlinkOfficialFpl(): Promise<{ linked: boolean }> {
 export async function getFplSyncStatus(): Promise<FplSyncStatus> {
   return apiFetch("/v1/fpl/team/sync/status");
 }
+
+export async function deleteMyFplTeam(): Promise<{ deleted: boolean }> {
+  return apiFetch("/v1/fpl/team", { method: "DELETE" });
+}
