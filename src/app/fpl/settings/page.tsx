@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Link2, Link2Off, RefreshCw, Info, Eye, EyeOff } from "lucide-react";
+import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { getFplSyncStatus, linkOfficialFpl, unlinkOfficialFpl, type FplSyncStatus } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
@@ -44,7 +44,7 @@ export default function FplSettingsPage() {
     setSubmitting(true);
     try {
       await unlinkOfficialFpl();
-      setStatus(prev => prev ? { ...prev, linked: false, enabled: false, lastAt: null } : prev);
+      setStatus(prev => prev ? { ...prev, linked: false, enabled: false, lastAt: null, lastSuccessAt: null, lastError: null } : prev);
       toast.success("Official FPL account unlinked");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to unlink");
@@ -87,17 +87,53 @@ export default function FplSettingsPage() {
             </div>
           ) : status.linked ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/5 px-4 py-3">
-                <Link2 className="h-5 w-5 text-success" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-success">Official FPL linked</p>
-                  {status.lastAt && (
-                    <p className="text-xs text-muted-foreground">
-                      Last sync: {new Date(status.lastAt).toLocaleString()}
-                    </p>
-                  )}
+              {/* Success banner (never shown with an active error) */}
+              {!status.lastError && (
+                <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/5 px-4 py-3">
+                  <Link2 className="h-5 w-5 text-success" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-success">Official FPL linked</p>
+                    {status.lastSuccessAt ? (
+                      <p className="text-xs text-muted-foreground">
+                        Last successful sync: {new Date(status.lastSuccessAt).toLocaleString()}
+                      </p>
+                    ) : status.lastAt ? (
+                      <p className="text-xs text-muted-foreground">
+                        Last sync: {new Date(status.lastAt).toLocaleString()}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Linked — first sync will run on your next page load.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Error banner — exposes exactly why sync isn't working */}
+              {status.lastError && (
+                <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-destructive">Sync is not working</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {status.lastError}
+                    </p>
+                    {status.lastAt && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Last tried: {new Date(status.lastAt).toLocaleString()}
+                        {status.lastSuccessAt && (
+                          <> · Last good: {new Date(status.lastSuccessAt).toLocaleString()}</>
+                        )}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Try unlinking and re-linking below with your current FPL password.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <Button
                 variant="outline"
                 className="w-full"

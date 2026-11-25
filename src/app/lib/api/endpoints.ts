@@ -1268,7 +1268,9 @@ export type FplChallenge = {
 export type FplSyncStatus = {
   linked: boolean;
   enabled: boolean;
-  lastAt: string | null;
+  lastAt: string | null;           // last time sync attempted (success or fail)
+  lastSuccessAt: string | null;    // last successful sync
+  lastError: string | null;        // description of the last failure, null if last attempt succeeded
   hasImportId: boolean;
 };
 
