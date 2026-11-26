@@ -29,6 +29,34 @@ const BOOKMARKLET = `javascript:(function(){try{var h=window.location.hostname;i
 // security prompts). Pastes + Enter runs it; token lands on clipboard.
 const CONSOLE_COMMAND = `(async()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('oidc.user:'));if(!k){alert('Sign in to FPL first.');return;}const t=JSON.parse(localStorage.getItem(k)).refresh_token;await navigator.clipboard.writeText(t);alert('✓ FPL token copied — paste on Fantasy Predict.');})();`;
 
+// Mirror of the backend parseRefreshToken — accepts any of the four
+// shapes real users paste (bare JWT, full JSON blob, DevTools pretty-
+// printed numbered row, or a single "refresh_token: ..." line) and
+// returns the clean JWT or null. Running this client-side lets us
+// auto-prefill the textarea with just the clean token right after
+// paste, so the user sees exactly what we understood. The backend
+// re-runs the same logic as a safety net.
+function extractRefreshToken(input: string): string | null {
+  const trimmed = (input || "").trim();
+  if (!trimmed) return null;
+  if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed.refresh_token === "string" && parsed.refresh_token.length > 0) {
+        return parsed.refresh_token;
+      }
+    } catch {
+      // fall through to regex
+    }
+  }
+  const m = trimmed.match(
+    /["']?refresh_token["']?\s*[:=]\s*["']([A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+)["']/,
+  );
+  if (m && m[1]) return m[1];
+  return null;
+}
+
 type TokenTest =
   | { kind: "idle" }
   | { kind: "testing" }
@@ -48,6 +76,7 @@ export default function FplSettingsPage() {
   const [consoleCopied, setConsoleCopied] = useState(false);
   const [testState, setTestState] = useState<TokenTest>({ kind: "idle" });
   const [isMobile, setIsMobile] = useState(false);
+  const [extractedFromPaste, setExtractedFromPaste] = useState(false);
   const bookmarkletRef = useRef<HTMLAnchorElement>(null);
 
   // Bypass React's javascript:-URL XSS block by setting the href via
@@ -85,6 +114,26 @@ export default function FplSettingsPage() {
   // next to an edited token would be misleading.
   useEffect(() => {
     if (testState.kind !== "idle") setTestState({ kind: "idle" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  // Auto-extract the refresh_token from whatever the user pasted — DevTools
+  // pretty-prints the oidc.user JSON into numbered rows, so copying from
+  // there gives `5. refresh_token: "eyJ..."` which our parser understands.
+  // We replace the textarea content with the clean JWT so the user sees
+  // exactly what we'll send. Safe against infinite loops because once the
+  // content is the clean JWT, extraction returns the same value.
+  useEffect(() => {
+    const trimmed = token.trim();
+    if (!trimmed) {
+      if (extractedFromPaste) setExtractedFromPaste(false);
+      return;
+    }
+    const clean = extractRefreshToken(trimmed);
+    if (clean && clean !== trimmed) {
+      setToken(clean);
+      setExtractedFromPaste(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -262,6 +311,9 @@ export default function FplSettingsPage() {
                 <p className="mt-1">
                   It's a short code your browser already has after you sign in to the official FPL site. We use it to sync your captain, picks and transfers to and from FPL. <strong className="text-foreground">We never see your FPL password</strong> — it stays on FPL. You do this <strong className="text-foreground">once</strong> and it keeps working.
                 </p>
+                <p className="mt-2">
+                  💡 <strong className="text-foreground">Don't worry about getting it perfectly clean</strong> — you can paste the full JSON, a single line, or even the messy numbered DevTools view, and we'll extract the right piece for you automatically.
+                </p>
               </div>
 
               {/* Bookmarklet one-click option */}
@@ -401,16 +453,23 @@ export default function FplSettingsPage() {
                 <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
                   <p className="font-semibold text-foreground">Manual steps (uses browser Developer Tools)</p>
                   <p className="mt-1">
-                    A bit more technical but works in any browser. If you're not comfortable with this, ask someone to help — or skip it and use the bookmark method above.
+                    A bit more technical but works in any browser. Good news: you can paste <em>anything</em> from this view — the whole JSON, a single row, numbered list, we extract the refresh token automatically.
                   </p>
                   <ol className="mt-3 space-y-2">
                     <li><strong className="text-foreground">1.</strong> Sign in to <em>fantasy.premierleague.com</em> in Chrome, Edge, or Firefox.</li>
-                    <li><strong className="text-foreground">2.</strong> Press <kbd className="rounded bg-background px-1.5 py-0.5 font-mono">F12</kbd> on your keyboard. A split panel will open on the side or bottom of your browser.</li>
+                    <li><strong className="text-foreground">2.</strong> Press <kbd className="rounded bg-background px-1.5 py-0.5 font-mono">F12</kbd> on your keyboard. A split panel opens on the side or bottom of your browser.</li>
                     <li><strong className="text-foreground">3.</strong> At the top of that panel, click the <strong>Application</strong> tab (or <strong>Storage</strong> tab on Firefox).</li>
-                    <li><strong className="text-foreground">4.</strong> On the left side of the panel: expand <strong>Local Storage</strong>, then click <strong>https://fantasy.premierleague.com</strong>.</li>
-                    <li><strong className="text-foreground">5.</strong> You'll see a list of items. Find the one whose name <strong>starts with</strong> <code className="rounded bg-background px-1 font-mono">oidc.user:</code> — ignore everything after the colon.</li>
-                    <li><strong className="text-foreground">6.</strong> Click that row. Its full value shows at the bottom (it's a long piece of text, don't worry about understanding it). Select all of it and copy.</li>
-                    <li><strong className="text-foreground">7.</strong> Come back here, paste into the box below, then hit <em>Test token first</em>.</li>
+                    <li><strong className="text-foreground">4.</strong> On the left side: expand <strong>Local Storage</strong>, then click <strong>https://fantasy.premierleague.com</strong>.</li>
+                    <li><strong className="text-foreground">5.</strong> You'll see a list of items. Click the row whose name <strong>starts with</strong> <code className="rounded bg-background px-1 font-mono">oidc.user:</code> — ignore everything after the colon.</li>
+                    <li>
+                      <p><strong className="text-foreground">6.</strong> Look at the panel below the list. You might see either:</p>
+                      <ul className="mt-1 ml-5 space-y-1 list-disc">
+                        <li>One long piece of text (good — select all with <kbd className="rounded bg-background px-1 py-0.5 font-mono">Ctrl+A</kbd> and copy)</li>
+                        <li>A numbered expanded view with rows like <code className="rounded bg-background px-1 font-mono">5. refresh_token: "eyJ..."</code> — just select from "refresh_token" through the end of that line, or triple-click the <em>refresh_token</em> row to select the whole line</li>
+                      </ul>
+                      <p className="mt-1 ml-5 text-[11px]">Either way works — paste it into our box and we'll pull out the right token automatically.</p>
+                    </li>
+                    <li><strong className="text-foreground">7.</strong> Come back here, paste into the box below. You'll see <em>"We found your refresh token"</em> appear if we understood it. Then hit <em>Test token first</em>.</li>
                   </ol>
                 </div>
               )}
@@ -420,11 +479,17 @@ export default function FplSettingsPage() {
                 <textarea
                   id="fpl-token"
                   className="min-h-[88px] w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Paste the token from your FPL browser's Local Storage here…"
+                  placeholder="Paste anything from Local Storage — the full JSON blob, just the refresh_token line, or the clean token. We'll figure it out."
                   value={token}
                   onChange={e => setToken(e.target.value)}
                   spellCheck={false}
                 />
+                {extractedFromPaste && token && (
+                  <p className="flex items-center gap-1.5 text-[11px] text-success">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    We found your refresh token in that paste and cleaned it up. Ready to test.
+                  </p>
+                )}
               </div>
 
               {/* Test result banner — shown when the user has clicked Test */}
