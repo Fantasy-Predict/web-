@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Trash2, ExternalLink, CheckCircle2, Smartphone, Laptop } from "lucide-react";
+import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Trash2, ExternalLink, CheckCircle2, Smartphone, Laptop, Terminal, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { deleteMyFplTeam, getFplSyncStatus, linkOfficialFpl, testFplToken, unlinkOfficialFpl, type FplSyncStatus } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
@@ -14,9 +14,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Bookmarklet: when the user clicks this while on fantasy.premierleague.com,
 // it finds the oidc.user:* key in Local Storage, pulls the refresh_token
 // out, copies it to the clipboard, and shows a confirmation. Then they
-// paste into our textarea. Minified; must stay on a single line (no new
-// lines allowed in a javascript: URL).
+// paste into our textarea. Minified; must stay on a single line.
+//
+// IMPORTANT: this is applied via setAttribute in a useEffect rather than
+// React's href prop, because React blocks `javascript:` URLs in href
+// since 16.9 as an XSS mitigation and sanitizes them to "javascript:void"
+// before render. We know this string is safe (static constant we
+// control), so we set it on the DOM node directly after mount.
 const BOOKMARKLET = `javascript:(function(){try{var h=window.location.hostname;if(!h.includes('premierleague.com')){alert('Open fantasy.premierleague.com first, sign in, then click this bookmark.');return;}var k=null;for(var i=0;i<localStorage.length;i++){var n=localStorage.key(i);if(n&&n.indexOf('oidc.user:')===0){k=n;break;}}if(!k){alert('No FPL session found. Sign in to fantasy.premierleague.com first, then try again.');return;}var v=localStorage.getItem(k);var j=JSON.parse(v);var t=j&&j.refresh_token;if(!t){alert('Found an FPL session but no refresh token. Try signing out and back in, then try again.');return;}navigator.clipboard.writeText(t).then(function(){alert('✓ FPL token copied. Paste it on Fantasy Predict.');},function(){prompt('Copy this token manually:',t);});}catch(e){alert('Error reading FPL token: '+e.message);}})();`;
+
+// Console one-liner: same behavior as the bookmarklet but pasted into
+// fantasy.premierleague.com's DevTools Console. For users whose
+// browser blocks drag-to-bookmarks-bar (corporate networks, Chrome's
+// security prompts). Pastes + Enter runs it; token lands on clipboard.
+const CONSOLE_COMMAND = `(async()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('oidc.user:'));if(!k){alert('Sign in to FPL first.');return;}const t=JSON.parse(localStorage.getItem(k)).refresh_token;await navigator.clipboard.writeText(t);alert('✓ FPL token copied — paste on Fantasy Predict.');})();`;
 
 type TokenTest =
   | { kind: "idle" }
@@ -33,8 +44,30 @@ export default function FplSettingsPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showHow, setShowHow] = useState(false);
+  const [showConsole, setShowConsole] = useState(false);
+  const [consoleCopied, setConsoleCopied] = useState(false);
   const [testState, setTestState] = useState<TokenTest>({ kind: "idle" });
   const [isMobile, setIsMobile] = useState(false);
+  const bookmarkletRef = useRef<HTMLAnchorElement>(null);
+
+  // Bypass React's javascript:-URL XSS block by setting the href via
+  // DOM API after mount. React only sanitizes URLs that go through its
+  // JSX prop pipeline; setAttribute() skips that pipeline entirely.
+  useEffect(() => {
+    if (bookmarkletRef.current) {
+      bookmarkletRef.current.setAttribute("href", BOOKMARKLET);
+    }
+  }, []);
+
+  async function copyConsoleCommand() {
+    try {
+      await navigator.clipboard.writeText(CONSOLE_COMMAND);
+      setConsoleCopied(true);
+      setTimeout(() => setConsoleCopied(false), 2500);
+    } catch {
+      toast.error("Couldn't copy. Select the command text manually and copy with Ctrl+C / ⌘+C.");
+    }
+  }
 
   useEffect(() => {
     getFplSyncStatus().then(setStatus).catch(() => null).finally(() => setLoading(false));
@@ -250,7 +283,8 @@ export default function FplSettingsPage() {
                     <p><strong className="text-foreground">Step 2.</strong> Click and hold this blue button, then drag it up to your bookmarks bar and let go:</p>
                     <div className="mt-2 ml-5">
                       <a
-                        href={BOOKMARKLET}
+                        ref={bookmarkletRef}
+                        href="#"
                         onClick={(e) => e.preventDefault()}
                         className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-primary/90"
                         draggable
@@ -260,6 +294,9 @@ export default function FplSettingsPage() {
                         Copy FPL Token
                       </a>
                       <p className="mt-1 text-[11px]">You should now see a bookmark called <em>Copy FPL Token</em> on your bar.</p>
+                      <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
+                        <strong>Dragging isn't working?</strong> Use the <em>Console method</em> option below instead.
+                      </p>
                     </div>
                   </li>
                   <li>
@@ -287,13 +324,78 @@ export default function FplSettingsPage() {
                 </ol>
               </div>
 
+              {/* Console method — bookmarklet alternative */}
+              <button
+                type="button"
+                onClick={() => setShowConsole(s => !s)}
+                className="text-left text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                {showConsole ? "Hide the Console method" : "Dragging didn't work? Use the Console method instead"}
+              </button>
+              {showConsole && (
+                <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-blue-500" />
+                    <p className="font-semibold text-foreground">Console method (no bookmark required)</p>
+                  </div>
+                  <p className="mt-2">
+                    Copy the command below, then paste it into your FPL browser's Developer Console. It'll copy your token to your clipboard automatically — same result as the bookmarklet, no drag-and-drop needed.
+                  </p>
+                  <ol className="mt-3 space-y-2">
+                    <li>
+                      <p><strong className="text-foreground">Step 1.</strong> Click <em>Copy command</em>:</p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 ml-5"
+                        onClick={copyConsoleCommand}
+                      >
+                        {consoleCopied ? (
+                          <><CheckCircle2 className="mr-2 h-3.5 w-3.5 text-success" /> Copied — now paste it in FPL's Console</>
+                        ) : (
+                          <><Copy className="mr-2 h-3.5 w-3.5" /> Copy command</>
+                        )}
+                      </Button>
+                    </li>
+                    <li>
+                      <p>
+                        <strong className="text-foreground">Step 2.</strong> Open{" "}
+                        <a
+                          href="https://fantasy.premierleague.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                        >
+                          fantasy.premierleague.com
+                          <ExternalLink className="h-3 w-3" />
+                        </a>{" "}
+                        and sign in.
+                      </p>
+                    </li>
+                    <li>
+                      <p><strong className="text-foreground">Step 3.</strong> Press <kbd className="rounded bg-background px-1.5 py-0.5 font-mono">F12</kbd> on your keyboard, then click the <strong>Console</strong> tab at the top of the panel that opens.</p>
+                    </li>
+                    <li>
+                      <p><strong className="text-foreground">Step 4.</strong> Click inside the Console area (where you see a <code className="rounded bg-background px-1 font-mono">&gt;</code> prompt), then paste (<kbd className="rounded bg-background px-1.5 py-0.5 font-mono">Ctrl</kbd>+<kbd className="rounded bg-background px-1.5 py-0.5 font-mono">V</kbd> or <kbd className="rounded bg-background px-1.5 py-0.5 font-mono">⌘</kbd>+<kbd className="rounded bg-background px-1.5 py-0.5 font-mono">V</kbd>) and press <kbd className="rounded bg-background px-1.5 py-0.5 font-mono">Enter</kbd>.</p>
+                      <p className="mt-0.5 ml-5 text-[11px]">
+                        If the Console warns you about pasting, type <code className="rounded bg-background px-1 font-mono">allow pasting</code> and press Enter, then paste again.
+                      </p>
+                    </li>
+                    <li>
+                      <p><strong className="text-foreground">Step 5.</strong> An alert pops up: <em>"✓ FPL token copied — paste on Fantasy Predict."</em> Come back here and paste into the box below.</p>
+                    </li>
+                  </ol>
+                </div>
+              )}
+
               {/* Manual DevTools instructions (collapsible) */}
               <button
                 type="button"
                 onClick={() => setShowHow(s => !s)}
                 className="text-left text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
               >
-                {showHow ? "Hide the manual steps" : "Bookmark didn't work? Show me the manual way"}
+                {showHow ? "Hide the manual steps" : "Still stuck? Show me the full manual way"}
               </button>
               {showHow && (
                 <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
