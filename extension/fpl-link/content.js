@@ -1,4 +1,4 @@
-// Fantasy Predict – FPL Link: content script. Runs ONLY on fantasy-predict.com.
+// Fantasy Predict – Account Link: content script. Runs ONLY on fantasy-predict.com.
 //
 // A tiny bridge between our settings page and the background worker, using
 // window.postMessage on the page's own origin:

@@ -21,6 +21,7 @@ const TOC = [
   { id: "data-retention", label: "Data Retention" },
   { id: "your-rights", label: "Your Rights" },
   { id: "third-party", label: "Third-Party Services" },
+  { id: "browser-extension", label: "Browser Extension" },
   { id: "childrens-privacy", label: "Children's Privacy" },
   { id: "changes", label: "Changes to this Policy" },
   { id: "contact", label: "Contact Us" },
@@ -98,7 +99,7 @@ export default function PrivacyClient() {
             Fantasy Predict.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm">
-            <span className="text-white/50">Last Updated: <span className="text-white/80">July 2026</span></span>
+            <span className="text-white/50">Last Updated: <span className="text-white/80">November 2026</span></span>
             <span className="hidden text-white/20 sm:inline">|</span>
             <span className="text-white/50">Effective Date: <span className="text-white/80">1 July 2026</span></span>
           </div>
@@ -392,10 +393,60 @@ export default function PrivacyClient() {
               </div>
             </section>
 
-            {/* 11. CHILDREN'S PRIVACY */}
-            <section id="childrens-privacy" data-aos="fade-up" data-aos-delay="400">
+            {/* 11. BROWSER EXTENSION */}
+            <section id="browser-extension" data-aos="fade-up" data-aos-delay="380">
               <div className="flex items-center gap-4 border-b border-gold/20 pb-3">
                 <span className="text-xs font-bold tracking-[0.18em] text-gold">11</span>
+                <h2 className="text-xl font-bold">Browser Extension (Fantasy Predict Account Link)</h2>
+              </div>
+              <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
+                <p>
+                  The Fantasy Predict Account Link extension has one purpose: to let you
+                  connect your official Fantasy Premier League account to Fantasy XI with a
+                  single click.
+                </p>
+                <p>What the extension does:</p>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>
+                    Opens the official Fantasy Premier League sign-in page when you press
+                    &quot;Link my FPL account&quot; on Fantasy Predict.
+                  </li>
+                  <li>
+                    After you sign in on that official page, reads the one-time sign-in code
+                    in the address FPL sends you back to, and passes it to the Fantasy Predict
+                    page you started from.
+                  </li>
+                  <li>Closes the sign-in tab and returns you to Fantasy Predict.</li>
+                </ul>
+                <p>What the extension does not do:</p>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>It never sees, reads or stores your FPL password.</li>
+                  <li>It does not read your browsing history or any other website.</li>
+                  <li>It does not collect analytics and does not sell or share any data.</li>
+                  <li>
+                    It stores nothing permanently. Short-lived state needed during sign-in is
+                    kept in your browser session only and is cleared when sign-in finishes.
+                  </li>
+                </ul>
+                <p>
+                  The one-time code is sent to our servers over an encrypted connection and
+                  exchanged for a permission token, which we store encrypted so that your
+                  Fantasy XI team can stay in step with your official FPL team. You can
+                  unlink at any time from the FPL Settings page, which removes the stored
+                  token. The extension only runs on fantasy-predict.com and, during sign-in,
+                  reads the address of the Fantasy Premier League tab it opened.
+                </p>
+                <p>
+                  Fantasy Predict is not affiliated with or endorsed by the Premier League
+                  or Fantasy Premier League.
+                </p>
+              </div>
+            </section>
+
+            {/* 12. CHILDREN'S PRIVACY */}
+            <section id="childrens-privacy" data-aos="fade-up" data-aos-delay="400">
+              <div className="flex items-center gap-4 border-b border-gold/20 pb-3">
+                <span className="text-xs font-bold tracking-[0.18em] text-gold">12</span>
                  <h2 className="text-xl font-bold">Children&apos;s Privacy</h2>
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
@@ -414,7 +465,7 @@ export default function PrivacyClient() {
             {/* 12. CHANGES TO THIS POLICY */}
             <section id="changes" data-aos="fade-up" data-aos-delay="440">
               <div className="flex items-center gap-4 border-b border-gold/20 pb-3">
-                <span className="text-xs font-bold tracking-[0.18em] text-gold">12</span>
+                <span className="text-xs font-bold tracking-[0.18em] text-gold">13</span>
                 <h2 className="text-xl font-bold">Changes to this Privacy Policy</h2>
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
@@ -435,7 +486,7 @@ export default function PrivacyClient() {
             {/* 13. CONTACT US */}
             <section id="contact" data-aos="fade-up" data-aos-delay="480">
               <div className="flex items-center gap-4 border-b border-gold/20 pb-3">
-                <span className="text-xs font-bold tracking-[0.18em] text-gold">13</span>
+                <span className="text-xs font-bold tracking-[0.18em] text-gold">14</span>
                 <h2 className="text-xl font-bold">Contact Us</h2>
               </div>
               <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">

@@ -1,4 +1,4 @@
-# Fantasy Predict – FPL Link (browser extension)
+# Fantasy Predict – Account Link (browser extension)
 
 One-click linking of a user's official FPL account to Fantasy XI. The user signs
 in on **FPL's own page**; the extension catches the one-time sign-in code FPL

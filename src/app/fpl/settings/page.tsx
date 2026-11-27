@@ -73,6 +73,7 @@ export default function FplSettingsPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showHow, setShowHow] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const [showConsole, setShowConsole] = useState(false);
   const [consoleCopied, setConsoleCopied] = useState(false);
   const [testState, setTestState] = useState<TokenTest>({ kind: "idle" });
@@ -108,7 +109,10 @@ export default function FplSettingsPage() {
   // changes without needing a listener for this one-shot UX.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    setIsMobile(mobile);
+    // The extension is desktop-only, so phones go straight to the manual steps.
+    if (mobile) setShowManual(true);
   }, []);
 
   // Clear the test result when the user edits the token — stale "Valid"
@@ -221,7 +225,7 @@ export default function FplSettingsPage() {
           <div className="mb-5 flex gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span>
-              This only works if you imported your team from the official FPL site. We never see your password — you paste a token from your own browser, encrypted end-to-end on our servers.
+              This only works if you imported your team from the official FPL site. We never see your FPL password — you sign in on FPL&apos;s own page (or copy a short code from your own browser), and we store the code encrypted on our servers.
             </span>
           </div>
 
@@ -275,10 +279,19 @@ export default function FplSettingsPage() {
                       </p>
                     )}
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Unlink below and link again with a fresh token from your FPL browser.
+                      Signing in to FPL again usually fixes this. On a computer, use the button below. On a phone, unlink and link again with a fresh code from your FPL browser.
                     </p>
                   </div>
                 </div>
+              )}
+
+              {/* Re-link in one click when sync is broken (desktop with the extension) */}
+              {status.lastError && (
+                <OneClickLink
+                  onLinked={async () => {
+                    setStatus(await getFplSyncStatus());
+                  }}
+                />
               )}
 
               <Button
@@ -314,6 +327,16 @@ export default function FplSettingsPage() {
                 </div>
               )}
 
+              <button
+                type="button"
+                onClick={() => setShowManual(s => !s)}
+                className="text-left text-sm font-medium text-primary underline underline-offset-2 hover:text-primary/80"
+              >
+                {showManual ? "Hide manual linking" : "Can't use the extension? Link manually"}
+              </button>
+
+              {showManual && (
+              <div className="grid gap-4">
               {/* What this is + trust-building intro */}
               <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
                 <p className="font-semibold text-foreground">What's an FPL token?</p>
@@ -548,6 +571,8 @@ export default function FplSettingsPage() {
                   )}
                 </Button>
               </div>
+              </div>
+              )}
             </form>
           )}
         </CardContent>

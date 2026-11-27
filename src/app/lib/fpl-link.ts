@@ -1,7 +1,7 @@
 /**
  * One-click FPL link — browser side.
  *
- * The "Fantasy Predict – FPL Link" extension opens FPL's own sign-in page and
+ * The "Fantasy Predict – Account Link" extension opens FPL's own sign-in page and
  * catches the one-time code FPL redirects back with. This module generates
  * the PKCE pair (the secret verifier never leaves this page and our backend),
  * talks to the extension over window.postMessage, and resolves with the code.

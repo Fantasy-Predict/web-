@@ -1,4 +1,4 @@
-// Fantasy Predict – FPL Link: background service worker (Manifest V3).
+// Fantasy Predict – Account Link: background service worker (Manifest V3).
 //
 // What it does, and ONLY this:
 //   1. Our settings page asks it to start a link (page → content.js → here)

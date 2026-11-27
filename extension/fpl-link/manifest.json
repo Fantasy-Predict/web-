@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Fantasy Predict – FPL Link",
+  "name": "Fantasy Predict – Account Link",
   "version": "1.0.0",
   "description": "One-click linking of your official FPL account to Fantasy Predict. You sign in on FPL's own page — your password never reaches us.",
   "permissions": ["storage"],
@@ -22,7 +22,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Fantasy Predict – FPL Link",
+    "default_title": "Fantasy Predict – Account Link",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png"
