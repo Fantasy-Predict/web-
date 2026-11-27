@@ -275,7 +275,11 @@ function extractTeamShort(
   return fallback;
 }
 
-export async function getMatches(competition: string, date?: string): Promise<Match[]> {
+export async function getMatches(
+  competition: string,
+  date?: string,
+  options: { includeStarted?: boolean; pool?: string } = {},
+): Promise<Match[]> {
   type MatchDoc = {
     _id?: string;
     id?: string;
@@ -309,6 +313,9 @@ export async function getMatches(competition: string, date?: string): Promise<Ma
 
   let matchPath = `/v1/matches?competition=${encodeURIComponent(competition)}`;
   if (date) matchPath += `&date=${encodeURIComponent(date)}`;
+  if (options.includeStarted) matchPath += `&includeStarted=true`;
+  // Inside a pool, matches carry that pool's prediction; otherwise the quick one.
+  if (options.pool) matchPath += `&pool=${encodeURIComponent(options.pool)}`;
   const res = await apiFetch<MatchDoc[] | { docs?: MatchDoc[] }>(matchPath, {
 
   });
@@ -346,7 +353,7 @@ export async function getMatches(competition: string, date?: string): Promise<Ma
   }));
 }
 
-export async function getMatchScores(competition: string): Promise<Match[]> {
+export async function getMatchScores(competition: string, pool?: string): Promise<Match[]> {
   type ScoreDoc = {
     _id?: string;
     id?: string;
@@ -377,7 +384,7 @@ export async function getMatchScores(competition: string): Promise<Match[]> {
   };
 
   const res = await apiFetch<ScoreDoc[] | { docs?: ScoreDoc[] }>(
-    `/v1/matches/score?competition=${encodeURIComponent(competition)}`,
+    `/v1/matches/score?competition=${encodeURIComponent(competition)}${pool ? `&pool=${encodeURIComponent(pool)}` : ""}`,
 
   );
 
@@ -556,6 +563,47 @@ export function getNigeriaLeaderboard(page = 1, limit = 20, competition?: string
 export function getPoolsLeaderboard(page = 1, limit = 20): Promise<PlatformBoardResponse> {
   const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
   return fetchBoard(`/v1/leaderboard/pools?${qs.toString()}`);
+}
+
+// Standings inside one pool — points from that pool's predictions only.
+export type PoolMemberBoardRow = {
+  rank: number;
+  delta: number | null; // positive = climbed; negative = dropped; null = no previous snapshot
+  userId: string;
+  name: string;
+  avatar?: string;
+  totalPoints: number;
+  exact: number;
+  close: number;
+  slam: number;
+};
+
+export type PoolMemberBoardResponse = {
+  board: PoolMemberBoardRow[];
+  personalRank: PoolMemberBoardRow | null;
+  meta: { total: number; matchdayLabel: string | null };
+};
+
+export async function getPoolMemberLeaderboard(poolId: string): Promise<PoolMemberBoardResponse> {
+  const data = await apiFetch<PoolMemberBoardResponse>(
+    `/v1/leaderboard/pool/${encodeURIComponent(poolId)}`,
+  );
+  return {
+    board: data?.board ?? [],
+    personalRank: data?.personalRank ?? null,
+    meta: data?.meta ?? { total: 0, matchdayLabel: null },
+  };
+}
+
+// Copy the user's quick predictions into a pool (upcoming matches only; never overwrites).
+export async function copyQuickPredictionsToPool(
+  poolId: string,
+): Promise<{ copied: number; skipped: number }> {
+  const res = await apiFetch<{ copied?: number; skipped?: number }>("/v1/predictions/copy-to-pool", {
+    method: "POST",
+    body: { pool: poolId },
+  });
+  return { copied: res?.copied ?? 0, skipped: res?.skipped ?? 0 };
 }
 
 // ============================================================

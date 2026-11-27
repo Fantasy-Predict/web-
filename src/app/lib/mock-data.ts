@@ -11,6 +11,8 @@ export type Match = {
   awayCrest?: string;
   kickoff: string;
   status: "upcoming" | "live" | "finished";
+  /** Kicked off but the final score isn't in yet (Fixtures page only). */
+  awaitingResult?: boolean;
   score?: { home: number; away: number };
   prediction?: { outcome: string; point?: number }[];
 };

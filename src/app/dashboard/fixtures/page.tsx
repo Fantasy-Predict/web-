@@ -73,7 +73,7 @@ export default function FixturesPage() {
       setVisibleCount(PAGE_SIZE);
       try {
         const [matchData, scoreData] = await Promise.all([
-          getMatches(selectedCompetition),
+          getMatches(selectedCompetition, undefined, { includeStarted: true }),
           getMatchScores(selectedCompetition).catch(() => []),
         ]);
         if (!active) return;
@@ -85,16 +85,23 @@ export default function FixturesPage() {
           if (s.prediction) scorePredictionMap.set(s.id, s.prediction);
         }
 
-        const enriched = matchData.map((m) => ({
-          ...m,
-          competitionName: compNameMap.current.get(m.competition) ?? m.competition,
-          kickoff: formatKickoff(m.kickoff),
-          score: scoreMap.get(m.id) ?? m.score,
-          prediction: scorePredictionMap.get(m.id) ?? m.prediction,
-          status: (scoreMap.has(m.id) && m.status !== "live")
-            ? "finished" as const
-            : m.status,
-        }));
+        const now = Date.now();
+        const enriched: Match[] = matchData.map((m) => {
+          const finished = scoreMap.has(m.id) && m.status !== "live";
+          const kickoffTime = new Date(m.kickoff).getTime();
+          return {
+            ...m,
+            competitionName: compNameMap.current.get(m.competition) ?? m.competition,
+            kickoff: formatKickoff(m.kickoff),
+            score: scoreMap.get(m.id) ?? m.score,
+            prediction: scorePredictionMap.get(m.id) ?? m.prediction,
+            status: finished ? "finished" as const : m.status,
+            // Kicked off but no score yet — show "Awaiting result" instead of
+            // letting the match look upcoming (or disappear).
+            awaitingResult:
+              !finished && m.status === "upcoming" && !isNaN(kickoffTime) && kickoffTime <= now,
+          };
+        });
 
         for (const s of scoreData) {
           if (!enriched.some((m) => m.id === s.id)) {
@@ -121,9 +128,12 @@ export default function FixturesPage() {
   }, [selectedCompetition]);
 
   const list = matches
-    .filter((match) =>
-      statusFilter === "All" ? true : match.status === statusFilter.toLowerCase(),
-    )
+    .filter((match) => {
+      if (statusFilter === "All") return true;
+      // Kicked-off matches awaiting a score are not "Upcoming" — they only show under All.
+      if (statusFilter === "Upcoming") return match.status === "upcoming" && !match.awaitingResult;
+      return match.status === statusFilter.toLowerCase();
+    })
     .sort((a, b) => {
       const aTime = new Date(a.kickoff).getTime();
       const bTime = new Date(b.kickoff).getTime();

@@ -12,7 +12,8 @@ import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
 import { StatCard } from "../../../../components/app/card";
 import { Sheet, SheetContent, SheetTitle } from "../../../../components/ui/sheet";
 import { formatNaira, type Pool } from "../../../lib/mock-data";
-import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getCompLeaderboard, getUserCompetitions, getPoolChallenges, sendPoolChallenge, respondToPoolChallenge, leavePool, removePoolMember, closePool, type PoolMember, type CompLeaderboardEntry, type PoolChallenge } from "../../../lib/api/endpoints";
+import { getPool, getPoolMembers, getProfile, joinPool, updatePoolMemberStatus, getPoolMemberLeaderboard, getPoolChallenges, sendPoolChallenge, respondToPoolChallenge, leavePool, removePoolMember, closePool, type PoolMember, type PoolMemberBoardRow, type PoolChallenge } from "../../../lib/api/endpoints";
+import { DeltaChip } from "../../../../components/app/delta-chip";
 import { applySeasonProgress } from "../../../lib/season-progress";
 import { notifyPool } from "../../../lib/notifications";
 import { InviteButton } from "./invite-button";
@@ -34,7 +35,7 @@ export default function PoolDetailPage() {
 
   const [pool, setPool] = useState<Pool | null>(null);
   const [members, setMembers] = useState<PoolMember[]>([]);
-  const [leaderboard, setLeaderboard] = useState<CompLeaderboardEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<PoolMemberBoardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -76,23 +77,12 @@ export default function PoolDetailPage() {
         setMembers(poolMembers ?? []);
         setCurrentUserId(profile?._id ?? null);
 
-        let compId = poolData?.competitionId;
-        if (!compId) {
-          try {
-            const comps = await getUserCompetitions();
-            const defaultComp = comps.find((c) => c.name === "Premier League" || c.code === "PL") ?? comps.find((c) => c.default) ?? comps[0];
-            if (defaultComp) compId = defaultComp._id;
-          } catch {
-            // ignore
-          }
-        }
-        if (compId) {
-          try {
-            const lb = await getCompLeaderboard(compId);
-            if (active) setLeaderboard(lb.board ?? []);
-          } catch {
-            // leaderboard fetch failed silently
-          }
+        // Standings inside THIS pool: only predictions made in the pool count.
+        try {
+          const lb = await getPoolMemberLeaderboard(poolId);
+          if (active) setLeaderboard(lb.board ?? []);
+        } catch {
+          // leaderboard fetch failed silently — members still list without points
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load this pool");
@@ -271,7 +261,7 @@ export default function PoolDetailPage() {
   const platformFee = isMonetized ? Math.round(totalPot * 0.1) : 0;
   const prizePoolAfterFee = isMonetized ? totalPot - platformFee : 0;
 
-  function lookupLeaderboard(member: PoolMember): CompLeaderboardEntry | undefined {
+  function lookupLeaderboard(member: PoolMember): PoolMemberBoardRow | undefined {
     const uid = member.userId || member.user?._id;
     return leaderboard.find((e) => e.userId === uid);
   }
@@ -279,8 +269,8 @@ export default function PoolDetailPage() {
   const sortedMembers = [...members].sort((a, b) => {
     const aLb = lookupLeaderboard(a);
     const bLb = lookupLeaderboard(b);
-    const aPoints = aLb?.total ?? a.points ?? -1;
-    const bPoints = bLb?.total ?? b.points ?? -1;
+    const aPoints = aLb?.totalPoints ?? a.points ?? -1;
+    const bPoints = bLb?.totalPoints ?? b.points ?? -1;
     return bPoints - aPoints;
   });
 
@@ -507,7 +497,7 @@ export default function PoolDetailPage() {
                 const displayName = member.username || `${member.firstName ?? ""} ${member.lastName ?? ""}`.trim() || "Member";
                 const initials = displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
                 const lbEntry = lookupLeaderboard(member);
-                const pts = lbEntry?.total ?? member.points;
+                const pts = lbEntry?.totalPoints ?? member.points;
                 const rank = lbEntry?.rank ?? (index + 1);
                 const isTop1 = rank === 1;
                 const isTop3 = rank <= 3;
@@ -519,7 +509,7 @@ export default function PoolDetailPage() {
                     isTop1 && "bg-gold/5",
                   )}
                 >
-                  <div className="flex items-center justify-center">
+                  <div className="flex flex-col items-center justify-center gap-0.5">
                     <span
                       className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
@@ -529,6 +519,7 @@ export default function PoolDetailPage() {
                     >
                       {rank}
                     </span>
+                    <DeltaChip delta={lbEntry?.delta ?? null} />
                   </div>
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="h-9 w-9 shrink-0">

@@ -99,7 +99,7 @@ export function MatchCard({
         <p className="truncate text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
           {match.competitionName ?? match.competition}
         </p>
-        <MatchStatus status={match.status} kickoff={match.kickoff} />
+        <MatchStatus status={match.status} kickoff={match.kickoff} awaitingResult={match.awaitingResult} />
       </div>
       <div className="mt-4 grid gap-3">
         <MatchRow short={match.homeShort} name={match.home} score={match.score?.home} crest={match.homeCrest} />
@@ -147,7 +147,25 @@ function MatchRow({ short, name, score, crest }: { short: string; name: string; 
   );
 }
 
-export function MatchStatus({ status, kickoff }: { status: Match["status"]; kickoff: string }) {
+export function MatchStatus({
+  status,
+  kickoff,
+  awaitingResult,
+}: {
+  status: Match["status"];
+  kickoff: string;
+  awaitingResult?: boolean;
+}) {
+  if (awaitingResult && status === "upcoming") {
+    return (
+      <Badge
+        variant="outline"
+        className="shrink-0 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+      >
+        Awaiting result
+      </Badge>
+    );
+  }
   if (status === "live") {
     return (
       <Badge className="shrink-0 border-transparent bg-destructive/10 text-destructive">Live</Badge>

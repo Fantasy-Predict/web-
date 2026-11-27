@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import type { Match } from "../../lib/mock-data";
-import { createPrediction, getMatches, getMatchScores, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
+import { copyQuickPredictionsToPool, createPrediction, getMatches, getMatchScores, getPool, getUserCompetitions, type UserCompetition } from "../../lib/api/endpoints";
 import { getOutcomeFromScore } from "../../lib/scoring";
 import { notifyPrediction } from "../../lib/notifications";
 
@@ -71,6 +71,9 @@ function PredictContent() {
   const [submitted, setSubmitted] = useState(false);
   const [competitions, setCompetitions] = useState<UserCompetition[]>([]);
   const [selectedCompetition, setSelectedCompetition] = useState<string>("");
+  const [poolInfo, setPoolInfo] = useState<{ name: string; competitionId?: string } | null>(null);
+  const [copying, setCopying] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const compNameMap = useRef<Map<string, string>>(new Map());
 
@@ -78,14 +81,21 @@ function PredictContent() {
     let active = true;
     async function load() {
       try {
-        const comps = await getUserCompetitions().catch(() => []);
+        const [comps, pool] = await Promise.all([
+          getUserCompetitions().catch(() => []),
+          poolId ? getPool(poolId).catch(() => null) : Promise.resolve(null),
+        ]);
         if (!active) return;
         setCompetitions(comps);
         const map = new Map<string, string>();
         comps.forEach((c) => map.set(c._id, c.name));
         compNameMap.current = map;
+        if (pool) setPoolInfo({ name: pool.name, competitionId: pool.competitionId });
         if (comps.length > 0) {
+          // Inside a pool you can only predict that pool's competition.
+          const poolComp = pool?.competitionId ? comps.find((c) => c._id === pool.competitionId) : undefined;
           const defaultComp =
+            poolComp ??
             comps.find((c) => c.name === "Premier League" || c.code === "PL") ??
             comps.find((c) => c.default) ??
             comps[0];
@@ -97,7 +107,32 @@ function PredictContent() {
     }
     load();
     return () => { active = false; };
-  }, []);
+  }, [poolId]);
+
+  async function handleCopyFromQuick() {
+    if (!poolId) return;
+    setCopying(true);
+    try {
+      const { copied, skipped } = await copyQuickPredictionsToPool(poolId);
+      if (copied > 0) {
+        toast.success(
+          `Copied ${copied} quick prediction${copied === 1 ? "" : "s"} into this pool` +
+            (skipped > 0 ? ` (${skipped} already had a pick here)` : ""),
+        );
+        setReloadKey((k) => k + 1);
+      } else {
+        toast.info(
+          skipped > 0
+            ? "Nothing to copy — you already have picks in this pool for those matches."
+            : "You have no quick predictions for upcoming matches to copy.",
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to copy predictions");
+    } finally {
+      setCopying(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -108,8 +143,8 @@ function PredictContent() {
         const perComp = await Promise.all(
           competitions.map(async (c) => {
             const [matchData, scoreData] = await Promise.all([
-              getMatches(c._id).catch(() => []),
-              getMatchScores(c._id).catch(() => []),
+              getMatches(c._id, undefined, { pool: poolId }).catch(() => []),
+              getMatchScores(c._id, poolId).catch(() => []),
             ]);
 
             const scoreMap = new Map<string, { home: number; away: number }>();
@@ -192,7 +227,7 @@ function PredictContent() {
     }
     load();
     return () => { active = false; };
-  }, [competitions]);
+  }, [competitions, poolId, reloadKey]);
 
   const allMatches = selectedCompetition ? (compMatches[selectedCompetition] ?? []) : [];
 
@@ -278,7 +313,11 @@ function PredictContent() {
     >
       {competitions.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
+          <Select
+            value={selectedCompetition}
+            onValueChange={setSelectedCompetition}
+            disabled={Boolean(poolId && poolInfo?.competitionId)}
+          >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All competitions" />
             </SelectTrigger>
@@ -293,12 +332,36 @@ function PredictContent() {
         </div>
       )}
 
+      {poolId && (
+        <Card className="mb-6 border-gold/30 bg-gold/5 p-5 shadow-[var(--shadow-card)]">
+          <p className="text-sm font-semibold">
+            Predicting in {poolInfo?.name ? `"${poolInfo.name}"` : "this pool"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            These picks count only in this pool. They are separate from your quick predictions and
+            from your other pools.
+          </p>
+          <Button
+            className="mt-3"
+            size="sm"
+            variant="outline"
+            onClick={handleCopyFromQuick}
+            disabled={copying}
+          >
+            {copying ? "Copying…" : "Copy my quick predictions"}
+          </Button>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Copies your quick picks for upcoming matches into this pool. Picks you already made here are kept.
+          </p>
+        </Card>
+      )}
+
       {!poolId && (
         <Card className="mb-6 border-primary/30 bg-primary/5 p-5 shadow-[var(--shadow-card)]">
           <p className="text-sm font-semibold">Quick predictions</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            You are not in a pool right now, but you can still make predictions. They will count
-            towards the global competition leaderboard.
+            These count towards the global leaderboards only. To compete in a pool, make your
+            predictions from inside that pool — pool predictions are kept separate.
           </p>
           <Button asChild className="mt-3" size="sm" variant="outline">
             <Link href="/dashboard/pools">Browse pools</Link>
