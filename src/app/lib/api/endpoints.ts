@@ -1557,6 +1557,12 @@ export async function linkOfficialFpl(payload: { token: string }): Promise<{ lin
   return apiFetch("/v1/fpl/team/sync/link", { method: "POST", body: payload });
 }
 
+// One-click link: the one-time sign-in code the extension caught + the PKCE
+// verifier generated in this browser. The backend exchanges them for tokens.
+export async function linkOfficialFplWithCode(payload: { code: string; codeVerifier: string }): Promise<{ linked: boolean }> {
+  return apiFetch("/v1/fpl/team/sync/link-code", { method: "POST", body: payload });
+}
+
 export type FplTokenTestResult =
   | { valid: true; teamName: string | null }
   | { valid: false; message: string };

@@ -6,6 +6,7 @@ import { AlertTriangle, Link2, Link2Off, RefreshCw, Info, Trash2, ExternalLink, 
 import { toast } from "sonner";
 import { deleteMyFplTeam, getFplSyncStatus, linkOfficialFpl, testFplToken, unlinkOfficialFpl, type FplSyncStatus } from "@/app/lib/api/endpoints";
 import { FplShell } from "@/components/layout/fpl-shell";
+import { OneClickLink } from "@/components/fpl/one-click-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -292,6 +293,14 @@ export default function FplSettingsPage() {
             </div>
           ) : (
             <form className="grid gap-4" onSubmit={handleLink}>
+              {/* One-click link via the browser extension (desktop). The manual
+                  methods below stay as the fallback for phones / no extension. */}
+              <OneClickLink
+                onLinked={async () => {
+                  setStatus(await getFplSyncStatus());
+                }}
+              />
+
               {/* Mobile banner — the bookmarklet flow is painful on phones */}
               {isMobile && (
                 <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
@@ -319,7 +328,7 @@ export default function FplSettingsPage() {
               {/* Bookmarklet one-click option */}
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                 <p className="text-sm font-semibold text-primary">
-                  🚀 One-click method (recommended)
+                  🚀 Quick method (bookmark)
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   The easiest way. You save a tiny shortcut, click it on FPL once, and your token copies automatically.

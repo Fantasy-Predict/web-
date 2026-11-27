@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Fantasy Predict – FPL Link",
+  "version": "1.0.0",
+  "description": "One-click linking of your official FPL account to Fantasy Predict. You sign in on FPL's own page — your password never reaches us.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://fantasy.premierleague.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://fantasy-predict.com/*", "https://www.fantasy-predict.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Fantasy Predict – FPL Link",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  }
+}
