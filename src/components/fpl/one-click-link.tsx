@@ -50,8 +50,15 @@ export function OneClickLink({ onLinked }: Props) {
         return;
       }
       setBusy("linking");
-      await linkOfficialFplWithCode({ code: result.code, codeVerifier: pkce.verifier });
-      toast.success("Official FPL account linked! Your picks will now sync automatically.");
+      const linked = await linkOfficialFplWithCode({ code: result.code, codeVerifier: pkce.verifier });
+      const who = [linked?.managerName, linked?.teamId ? `Team ${linked.teamId}` : null]
+        .filter(Boolean)
+        .join(", ");
+      toast.success(
+        who
+          ? `Linked to ${who}. Your picks will now sync automatically.`
+          : "Official FPL account linked! Your picks will now sync automatically.",
+      );
       await onLinked();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not link your FPL account. Please try again.");
